@@ -1,10 +1,16 @@
 // ** React Imports
 import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 // ** Third Party Components
 import classnames from 'classnames'
 import { Star, ShoppingCart, Heart } from 'react-feather'
 import { Card, CardBody, CardText, Button, Badge } from 'reactstrap'
+
+// ** Custom Hooks
+import { useScanner } from '../../../../hooks/useScanner'
 
 const ProductCards = props => {
   // ** Props
@@ -19,6 +25,9 @@ const ProductCards = props => {
     addToWishlist,
     deleteWishlistItem
   } = props
+
+  // Initialize scanner
+  const { isConnected } = useScanner(products)
 
   // ** Handle Move/Add to cart
   const handleCartBtn = (id, val) => {
@@ -46,93 +55,68 @@ const ProductCards = props => {
         const CartBtnTag = item.isInCart ? Link : 'button'
         const itemQty = store.stable.find(p => p.id === item.id).qty
         return (
-          
-            <Card className='ecommerce-card' key={item.id}>
-              {/* <div className='item-img text-center mx-auto'>
-                <Link to={`/apps/ecommerce/product-detail/${item.id}`}>
-                  <img className='img-fluid card-img-top' src={item.image} alt={item.name} />
-                </Link>
-              </div> */}
-              <CardBody>
-                <div className='item-wrapper'>
-                  <div className='item-rating'>
+          <Card className='ecommerce-card' key={item.id}>
+            <CardBody>
+              <div className='item-wrapper'>
+                <div className='item-rating'>
                   <h6 className='item-name'>
-                    {/* <Link className='text-body' to={`/apps/ecommerce/product-detail/${item.id}`}> */}
-                      {item.name} ({item.unitValue}{item.unit})
-                    {/* </Link> */}
+                    {item.name} ({item.unitValue}{item.unit})
                   </h6>
-                  </div>
-                  <div className='item-cost'>
-                    <h6 className='item-price'>{item.price.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
-                  </div>
                 </div>
-                {/* <h6 className='item-name'>
-                  <Link className='text-body' to={`/apps/ecommerce/product-detail/${item.id}`}>
-                    {item.name}
-                  </Link>
-                </h6> */}
-                <CardText className='item-description d-flex flex-row'>
-                  <span className='mr-auto'>{(Number(itemQty) * Number(item.price)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-                  <Badge className='ml-auto' color={itemQty > 5 ? 'light-success' : 'light-danger'}>{itemQty} {itemQty > 5 ? 'Available' : 'Left'}</Badge>
-                </CardText>
-              </CardBody>
-              <div className='item-options text-center'>
-                {/* <div className='item-wrapper'>
-                  <div className='item-cost'>
-                    <h4 className='item-price'>R{item.price.toLocaleString()}</h4>
-                    {item.hasFreeShipping ? (
-                      <CardText className='shipping'>
-                        <Badge color='light-success'>Free Shipping</Badge>
-                      </CardText>
-                    ) : null}
-                  </div>
-                </div> */}
-                {/* <Button
-                  className='btn-wishlist'
-                  color='light'
-                  onClick={() => handleWishlistClick(item.id, item.isInWishlist)}
-                >
-                  <Heart
-                    className={classnames('mr-50', {
-                      'text-danger': item.isInWishlist
-                    })}
-                    size={14}
-                  />
-                  <span>Wishlist</span>
-                </Button> */}
-                <Button
-                  color='primary'
-                  tag={CartBtnTag}
-                  className='btn-cart move-cart'
-                  onClick={() => handleCartBtn(item.id, item.isInCart)}
-                  /*eslint-disable */
-                  {...(item.isInCart
-                    ? {
-                        to: '/apps/ecommerce/checkout'
-                      }
-                    : {})}
-                  /*eslint-enable */
-                >
-                  <ShoppingCart className='mr-50' size={14} />
-                  <span>{item.isInCart ? 'View In Cart' : 'Add To Cart'}</span>
-                </Button>
+                <div className='item-cost'>
+                  <h6 className='item-price'>{item.price.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
+                </div>
               </div>
-            </Card>
-          
+              <CardText className='item-description d-flex flex-row'>
+                <span className='mr-auto'>{(Number(itemQty) * Number(item.price)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+                <Badge className='ml-auto' color={itemQty > 5 ? 'light-success' : 'light-danger'}>{itemQty} {itemQty > 5 ? 'Available' : 'Left'}</Badge>
+              </CardText>
+            </CardBody>
+            <div className='item-options text-center'>
+              <Button
+                color='primary'
+                tag={CartBtnTag}
+                className='btn-cart move-cart'
+                onClick={() => handleCartBtn(item.id, item.isInCart)}
+                {...(item.isInCart ? { to: '/apps/ecommerce/checkout'} : {})}
+              >
+                <ShoppingCart className='mr-50' size={14} />
+                <span>{item.isInCart ? 'View In Cart' : 'Add To Cart'}</span>
+              </Button>
+            </div>
+          </Card>
         )
       })
     }
   }
 
   return (
-    <div
-      className={classnames({
-        'grid-view': activeView === 'grid',
-        'list-view': activeView === 'list'
-      })}
-    >
-      {renderProducts()}
-    </div>
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      {isConnected && (
+        <div className='scanner-status mb-1'>
+          <Badge color='success'>Scanner Connected</Badge>
+        </div>
+      )}
+      <div
+        className={classnames({
+          'grid-view': activeView === 'grid',
+          'list-view': activeView === 'list'
+        })}
+      >
+        {renderProducts()}
+      </div>
+    </>
   )
 }
 
