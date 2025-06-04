@@ -82,7 +82,7 @@ const Login = props => {
 	const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const illustration = skin === 'dark' ? 'banner-21.png' : 'banner-21.png',
+  const illustration = skin === 'dark' ? 'graphic-5.png' : 'graphic-5.png',
     source = require(`@src/assets/images/pages/${illustration}`).default
 
     useEffect(() => {
