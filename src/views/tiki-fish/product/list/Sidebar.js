@@ -22,7 +22,8 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
     category: '',
     price: '',
     costPrice: '',
-    packagingPrice: ''
+    packagingPrice: '',
+    barcode: ''
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,7 +54,8 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
               category: '',
               price: '',
               costPrice: '',
-              packagingPrice: ''
+              packagingPrice: '',
+              barcode: ''
             })
             toggleSidebar()
         } else {
@@ -68,7 +70,8 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
             category: '',
             price: '',
             costPrice: '',
-            packagingPrice: ''
+            packagingPrice: '',
+            barcode: ''
           })
           toggleSidebar()
         }
@@ -201,6 +204,17 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
               <option value='store'>Store</option>
             </AvInput>
           </FormGroup> */}
+          <FormGroup>
+            <Label for='barcode'>Product Barcode</Label>
+            <AvInput 
+              type='number' 
+              name='barcode' 
+              id='barcode' 
+              placeholder='Product Barcode' 
+              value={productData.barcode}
+              onChange={e => setProductData({...productData, barcode: e.target.value})}
+            />
+          </FormGroup>
           <FormGroup>
             <Label for='description'>Product Description</Label>
             <AvInput 

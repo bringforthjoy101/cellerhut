@@ -89,7 +89,7 @@ const Cart = (props) => {
 					<div className="item-options text-center">
 						<div className="item-wrapper">
 							<div className="item-cost">
-								<h4 className="item-price">R{(item.price * item.qty).toLocaleString()}</h4>
+								<h4 className="item-price">{(item.price * item.qty).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h4>
 								{item.hasFreeShipping ? (
 									<CardText className="shipping">
 										<Badge color="light-success" pill>
@@ -249,7 +249,7 @@ const Cart = (props) => {
 								<AvInput
 									name="location"
 									id="location"
-									placeholder="Akure, Ondo State"
+									placeholder="Pretoria, Gauteng"
 									value={orderData.location}
 									onChange={(e) => setOrderData({ ...orderData, location: e.target.value })}
 								/>
@@ -298,19 +298,19 @@ const Cart = (props) => {
 								<ul className="list-unstyled">
 									<li className="price-detail">
 										<div className="detail-title detail-total">Sub Total</div>
-										<div className="detail-amt font-weight-bolder">R{subTotal.toLocaleString()}</div>
+										<div className="detail-amt font-weight-bolder">{subTotal.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Discount</div>
-										<div className="detail-amt font-weight-bolder">R{Number(discount).toLocaleString()}</div>
+										<div className="detail-amt font-weight-bolder">{Number(discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Logistics</div>
-										<div className="detail-amt font-weight-bolder">R{Number(logistics).toLocaleString()}</div>
+										<div className="detail-amt font-weight-bolder">{Number(logistics).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Total</div>
-										<div className="detail-amt font-weight-bolder">R{totalAmount.toLocaleString()}</div>
+										<div className="detail-amt font-weight-bolder">{totalAmount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
 									</li>
 								</ul>
 								<Button.Ripple
