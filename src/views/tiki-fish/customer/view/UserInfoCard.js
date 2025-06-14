@@ -32,7 +32,7 @@ const UserInfoCard = ({ customerDetails, userRole }) => {
           initials
           color={color}
           className='rounded'
-          content={`${customerDetails.fullName}`}
+          content={`${customerDetails.name}`}
           contentStyles={{
             borderRadius: 0,
             fontSize: 'calc(36px)',
@@ -94,9 +94,9 @@ const UserInfoCard = ({ customerDetails, userRole }) => {
   }
 
   const [userData, setUserData] = useState({
-    fullName: customerDetails.fullName,
+    name: customerDetails.name,
     phone: customerDetails.phone,
-    location: customerDetails.location,
+    email: customerDetails.email,
     status: customerDetails.status
   })
   const [formModal, setFormModal] = useState(false)
@@ -146,9 +146,9 @@ const UserInfoCard = ({ customerDetails, userRole }) => {
               {renderCustomerImg()}
                 <div className='d-flex flex-column ml-1'>
                   <div className='user-info mb-1'>
-                    <h4 className='mb-0'>{customerDetails !== null ? `${customerDetails.fullName}` : 'Customer Name'}</h4>
+                    <h4 className='mb-0'>{customerDetails !== null ? `${customerDetails.name}` : 'Customer Name'}</h4>
                     <CardText tag='span' className='text-captalize'>
-                      {customerDetails?.location}
+                      {customerDetails?.email}
                     </CardText>
                   </div>
                   <div className='d-flex flex-wrap align-items-center'>
@@ -165,14 +165,28 @@ const UserInfoCard = ({ customerDetails, userRole }) => {
                           <Row>
                             <Col xl='6' lg='12'>
                               <FormGroup>
-                                <Label for='fullName'>Full Name</Label>
+                                <Label for='firstName'>First Name</Label>
                                 <AvInput 
                                   type='text' 
-                                  name='fullName' 
-                                  id='fullName' 
+                                  name='firstName' 
+                                  id='firstName' 
                                   placeholder='First Name' 
-                                  value={customerDetails.fullName}
-                                  onChange={e => setUserData({...userData, fullName: e.target.value})}
+                                  value={customerDetails.firstName}
+                                  onChange={e => setUserData({...userData, firstName: e.target.value})}
+                                  required 
+                                />
+                              </FormGroup>
+                            </Col>
+                            <Col xl='6' lg='12'>
+                              <FormGroup>
+                                <Label for='lastName'>Last Name</Label>
+                                <AvInput 
+                                  type='text' 
+                                  name='lastName' 
+                                  id='lastName' 
+                                  placeholder='Last Name' 
+                                  value={customerDetails.lastName}
+                                  onChange={e => setUserData({...userData, firstName: e.target.value})}
                                   required 
                                 />
                               </FormGroup>
@@ -193,14 +207,14 @@ const UserInfoCard = ({ customerDetails, userRole }) => {
                             </Col>
                             <Col xl='6' lg='12'>
                               <FormGroup>
-                                <Label for='location'>Location</Label>
+                                <Label for='email'>Email</Label>
                                 <AvInput 
                                   type='text' 
-                                  name='location' 
-                                  id='location' 
-                                  placeholder='Location' 
-                                  value={customerDetails.location}
-                                  onChange={e => setUserData({...userData, location: e.target.value})}
+                                  name='email' 
+                                  id='email' 
+                                  placeholder='Email' 
+                                  value={customerDetails.email}
+                                  onChange={e => setUserData({...userData, email: e.target.value})}
                                 />
                               </FormGroup>
                             </Col>
@@ -275,10 +289,10 @@ const UserInfoCard = ({ customerDetails, userRole }) => {
                   <div className='user-info-title'>
                     <Hexagon className='mr-1' size={14} />
                     <CardText tag='span' className='user-info-title font-weight-bold mb-0'>
-                      Location
+                      Email
                     </CardText>
                   </div>
-                  <CardText className='text-capitalize mb-0'>{customerDetails?.location}</CardText>
+                  <CardText className='text-capitalize mb-0'>{customerDetails?.email}</CardText>
                 </div>
                 <div className='d-flex flex-wrap align-items-center mt-1'>
                   <div className='user-info-title'>

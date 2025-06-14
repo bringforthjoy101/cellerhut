@@ -26,7 +26,7 @@ const renderClient = row => {
     color = states[stateNum]
 
   if (row.image) {
-    return <Avatar className='mr-1' img={`${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} width='32' height='32' />
+    return <Avatar className='mr-1' img={`${row.image ? row.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`}`} width='32' height='32' />
   } else {
     return <Avatar color={color || 'primary'} className='mr-1' content={`${row.name}` || 'Sample Product'} initials />
   }
@@ -110,7 +110,7 @@ export const columns = [
     name: 'Category',
     selector: 'category',
     sortable: true,
-    cell: row => <span className="text-capitalize">{row.category}</span>
+    cell: row => <span className="text-capitalize">{row.category.name}</span>
   },
   {
     name: 'Cretaed Date',

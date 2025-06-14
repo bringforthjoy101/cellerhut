@@ -27,7 +27,7 @@ const UserInfoCard = ({ selectedProduct }) => {
 
   const renderImg = () => {
     if (selectedProduct !== null && selectedProduct.image) {
-      return <img src={`${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt='user-avatar' className='img-fluid rounded' height='104' width='104' />
+      return <img src={`${selectedProduct.image ? selectedProduct.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`}`} alt='user-avatar' className='img-fluid rounded' height='104' width='104' />
     } else {
       const stateNum = Math.floor(Math.random() * 6),
         states = ['light-success', 'light-danger', 'light-warning', 'light-info', 'light-primary', 'light-secondary'],
@@ -181,7 +181,7 @@ const UserInfoCard = ({ selectedProduct }) => {
                   <span>Product Cost Price: </span>
                 </div>
                 <div className='ml-1'>
-                  <h6 className='mb-0'>{(selectedProduct.costPrice).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
+                  <h6 className='mb-0'>{Number(selectedProduct.costPrice).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
                 </div>
               </div>
               {/* <div className='d-flex align-items-center mr-2 mt-1'>
@@ -197,7 +197,7 @@ const UserInfoCard = ({ selectedProduct }) => {
                   <span>Product Selling Price: </span>
                 </div>
                 <div className='ml-1'>
-                  <h6 className='mb-0'>{selectedProduct.price.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
+                  <h6 className='mb-0'>{Number(selectedProduct.price).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
                 </div>
               </div>
               <div className='d-flex align-items-center mr-2 mt-1'>
@@ -205,7 +205,7 @@ const UserInfoCard = ({ selectedProduct }) => {
                   <span>Product Packaging Price: </span>
                 </div>
                 <div className='ml-1'>
-                  <h6 className='mb-0'>{selectedProduct.packagingPrice.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
+                  <h6 className='mb-0'>{Number(selectedProduct.packagingPrice).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
                 </div>
               </div>
             </div>
@@ -231,7 +231,7 @@ const UserInfoCard = ({ selectedProduct }) => {
                   <span>Product Qty: </span>
                 </div>
                 <div className='ml-1'>
-                  <h6 className='mb-0'>{selectedProduct.qty}</h6>
+                  <h6 className='mb-0'>{selectedProduct.qty} {selectedProduct.unit}</h6>
                 </div>
               </div>
             </div>

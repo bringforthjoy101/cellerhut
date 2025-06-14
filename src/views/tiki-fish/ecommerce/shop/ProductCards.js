@@ -56,6 +56,11 @@ const ProductCards = props => {
         const itemQty = store.stable.find(p => p.id === item.id).qty
         return (
           <Card className='ecommerce-card' key={item.id}>
+            <div className='item-img text-center mx-auto'>
+              <Link to={`#`}>
+                <img className='img-fluid card-img-top' src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} />
+              </Link>
+            </div>
             <CardBody>
               <div className='item-wrapper'>
                 <div className='item-rating'>

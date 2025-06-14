@@ -36,7 +36,7 @@ const CustomHeader = ({ handleFilter, searchTerm, handlePerPage, rowsPerPage, do
 							<option value="50">50</option>
 						</CustomInput>
 					</div>
-					<h3 className="d-none d-lg-block">{customerDetails.fullName.split(' ')[0]}'s Orders</h3>
+					<h3 className="d-none d-lg-block">{customerDetails.firstName}'s Orders</h3>
 				</Col>
 				<Col
 					lg="3"

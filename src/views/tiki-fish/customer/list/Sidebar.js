@@ -14,9 +14,11 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 	const dispatch = useDispatch()
 
 	const [userData, setUserData] = useState({
-		fullName: '',
+		firstName: '',
+		lastName: '',
 		phone: '',
-		location: ''
+		email: '',
+		password: '',
 	})
 
 	const [isSubmitting, setIsSubmitting] = useState(false)
@@ -81,14 +83,24 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		<Sidebar size="lg" open={open} title="New Customer" headerClassName="mb-1" contentClassName="pt-0" toggleSidebar={toggleSidebar}>
 			<AvForm onSubmit={onSubmit}>
 				<FormGroup>
-					<Label for="fullName">Full Name</Label>
+					<Label for="firstName">First Name</Label>
 					<AvInput
-						name="fullName"
-						id="fullName"
-						placeholder="Full Name"
-						value={userData.fullName}
-						onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
+						name="firstName"
+						id="firstName"
+						placeholder="First Name"
+						value={userData.firstName}
+						onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
 						required
+					/>
+				</FormGroup>
+				<FormGroup>
+					<Label for='lastName'>Last Name</Label>
+					<AvInput 
+					name='lastName' 
+					id='lastName' 
+					placeholder='Last Name' 
+					value={userData.lastName}
+					onChange={e => setUserData({...userData, lastName: e.target.value})}
 					/>
 				</FormGroup>
 				<FormGroup>
@@ -103,16 +115,28 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 					/>
 				</FormGroup>
 				<FormGroup>
-					<Label for='location'>Location</Label>
-					<AvInput 
-					name='location' 
-					id='location' 
-					placeholder='Akure, Ondo State' 
-					value={userData.location}
-					onChange={e => setUserData({...userData, location: e.target.value})}
+					<Label for="email">Email</Label>
+					<AvInput
+						name="email"
+						id="email"
+						placeholder="Email"
+						value={userData.email}
+						onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+						required
 					/>
 				</FormGroup>
-				
+				<FormGroup>
+					<Label for="password">Password</Label>
+					<AvInput
+						name="password"
+						id="password"
+						placeholder="Password"
+						value={userData.password}
+						onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+						required
+					/>
+				</FormGroup>
+
 				<Button type="submit" className="mr-1" color="primary" disabled={isSubmitting}>
 					{isSubmitting && <Spinner color="white" size="sm" />}
 					<span className="ml-50">Submit</span>

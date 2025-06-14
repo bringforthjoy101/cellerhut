@@ -39,18 +39,18 @@ const { selectedOrder } = store
 		// products = process.env.NODE_ENV === 'production' ? JSON.parse(products) : products
 		return products.map((product) => {
 			return (
-				<tr key={product.id}>
+				<tr key={product.productId}>
 					<td className="ml-0 mr-0">
-						<p className="card-text font-weight-bold mb-25">{product.name}</p>
+						<p className="card-text font-weight-bold mb-25">{product.product.name}</p>
 					</td>
 					<td className="">
-						<span className="font-weight-bold">{product.price.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+						<span className="font-weight-bold">{Number(product.price).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 					</td>
 					<td className="">
-						<span className="font-weight-bold">{product.qty.toLocaleString()}</span>
+						<span className="font-weight-bold">{product.quantity.toLocaleString()}</span>
 					</td>
 					<td className="">
-						<span className="font-weight-bold">{product.amount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+						<span className="font-weight-bold">{Number(Number(product.price) * Number(product.quantity)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 					</td>
 				</tr>
 			)
@@ -81,15 +81,15 @@ const { selectedOrder } = store
 						</div>
 						<div className="invoice-date-wrapper mb-50">
 							<span className="invoice-date-title">Location:</span>
-							<span className="font-weight-bold"> {selectedOrder?.location}</span>
+							<span className="font-weight-bold"> {selectedOrder?.address.street}, {selectedOrder?.address.suburb}, {selectedOrder?.address.city}, {selectedOrder?.address.province}, {selectedOrder?.address.postalCode}</span>
 						</div>
 						<div className="invoice-date-wrapper mb-50">
 							<p className="invoice-date-title">Customer:</p>
-							<p className="font-weight-bold">{selectedOrder?.customer.fullName} - {selectedOrder?.customer.phone}</p>
+							<p className="font-weight-bold">{selectedOrder?.customer.name} - {selectedOrder?.customer.phone}</p>
 						</div>
 						<div className="invoice-date-wrapper">
 							<p className="invoice-date-title">Payment Mode:</p>
-							<p className="font-weight-bold">{selectedOrder?.paymentMode.toUpperCase()}</p>
+							<p className="font-weight-bold">{selectedOrder?.paymentMethod.toUpperCase()}</p>
 						</div>
 					</div>
 				</div>
@@ -105,7 +105,7 @@ const { selectedOrder } = store
 							<th className="">Total</th>
 						</tr>
 					</thead>
-					<tbody>{renderTable(selectedOrder?.products)}</tbody>
+					<tbody>{renderTable(selectedOrder?.orderItems)}</tbody>
 				</Table>
 
 				<Row className="invoice-sales-total-wrapper mt-3">
@@ -113,26 +113,26 @@ const { selectedOrder } = store
 						<div className="invoice-total-wrapper d-flex flex-column align-items-end">
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Subtotal:</p>
-								<p className="invoice-total-amount">{selectedOrder?.subTotal.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(selectedOrder?.subTotal).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Logistics:</p>
-								<p className="invoice-total-amount">{selectedOrder?.logistics.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(selectedOrder?.logistics).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Discount:</p>
-								<p className="invoice-total-amount">{selectedOrder?.discount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(selectedOrder?.discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 							<hr className="my-50" />
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Total:</p>
-								<p className="invoice-total-amount">{selectedOrder?.amount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(selectedOrder?.amount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 						</div>
 					</Col>
 					<Col className="mt-md-0 mt-3" md="12">
 						<p className="mb-0">
-							<span className="font-weight-bold">Attendant:</span> <span className="ml-75">{selectedOrder?.admin.firstName} {selectedOrder?.admin.lastName}</span>
+							<span className="font-weight-bold">Attendant:</span> <span className="ml-75">{selectedOrder?.admin.firstName}</span>
 						</p>
 					</Col>
 				</Row>

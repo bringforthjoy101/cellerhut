@@ -79,7 +79,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 	useEffect(() => {
 		if (selectedProduct !== null) {
 			if (selectedProduct.image.length) {
-				return setImg(`${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`)
+				return setImg(selectedProduct.image)
 			} else {
 				return setImg(null)
 			}

@@ -54,14 +54,14 @@ const CartDropdown = () => {
 
               return (
                 <Media key={item.id} className='align-items-center'>
-                  <img className='d-block rounded mr-1' src={`${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} width='62' />
+                  <img className='d-block rounded mr-1' src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} width='62' />
                   <Media body>
                     <X size={14} className='cart-item-remove' onClick={() => dispatch(deleteCartItem(item.id))} />
                     <div className='media-heading'>
                       <h6 className='cart-item-title'>
                         <Link
                           className='text-body'
-                          to={`/apps/ecommerce/product/${item.slug}`}
+                          to={`#`}
                           onClick={() => handleDropdownItemClick(item.id)}
                         >
                           {item.name}

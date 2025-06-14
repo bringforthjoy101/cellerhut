@@ -44,14 +44,14 @@ const Cart = (props) => {
 			return (
 				<Card key={item.name} className="ecommerce-card">
 					<div className="item-img">
-						<Link to={`/apps/ecommerce/product/${item.id}`}>
-							<img className="img-fluid" src={`${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} />
+						<Link to={`#`}>
+							<img className="img-fluid" src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} />
 						</Link>
 					</div>
 					<CardBody>
 						<div className="item-name">
 							<h6 className="mb-0">
-								<Link to={`/apps/ecommerce/product/${item.id}`}>{item.name}</Link>
+								<Link to={`#`}>{item.name}</Link>
 							</h6>
 							{/* <span className='item-company'>
                 By
@@ -166,9 +166,9 @@ const Cart = (props) => {
 	const renderCustomers = (customers) => {
 		console.log(customers)
 		return customers
-			.filter((customer) => customer.status === 'active')
+			.filter((customer) => customer.is_active)
 			.map((customer) => {
-				return { value: customer.id, label: `${customer.fullName} (${customer.phone})` }
+				return { value: customer.id, label: `${customer.name} (${customer.phone})` }
 			})
 	}
 

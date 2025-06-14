@@ -117,7 +117,7 @@ export const columns = [
             to={`/customer/view/${row.id}`}
             className='user-name text-truncate mb-0'
           >
-            <span className='font-weight-bold'>{row.fullName}</span>
+            <span className='font-weight-bold'>{row.name}</span>
           </Link> 
           <small className='text-truncate text-muted text-capitalize mb-0'>{row.phone}</small>
         </div>
@@ -132,11 +132,11 @@ export const columns = [
     cell: row => <span className="text-capitalize"> {row.phone}</span>
   },
   {
-    name: 'Location',
+    name: 'Email',
     minWidth: '150px',
-    selector: 'location',
+    selector: 'email',
     sortable: true,
-    cell: row => <span className="text-capitalize">{row.location}</span>
+    cell: row => <span className="text-capitalize">{row.email}</span>
   },
   {
     name: 'Total Orders',
@@ -159,8 +159,8 @@ export const columns = [
     selector: 'status',
     sortable: true,
     cell: row => (
-      <Badge className='text-capitalize' color={statusObj[row.status]} pill>
-        {row.status}
+      <Badge className='text-capitalize' color={statusObj[row.is_active ? 'active' : 'suspended']} pill>
+        {row.is_active ? 'Active' : 'Inactive'}
       </Badge>
     )
   },

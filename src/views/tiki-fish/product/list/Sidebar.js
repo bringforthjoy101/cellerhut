@@ -1,17 +1,27 @@
 // ** Custom Components
 import Sidebar from '@components/sidebar'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
+import Uppy from '@uppy/core'
+import thumbnailGenerator from '@uppy/thumbnail-generator'
+import { DragDrop } from '@uppy/react'
+// import FileUploaderBasic from '@views/forms/form-elements/file-uploader/FileUploaderBasic'
 
-import { swal, apiRequest } from '@utils'
+import { swal, apiUrl, Storage, apiRequest } from '@utils'
 import { getAllData, getFilteredData } from '../store/action'
 
 // ** Third Party Components
-import { Button, FormGroup, Label, Spinner, CustomInput } from 'reactstrap'
+import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody } from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
 
 const SidebarNewUsers = ({ open, toggleSidebar }) => {
   const dispatch = useDispatch()
+
+  const [uppy] = useState(() => new Uppy({
+    meta: { type: 'product-image' },
+    restrictions: { maxNumberOfFiles: 1 },
+    autoProceed: true
+  }))
 
   const [productData, setProductData] = useState({
     name: '',
@@ -23,41 +33,135 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
     price: '',
     costPrice: '',
     packagingPrice: '',
-    barcode: ''
+    barcode: '',
+    image: '',
+    sku: '',
+    alcohol_content: '',
+    volume: '',
+    origin: '',
+    vintage: '',
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   
+  const uploadImage = async (file) => {
+    console.log('Uploading file:', file)
+    const formData = new FormData()
+    formData.append('image', file)
+    
+    const userData = Storage.getItem('userData')
+    const { accessToken } = userData
+
+    try {
+      const response = await fetch(`${apiUrl}/upload-images`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json'
+          // Don't set Content-Type, let the browser set it with the boundary
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+      console.log('Upload response:', data)
+      
+      if (data.status) {
+        const imageUrl = data.data.url
+        setProductData(prev => ({...prev, image: imageUrl}))
+        return imageUrl
+      } else {
+        swal('Oops!', data.message || 'Failed to upload image', 'error')
+        return null
+      }
+    } catch (error) {
+      console.error('Upload error details:', error)
+      swal('Error!', 'Failed to upload image. Please try again.', 'error')
+      return null
+    }
+  }
+
+  useEffect(() => {
+    uppy.use(thumbnailGenerator)
+    
+    uppy.on('thumbnail:generated', async (file, preview) => {
+      console.log('Uppy file object:', file)
+      setProductData(prev => ({...prev, imagePreview: preview}))
+      
+      // Get the actual file from Uppy
+      const fileToUpload = uppy.getFile(file.id)
+      console.log('File to upload:', fileToUpload)
+      
+      if (fileToUpload && fileToUpload.data) {
+        // Create a new File object with the correct name
+        const uploadFile = new File([fileToUpload.data], fileToUpload.name, {
+          type: fileToUpload.type || 'image/jpeg'
+        })
+        const imageUrl = await uploadImage(uploadFile)
+        if (imageUrl) {
+          setProductData(prev => ({...prev, image: imageUrl}))
+        }
+      } else {
+        console.error('No file data found in Uppy file object')
+        swal('Error!', 'Failed to get file data for upload', 'error')
+      }
+    })
+
+    // Add file upload success and error handlers
+    uppy.on('upload-success', (file, response) => {
+      console.log('Upload success:', file, response)
+    })
+
+    uppy.on('upload-error', (file, error, response) => {
+      console.error('Upload error:', file, error, response)
+      swal('Error!', 'Failed to upload image', 'error')
+    })
+
+    return () => uppy.close()
+  }, [])
+
   // ** Function to handle form submit
   const onSubmit = async (event, errors) => {
     setIsSubmitting(true)
     event.preventDefault()
-    console.log({errors})
     if (errors) setIsSubmitting(false)
     if (errors && !errors.length) {
-      console.log({productData})
-      setIsSubmitting(true)
-      const body = JSON.stringify(productData)
       try {
-        const response = await apiRequest({url:'/products/create', method:'POST', body}, dispatch)
-        console.log({response})
+        const productPayload = {
+          ...productData
+        }
+        delete productPayload.imagePreview // Remove the preview URL as it's not needed in the API
+
+        const body = JSON.stringify(productPayload)
+        const response = await apiRequest({
+          url: '/products/create',
+          method: 'POST',
+          body
+        }, dispatch)
+
         if (response.data.status) {
-            setIsSubmitting(false)
-            swal('Great job!', response.data.message, 'success')
-            dispatch(getAllData())
-            setProductData({
-              name: '',
-              description: '',
-              qty: '',
-              unit: '',
-              unitValue: '',
-              category: '',
-              price: '',
-              costPrice: '',
-              packagingPrice: '',
-              barcode: ''
-            })
-            toggleSidebar()
+          setIsSubmitting(false)
+          swal('Great job!', response.data.message, 'success')
+          dispatch(getAllData())
+          setProductData({
+            name: '',
+            description: '',
+            qty: '',
+            unit: '',
+            unitValue: '',
+            category: '',
+            price: '',
+            costPrice: '',
+            packagingPrice: '',
+            barcode: '',
+            image: '',
+            imagePreview: '',
+            sku: '',
+            alcohol_content: '',
+            volume: '',
+            origin: '',
+            vintage: ''
+          })
+          toggleSidebar()
         } else {
           setIsSubmitting(false)
           swal('Oops!', response.data.message, 'error')
@@ -71,13 +175,21 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
             price: '',
             costPrice: '',
             packagingPrice: '',
-            barcode: ''
+            barcode: '',
+            image: '',
+            imagePreview: '',
+            sku: '',
+            alcohol_content: '',
+            volume: '',
+            origin: '',
+            vintage: ''
           })
           toggleSidebar()
         }
       } catch (error) {
         setIsSubmitting(false)
         console.error({error})
+        swal('Error!', 'Failed to process the request. Please try again.', 'error')
       }
     }
   }
@@ -168,7 +280,11 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
               required
             >
               <option value=''>Select Product Unit</option>
-              <option value='wrap'>Wrap</option>
+              <option value='bottle'>Bottle</option>
+              <option value='case'>Case</option>
+              <option value='box'>Box</option>
+              <option value='can'>Can</option>
+              <option value='dozen'>Dozen</option>
               <option value='kg'>Kilogram</option>
               <option value='pck'>Pack</option>
               <option value='pcs'>Pieces</option>
@@ -189,25 +305,95 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
               onChange={e => setProductData({...productData, unitValue: e.target.value})}
             />
           </FormGroup>
-          {/* <FormGroup>
-            <Label for='category'>Product Category</Label>
+          <FormGroup>
+            <Label for='categoryId'>Product Category</Label>
             <AvInput 
               type='select' 
-              id='category' 
-              name='category' 
-              value={productData.category}
-              onChange={e => setProductData({...productData, category: e.target.value})}
+              id='categoryId' 
+              name='categoryId' 
+              value={productData.categoryId}
+              onChange={e => setProductData({...productData, categoryId: e.target.value})}
               required
             >
               <option value=''>Select Product Category</option>
-              <option value='shop'>Shop</option>
-              <option value='store'>Store</option>
+              <option value='1'>Wines</option>
+              <option value='2'>Spirits</option>
+              <option value='3'>Beer</option>
+              <option value='4'>Red Wines</option>
+              <option value='5'>White Wines</option>
+              <option value='6'>Rose Wines</option>
+              <option value='7'>Sparkling</option>
+              <option value='8'>Whisky</option>
+              <option value='9'>Gin</option>
+              <option value='10'>Vodka</option>
+              <option value='11'>Rum</option>
+
             </AvInput>
-          </FormGroup> */}
+          </FormGroup>
+          <FormGroup>
+            <Label for='productImage'>Product Image</Label>
+            <Card>
+              <CardBody>
+                <DragDrop uppy={uppy} />
+                {productData.imagePreview && (
+                  <img 
+                    className='rounded mt-2' 
+                    src={productData.imagePreview} 
+                    alt='product' 
+                    style={{ maxWidth: '200px' }}
+                  />
+                )}
+              </CardBody>
+            </Card>
+          </FormGroup>
+          <FormGroup>
+            <Label for='sku'>Product SKU</Label>
+            <AvInput 
+              type='text' 
+              name='sku' 
+              id='sku' 
+              placeholder='Product SKU' 
+              value={productData.sku}
+              onChange={e => setProductData({...productData, sku: e.target.value})}
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label for='alcohol_content'>Product Alcohol Content</Label>
+            <AvInput 
+              type='number' 
+              name='alcohol_content' 
+              id='alcohol_content' 
+              placeholder='Product Alcohol Content' 
+              value={productData.alcohol_content}
+              onChange={e => setProductData({...productData, alcohol_content: e.target.value})}
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label for='volume'>Product Volume</Label>
+            <AvInput 
+              type='number' 
+              name='volume' 
+              id='volume' 
+              placeholder='Product Volume' 
+              value={productData.volume}
+              onChange={e => setProductData({...productData, volume: e.target.value})}
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label for='origin'>Product Origin</Label>
+            <AvInput 
+              type='text' 
+              name='origin' 
+              id='origin' 
+              placeholder='Product Origin' 
+              value={productData.origin}
+              onChange={e => setProductData({...productData, origin: e.target.value})}
+            />
+          </FormGroup>
           <FormGroup>
             <Label for='barcode'>Product Barcode</Label>
             <AvInput 
-              type='number' 
+              type='text' 
               name='barcode' 
               id='barcode' 
               placeholder='Product Barcode' 

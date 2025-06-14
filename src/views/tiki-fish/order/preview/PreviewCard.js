@@ -23,18 +23,18 @@ const PreviewCard = ({ data }) => {
 		// products = JSON.parse(products)
 		return products.map((product) => {
 			return (
-				<tr key={product.id}>
+				<tr key={product.productId}>
 					<td className="py-1">
-						<p className="card-text font-weight-bold mb-25">{product.name} - {product.unitValue}{product.unit}</p>
+						<p className="card-text font-weight-bold mb-25">{product.product.name}</p>
 					</td>
 					<td className="py-1">
-						<span className="font-weight-bold">{product.price.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+						<span className="font-weight-bold">{Number(product.price).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 					</td>
 					<td className="py-1">
-						<span className="font-weight-bold">{product.qty.toLocaleString()}</span>
+						<span className="font-weight-bold">{product.quantity.toLocaleString()}</span>
 					</td>
 					<td className="py-1">
-						<span className="font-weight-bold">{product.amount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+						<span className="font-weight-bold">{Number(Number(product.price) * Number(product.quantity)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 					</td>
 				</tr>
 			)
@@ -92,15 +92,15 @@ const PreviewCard = ({ data }) => {
 						</div>
 						<div className="invoice-date-wrapper">
 							<p className="invoice-date-title">Customer:</p>
-							<p className="invoice-date">{data.customer.fullName} - {data.customer.phone}</p>
+							<p className="invoice-date">{data.customer.name} - {data.customer.phone}</p>
 						</div>
 						<div className="invoice-date-wrapper">
 							<p className="invoice-date-title">Location:</p>
-							<p className="invoice-date">{data.location}</p>
+							<p className="invoice-date">{data.address.street}, {data.address.suburb}, {data.address.city}, {data.address.province}, {data.address.postalCode}</p>
 						</div>
 						<div className="invoice-date-wrapper">
 							<p className="invoice-date-title">Payment Mode:</p>
-							<p className="invoice-date">{data.paymentMode.toUpperCase()}</p>
+							<p className="invoice-date">{data.paymentMethod.toUpperCase()}</p>
 						</div>
 						<div className="invoice-date-wrapper">
 							<p className="invoice-date-title">Order Status:</p>
@@ -162,7 +162,7 @@ const PreviewCard = ({ data }) => {
 						<th className="py-1">Total</th>
 					</tr>
 				</thead>
-				<tbody>{renderTable(data.products)}</tbody>
+				<tbody>{renderTable(data.orderItems)}</tbody>
 			</Table>
 			{/* /Invoice Description */}
 
@@ -181,20 +181,20 @@ const PreviewCard = ({ data }) => {
 						<div className="invoice-total-wrapper">
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Subtotal:</p>
-								<p className="invoice-total-amount">{data.subTotal.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(data.subTotal).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Logistics:</p>
-								<p className="invoice-total-amount">{data.logistics?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' }) || 0}</p>
+								<p className="invoice-total-amount">{Number(data.logistics).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Discount:</p>
-								<p className="invoice-total-amount">{data.discount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(data.discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 							<hr className="my-50" />
 							<div className="invoice-total-item">
 								<p className="invoice-total-title">Total:</p>
-								<p className="invoice-total-amount">{data.amount.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
+								<p className="invoice-total-amount">{Number(data.amount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</p>
 							</div>
 						</div>
 					</Col>
