@@ -1,4 +1,3 @@
-const SassRuleRewire = require('react-app-rewire-sass-rule')
 const path = require('path')
 const rewireAliases = require('react-app-rewire-aliases')
 
@@ -19,20 +18,25 @@ module.exports = function override(config, env) {
     '@hooks': path.resolve(__dirname, 'src/utility/hooks')
   })(config, env)
 
-  config = new SassRuleRewire()
-    .withRuleOptions({
-      test: /\.s[ac]ss$/i,
-      use: [
-        {
-          loader: 'sass-loader',
-          options: {
-            sassOptions: {
-              includePaths: ['node_modules', 'src/assets']
-            }
+  // Configure SASS without node-sass dependency
+  const oneOf = config.module.rules.find(rule => rule.oneOf).oneOf
+  const sassRule = {
+    test: /\.s[ac]ss$/i,
+    use: [
+      require.resolve('style-loader'),
+      require.resolve('css-loader'),
+      {
+        loader: require.resolve('sass-loader'),
+        options: {
+          implementation: require('sass'),
+          sassOptions: {
+            includePaths: ['node_modules', 'src/assets']
           }
         }
-      ]
-    })
-    .rewire(config, env)
+      }
+    ]
+  }
+
+  oneOf.unshift(sassRule)
   return config
 }

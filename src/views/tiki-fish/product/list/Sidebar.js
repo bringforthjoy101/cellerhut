@@ -9,10 +9,12 @@ import { DragDrop } from '@uppy/react'
 
 import { swal, apiUrl, Storage, apiRequest } from '@utils'
 import { getAllData, getFilteredData } from '../store/action'
+import { useProductScanner } from '../../../../hooks/useProductScanner'
 
 // ** Third Party Components
-import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody } from 'reactstrap'
+import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody, InputGroup, InputGroupAddon } from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
+import { Camera } from 'react-feather'
 
 const SidebarNewUsers = ({ open, toggleSidebar }) => {
   const dispatch = useDispatch()
@@ -43,6 +45,14 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Handle barcode scanning
+  const handleBarcodeScanned = (barcode) => {
+    setProductData(prev => ({...prev, barcode}))
+  }
+
+  // Initialize scanner hook
+  const { isConnected, isScanning, startScanning } = useProductScanner(handleBarcodeScanned)
   
   const uploadImage = async (file) => {
     console.log('Uploading file:', file)
@@ -392,14 +402,31 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
           </FormGroup>
           <FormGroup>
             <Label for='barcode'>Product Barcode</Label>
-            <AvInput 
-              type='text' 
-              name='barcode' 
-              id='barcode' 
-              placeholder='Product Barcode' 
-              value={productData.barcode}
-              onChange={e => setProductData({...productData, barcode: e.target.value})}
-            />
+            <InputGroup>
+              <AvInput 
+                type='text' 
+                name='barcode' 
+                id='barcode' 
+                placeholder='Product Barcode' 
+                value={productData.barcode}
+                onChange={e => setProductData({...productData, barcode: e.target.value})}
+              />
+              <InputGroupAddon addonType='append'>
+                <Button 
+                  color={isConnected ? (isScanning ? 'warning' : 'success') : 'secondary'}
+                  onClick={startScanning}
+                  disabled={!isConnected}
+                  title={isConnected ? 'Scan Barcode' : 'Scanner not connected'}
+                >
+                  <Camera size={16} />
+                  {isScanning && <Spinner size='sm' className='ml-1' />}
+                </Button>
+              </InputGroupAddon>
+            </InputGroup>
+            <small className='text-muted'>
+              Scanner status: {isConnected ? 'Connected' : 'Disconnected'}
+              {isScanning && ' - Ready to scan'}
+            </small>
           </FormGroup>
           <FormGroup>
             <Label for='description'>Product Description</Label>

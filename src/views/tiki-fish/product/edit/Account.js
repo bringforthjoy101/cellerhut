@@ -6,11 +6,12 @@ import { useDispatch } from 'react-redux'
 import Avatar from '@components/avatar'
 
 // ** Third Party Components
-import { Lock, Edit, Trash2 } from 'react-feather'
-import { Media, Row, Col, Button, Form, Input, Label, FormGroup, Table, CustomInput } from 'reactstrap'
+import { Lock, Edit, Trash2, Camera } from 'react-feather'
+import { Media, Row, Col, Button, Form, Input, Label, FormGroup, Table, CustomInput, InputGroup, InputGroupAddon, Spinner } from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
 import { getAllData, getProduct } from '../store/action'
 import { swal, apiRequest } from '@utils'
+import { useProductScanner } from '../../../../hooks/useProductScanner'
 
 const UserAccountTab = ({ selectedProduct }) => {
 	const dispatch = useDispatch()
@@ -24,8 +25,17 @@ const UserAccountTab = ({ selectedProduct }) => {
 		packagingPrice: selectedProduct.packagingPrice,
 		unit: selectedProduct.unit,
 		unitValue: selectedProduct.unitValue,
-		category: selectedProduct.category
+		category: selectedProduct.category,
+		barcode: selectedProduct.barcode || ''
 	})
+
+	// Handle barcode scanning
+	const handleBarcodeScanned = (barcode) => {
+		setProductData(prev => ({...prev, barcode}))
+	}
+
+	// Initialize scanner hook
+	const { isConnected, isScanning, startScanning } = useProductScanner(handleBarcodeScanned)
 
 	const onSubmit = async (event, errors) => {
 		event.preventDefault()
@@ -47,6 +57,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 						costPrice: selectedProduct.costPrice,
 						packagingPrice: selectedProduct.packagingPrice,
 						unitValue: selectedProduct.unitValue,
+						barcode: selectedProduct.barcode || ''
 					})
 				} else {
 					swal('Oops!', response.data.message, 'error')
@@ -57,6 +68,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 						costPrice: selectedProduct.costPrice,
 						packagingPrice: selectedProduct.packagingPrice,
 						unitValue: selectedProduct.unitValue,
+						barcode: selectedProduct.barcode || ''
 					})
 				}
 			} catch (error) {
@@ -243,6 +255,35 @@ const UserAccountTab = ({ selectedProduct }) => {
 									<option value="crate">Crate</option>
 									<option value="carton">Carton</option>
 								</AvInput>
+							</FormGroup>
+						</Col>
+						<Col md="6" sm="12">
+							<FormGroup>
+								<Label for="barcode">Product Barcode</Label>
+								<InputGroup>
+									<AvInput
+										name="barcode"
+										id="barcode"
+										placeholder="Product Barcode"
+										value={productData.barcode}
+										onChange={(e) => setProductData({ ...productData, barcode: e.target.value })}
+									/>
+									<InputGroupAddon addonType='append'>
+										<Button 
+											color={isConnected ? (isScanning ? 'warning' : 'success') : 'secondary'}
+											onClick={startScanning}
+											disabled={!isConnected}
+											title={isConnected ? 'Scan Barcode' : 'Scanner not connected'}
+										>
+											<Camera size={16} />
+											{isScanning && <Spinner size='sm' className='ml-1' />}
+										</Button>
+									</InputGroupAddon>
+								</InputGroup>
+								<small className='text-muted'>
+									Scanner status: {isConnected ? 'Connected' : 'Disconnected'}
+									{isScanning && ' - Ready to scan'}
+								</small>
 							</FormGroup>
 						</Col>
 
