@@ -18,6 +18,25 @@ export const getAllData = () => {
   }
 }
 
+// ** Get all Categories Data
+export const getCategories = () => {
+  return async dispatch => {
+    const response = await apiRequest({url:'/categories', method:'GET'}, dispatch)
+    if (response && response.data.data && response.data.status) {
+        await dispatch({
+          type: 'GET_CATEGORIES_SUCCESS',
+          data: response.data.data
+        })
+    } else {
+      console.log(response)
+      await dispatch({
+        type: 'GET_CATEGORIES_ERROR',
+        error: response?.data?.message || 'Failed to load categories'
+      })
+    }
+  }
+}
+
 // All Users Filtered Data
 export const getFilteredData = (products, params) => {
   return async dispatch => {

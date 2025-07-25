@@ -1,23 +1,24 @@
 // ** Custom Components
 import Sidebar from '@components/sidebar'
 import { useState, useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import Uppy from '@uppy/core'
 import thumbnailGenerator from '@uppy/thumbnail-generator'
 import { DragDrop } from '@uppy/react'
 // import FileUploaderBasic from '@views/forms/form-elements/file-uploader/FileUploaderBasic'
 
 import { swal, apiUrl, Storage, apiRequest } from '@utils'
-import { getAllData, getFilteredData } from '../store/action'
+import { getAllData, getFilteredData, getCategories } from '../store/action'
 import { useProductScanner } from '../../../../hooks/useProductScanner'
 
 // ** Third Party Components
 import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody, InputGroup, InputGroupAddon } from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
-import { Camera } from 'react-feather'
+import { Camera, X, RefreshCw } from 'react-feather'
 
 const SidebarNewUsers = ({ open, toggleSidebar }) => {
   const dispatch = useDispatch()
+  const { categories, categoriesLoading, categoriesError } = useSelector(state => state.products)
 
   const [uppy] = useState(() => new Uppy({
     meta: { type: 'product-image' },
@@ -90,6 +91,13 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
     }
   }
 
+  // Fetch categories on component mount
+  useEffect(() => {
+    if (categories.length === 0 && !categoriesLoading) {
+      dispatch(getCategories())
+    }
+  }, [dispatch, categories.length, categoriesLoading])
+
   useEffect(() => {
     uppy.use(thumbnailGenerator)
     
@@ -128,6 +136,28 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 
     return () => uppy.close()
   }, [])
+
+  // ** Function to remove uploaded image
+  const removeImage = () => {
+    setProductData(prev => ({
+      ...prev, 
+      image: '',
+      imagePreview: ''
+    }))
+    // Clear all files from Uppy
+    uppy.getFiles().forEach(file => {
+      uppy.removeFile(file.id)
+    })
+  }
+
+  // ** Function to replace image (same as remove, user can upload new one)
+  const replaceImage = () => {
+    removeImage()
+    // Force a small delay to ensure state is updated before showing drag-drop again
+    setTimeout(() => {
+      // Trigger a re-render by focusing on the component
+    }, 100)
+  }
 
   // ** Function to handle form submit
   const onSubmit = async (event, errors) => {
@@ -324,34 +354,66 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
               value={productData.categoryId}
               onChange={e => setProductData({...productData, categoryId: e.target.value})}
               required
+              disabled={categoriesLoading}
             >
-              <option value=''>Select Product Category</option>
-              <option value='1'>Wines</option>
-              <option value='2'>Spirits</option>
-              <option value='3'>Beer</option>
-              <option value='4'>Red Wines</option>
-              <option value='5'>White Wines</option>
-              <option value='6'>Rose Wines</option>
-              <option value='7'>Sparkling</option>
-              <option value='8'>Whisky</option>
-              <option value='9'>Gin</option>
-              <option value='10'>Vodka</option>
-              <option value='11'>Rum</option>
-
+              <option value=''>
+                {categoriesLoading ? 'Loading categories...' : 'Select Product Category'}
+              </option>
+              {categoriesError ? (
+                <option value='' disabled>Error loading categories</option>
+              ) : (
+                categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))
+              )}
             </AvInput>
           </FormGroup>
           <FormGroup>
             <Label for='productImage'>Product Image</Label>
             <Card>
               <CardBody>
-                <DragDrop uppy={uppy} />
-                {productData.imagePreview && (
-                  <img 
-                    className='rounded mt-2' 
-                    src={productData.imagePreview} 
-                    alt='product' 
-                    style={{ maxWidth: '200px' }}
-                  />
+                {!productData.imagePreview ? (
+                  <DragDrop uppy={uppy} />
+                ) : (
+                  <div>
+                    <img 
+                      className='rounded mb-2' 
+                      src={productData.imagePreview} 
+                      alt='product' 
+                      style={{ maxWidth: '200px', display: 'block' }}
+                    />
+                    <div className='d-flex gap-1'>
+                      <Button 
+                        size='sm' 
+                        color='warning' 
+                        outline 
+                        onClick={replaceImage}
+                        className='mr-1'
+                      >
+                        <RefreshCw size={14} className='mr-50' />
+                        Replace
+                      </Button>
+                      <Button 
+                        size='sm' 
+                        color='danger' 
+                        outline 
+                        onClick={removeImage}
+                      >
+                        <X size={14} className='mr-50' />
+                        Remove
+                      </Button>
+                    </div>
+                    <small className='text-muted d-block mt-1'>
+                      Click "Replace" to upload a different image or "Remove" to delete this image
+                    </small>
+                  </div>
+                )}
+                {!productData.imagePreview && (
+                  <small className='text-muted'>
+                    Drag and drop an image file here or click to browse
+                  </small>
                 )}
               </CardBody>
             </Card>
