@@ -108,3 +108,59 @@ export const logInventory = (productId, inventoryData) => {
 	}
 }
 
+export const uploadProductCSV = (csvFile) => {
+	return async (dispatch) => {
+		const formData = new FormData()
+		formData.append('csv', csvFile)
+		
+		try {
+			const response = await apiRequest({ 
+				url: '/products/upload-csv', 
+				method: 'POST', 
+				body: formData,
+				isFormData: true
+			}, dispatch)
+			
+			if (response && response.data.status) {
+				swal('Success!', `${response.data.message}`, 'success')
+				dispatch(getAllData())
+				return response.data
+			} else {
+				swal('Oops!', response.data.message || 'CSV upload failed.', 'error')
+				return { status: false, message: response.data.message }
+			}
+		} catch (error) {
+			console.log('CSV upload error:', error)
+			swal('Oops!', 'Something went wrong with the CSV upload.', 'error')
+			return { status: false, message: 'Network error' }
+		}
+	}
+}
+
+export const createMultipleProducts = (products) => {
+	return async (dispatch) => {
+		const body = JSON.stringify({ products })
+		
+		try {
+			const response = await apiRequest({ 
+				url: '/products/create-multiple', 
+				method: 'POST', 
+				body 
+			}, dispatch)
+			
+			if (response && response.data.status) {
+				swal('Success!', `${response.data.message}`, 'success')
+				dispatch(getAllData())
+				return response.data
+			} else {
+				swal('Oops!', response.data.message || 'Multiple products creation failed.', 'error')
+				return { status: false, message: response.data.message }
+			}
+		} catch (error) {
+			console.log('Multiple products creation error:', error)
+			swal('Oops!', 'Something went wrong with creating multiple products.', 'error')
+			return { status: false, message: 'Network error' }
+		}
+	}
+}
+

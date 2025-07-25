@@ -133,6 +133,10 @@ const ManagerRoutes = [
         component: lazy(() => import('../../views/tiki-fish/reports/list')),
       },
       {
+        path: '/reports/audit',
+        component: lazy(() => import('../../views/tiki-fish/reports/audit/AuditReportGenerator')),
+      },
+      {
         path: '/withdrawals/list',
         component: lazy(() => import('../../views/tiki-fish/withdrawals/list')),
       },
@@ -362,6 +366,10 @@ const SalesRepRoutes = [
   {
     path: '/reports/list',
     component: lazy(() => import('../../views/tiki-fish/reports/list')),
+  },
+  {
+    path: '/reports/audit',
+    component: lazy(() => import('../../views/tiki-fish/reports/audit/AuditReportGenerator')),
   },
   {
     path: '/withdrawals/list',

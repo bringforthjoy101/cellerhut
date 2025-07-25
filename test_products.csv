@@ -1,0 +1,4 @@
+name,description,qty,price,costPrice,packagingPrice,unit,unitValue,sku,barcode,categoryId,tax_rate,tax_inclusive,alcohol_content,volume,origin,vintage
+"Premium Whiskey","Aged premium whiskey with rich flavor",25,89.99,55.00,5.00,bottle,750,PWH001,1234567890123,8,15.00,false,40,750ml,Scotland,2018
+"Craft Beer 6-Pack","Local craft beer variety pack",50,18.99,12.00,2.00,pck,6,CBP001,1234567890124,3,10.00,false,5.5,330ml,Ireland,2023
+"Red Wine Vintage","Premium red wine from vineyard",30,45.99,28.00,3.50,bottle,750,RWV001,1234567890125,4,15.00,true,13.5,750ml,France,2020

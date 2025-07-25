@@ -4,6 +4,7 @@ import { Fragment, useState, useEffect } from 'react'
 // ** Columns
 import { columns } from './columns'
 import Sidebar from './Sidebar'
+import CSVUploadModal from './CSVUploadModal'
 
 // ** Store & Actions
 import { getAllData, getFilteredData } from '../store/action'
@@ -12,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux'
 // ** Third Party Components
 import Select from 'react-select'
 import ReactPaginate from 'react-paginate'
-import { ChevronDown, Share, Printer, FileText } from 'react-feather'
+import { ChevronDown, Share, Printer, FileText, Upload } from 'react-feather'
 import DataTable from 'react-data-table-component'
 import { selectThemeColors, isUserLoggedIn } from '@utils'
 import { Card, CardHeader, CardTitle, CardBody, UncontrolledButtonDropdown, DropdownMenu, DropdownItem, DropdownToggle, Input, Row, Col, Label, CustomInput, Button } from 'reactstrap'
@@ -36,9 +37,13 @@ const ProductTable = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentCategory, setCurrentCategory] = useState({ value: '', label: 'Select Status', number: 0 })
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [csvModalOpen, setCsvModalOpen] = useState(false)
 
   // ** Function to toggle sidebar
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
+
+  // ** Function to toggle CSV modal
+  const toggleCSVModal = () => setCsvModalOpen(!csvModalOpen)
 
   useEffect(() => {
     dispatch(getAllData())
@@ -330,7 +335,17 @@ const ProductTable = () => {
           className='d-flex align-items-sm-center justify-content-lg-end justify-content-start flex-lg-nowrap flex-wrap flex-sm-row flex-column pr-lg-1 p-0 mt-lg-0 mt-1'
         >
           {
-            userData?.role === 'admin' ? <Button.Ripple color='primary' onClick={toggleSidebar}> Add New Product </Button.Ripple> : ''
+            userData?.role === 'admin' ? (
+              <Fragment>
+                <Button.Ripple color='success' outline onClick={toggleCSVModal} className='mr-1'>
+                  <Upload size={16} className='mr-50' />
+                  Bulk Upload
+                </Button.Ripple>
+                <Button.Ripple color='primary' onClick={toggleSidebar}>
+                  Add New Product
+                </Button.Ripple>
+              </Fragment>
+            ) : ''
           }
         </Col>
       </Row>
@@ -348,6 +363,7 @@ const ProductTable = () => {
         />
       </Card>
       <Sidebar open={sidebarOpen} toggleSidebar={toggleSidebar} />
+      <CSVUploadModal isOpen={csvModalOpen} toggle={toggleCSVModal} />
     </Fragment>
   )
 }
