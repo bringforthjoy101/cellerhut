@@ -43,7 +43,7 @@ module.exports = {
 		// 'implicit-arrow-linebreak': ['error', 'beside'],
 		// indent: ['error', 4],
 		'keyword-spacing': 'error',
-		'multiline-ternary': ['error', 'never'],
+		'multiline-ternary': 'off',
 		// 'no-lonely-if': 'error',
 		'no-mixed-operators': 'error',
 		'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 1 }],
@@ -69,7 +69,7 @@ module.exports = {
 		'no-var': 'error',
 		'object-shorthand': 'error',
 		'prefer-const': 'error',
-		'prefer-template': 'error',
+		'prefer-template': 'warn',
 	},
 
 	// rules: {
