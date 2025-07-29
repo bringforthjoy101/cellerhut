@@ -12,9 +12,9 @@ import { getAllData, getFilteredData, getCategories } from '../store/action'
 import { useProductScanner } from '../../../../hooks/useProductScanner'
 
 // ** Third Party Components
-import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody, InputGroup, InputGroupAddon } from 'reactstrap'
+import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody, InputGroup, InputGroupAddon, Alert, Badge } from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
-import { Camera, X, RefreshCw } from 'react-feather'
+import { Camera, X, RefreshCw, AlertCircle, CheckCircle, RefreshCcw } from 'react-feather'
 
 const SidebarNewUsers = ({ open, toggleSidebar }) => {
   const dispatch = useDispatch()
@@ -52,8 +52,17 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
     setProductData(prev => ({...prev, barcode}))
   }
 
-  // Initialize scanner hook
-  const { isConnected, isScanning, startScanning } = useProductScanner(handleBarcodeScanned)
+  // Initialize scanner hook with enhanced features
+  const { 
+    isConnected, 
+    isScanning, 
+    isInitializing,
+    lastError,
+    canRetry,
+    startScanning, 
+    stopScanning,
+    retryInitialization 
+  } = useProductScanner(handleBarcodeScanned)
   
   const uploadImage = async (file) => {
     console.log('Uploading file:', file)
@@ -469,26 +478,105 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
                 type='text' 
                 name='barcode' 
                 id='barcode' 
-                placeholder='Product Barcode' 
+                placeholder='Enter or scan product barcode' 
                 value={productData.barcode}
                 onChange={e => setProductData({...productData, barcode: e.target.value})}
               />
               <InputGroupAddon addonType='append'>
-                <Button 
-                  color={isConnected ? (isScanning ? 'warning' : 'success') : 'secondary'}
-                  onClick={startScanning}
-                  disabled={!isConnected}
-                  title={isConnected ? 'Scan Barcode' : 'Scanner not connected'}
-                >
-                  <Camera size={16} />
-                  {isScanning && <Spinner size='sm' className='ml-1' />}
-                </Button>
+                {isScanning ? (
+                  <Button 
+                    color='warning'
+                    onClick={stopScanning}
+                    title='Stop scanning'
+                  >
+                    <X size={16} />
+                    <Spinner size='sm' className='ml-1' />
+                  </Button>
+                ) : (
+                  <Button 
+                    color={isConnected ? 'success' : 'secondary'}
+                    onClick={startScanning}
+                    disabled={!isConnected || isInitializing}
+                    title={isConnected ? 'Scan Barcode' : 'Scanner not available'}
+                  >
+                    <Camera size={16} />
+                    {isInitializing && <Spinner size='sm' className='ml-1' />}
+                  </Button>
+                )}
+                {lastError && canRetry && (
+                  <Button 
+                    color='info'
+                    onClick={retryInitialization}
+                    title='Retry scanner connection'
+                    className='ml-1'
+                  >
+                    <RefreshCcw size={16} />
+                  </Button>
+                )}
               </InputGroupAddon>
             </InputGroup>
-            <small className='text-muted'>
-              Scanner status: {isConnected ? 'Connected' : 'Disconnected'}
-              {isScanning && ' - Ready to scan'}
-            </small>
+            
+            {/* Enhanced Scanner Status */}
+            <div className='mt-2'>
+              <div className='d-flex align-items-center mb-1'>
+                {isInitializing && (
+                  <Badge color='info' className='mr-2'>
+                    <Spinner size='sm' className='mr-1' />
+                    Initializing...
+                  </Badge>
+                )}
+                {isConnected && !isInitializing && (
+                  <Badge color='success' className='mr-2'>
+                    <CheckCircle size={12} className='mr-1' />
+                    Scanner Ready
+                  </Badge>
+                )}
+                {!isConnected && !isInitializing && (
+                  <Badge color='secondary' className='mr-2'>
+                    <AlertCircle size={12} className='mr-1' />
+                    Scanner Unavailable
+                  </Badge>
+                )}
+                {isScanning && (
+                  <Badge color='warning'>
+                    <Camera size={12} className='mr-1' />
+                    Scanning Active
+                  </Badge>
+                )}
+              </div>
+              
+              {lastError && (
+                <Alert color='warning' className='mb-2 p-2'>
+                  <div className='d-flex justify-content-between align-items-start'>
+                    <div>
+                      <strong>{lastError.title}</strong>
+                      <div className='small'>{lastError.message}</div>
+                    </div>
+                    {canRetry && (
+                      <Button 
+                        size='sm' 
+                        color='warning' 
+                        outline
+                        onClick={retryInitialization}
+                        className='ml-2'
+                      >
+                        <RefreshCcw size={14} className='mr-1' />
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                </Alert>
+              )}
+              
+              <small className='text-muted'>
+                {isConnected 
+                  ? isScanning 
+                    ? '📷 Point scanner at barcode to scan'
+                    : '✅ Scanner ready - click scan button or enter barcode manually'
+                  : lastError?.action || '⚠️ Scanner not available - manual entry only'
+                }
+              </small>
+            </div>
           </FormGroup>
           <FormGroup>
             <Label for='description'>Product Description</Label>
