@@ -69,7 +69,7 @@ module.exports = {
 		'no-var': 'error',
 		'object-shorthand': 'error',
 		'prefer-const': 'error',
-		'prefer-template': 'warn',
+		'prefer-template': 'off',
 	},
 
 	// rules: {

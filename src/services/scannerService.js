@@ -309,6 +309,78 @@ class ScannerService {
 		}
 	}
 
+	// Test Socket Mobile connection with simulated scan (for testing without device)
+	async testConnection() {
+		console.log('🧪 Testing Socket Mobile connection...')
+		
+		if (!this.isInitialized) {
+			throw new Error('Scanner not initialized. Call initialize() first.')
+		}
+		
+		// Test that we can communicate with the service
+		const status = this.getStatus()
+		console.log('📊 Current status:', status)
+		
+		// Comprehensive test results
+		const testResults = {
+			initialization: this.isInitialized,
+			hasCapture: this.capture !== null,
+			hasDevice: this.captureDevice !== null,
+			isConnected: this.isConnected(),
+			hasCallback: this.onDecodedDataCallback !== null,
+			attempts: this.initializationAttempts,
+			timestamp: new Date().toISOString()
+		}
+		
+		console.log('🔍 Test Results:', testResults)
+		
+		// Simulate a barcode scan for testing
+		if (this.onDecodedDataCallback) {
+			console.log('🧪 Simulating barcode scan: TEST123456789')
+			this.onDecodedDataCallback('TEST123456789')
+			
+			return { 
+				success: true, 
+				message: 'Test scan successful',
+				details: testResults
+			}
+		}
+		
+		return { 
+			success: false, 
+			message: 'No callback registered',
+			details: testResults
+		}
+	}
+
+	// Comprehensive diagnostic information for troubleshooting
+	getDiagnostics() {
+		return {
+			service: {
+				isInitialized: this.isInitialized,
+				isInitializing: false, // We don't track this in this service
+				attempts: this.initializationAttempts,
+				maxAttempts: this.maxRetryAttempts
+			},
+			capture: {
+				hasCapture: this.capture !== null,
+				hasDevice: this.captureDevice !== null,
+				isConnected: this.isConnected()
+			},
+			callback: {
+				hasCallback: this.onDecodedDataCallback !== null,
+				callbackType: typeof this.onDecodedDataCallback
+			},
+			environment: {
+				hasAppId: !!process.env.REACT_APP_SOCKETMOBILE_APP_ID,
+				hasDeveloperId: !!process.env.REACT_APP_SOCKETMOBILE_DEVELOPER_ID,
+				hasAppKey: !!process.env.REACT_APP_SOCKETMOBILE_APP_KEY,
+				nodeEnv: process.env.NODE_ENV
+			},
+			timestamp: new Date().toISOString()
+		}
+	}
+
 	// Reset scanner state (useful for troubleshooting)
 	reset() {
 		console.log('🔄 Resetting scanner state...')

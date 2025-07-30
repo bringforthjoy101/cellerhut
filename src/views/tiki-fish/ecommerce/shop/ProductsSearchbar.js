@@ -2,11 +2,12 @@
 import { useState, useCallback } from 'react'
 
 // ** Third Party Components
-import { Search, Camera, RefreshCcw } from 'react-feather'
+import { Search, Camera, RefreshCcw, Activity } from 'react-feather'
 import { Row, Col, InputGroup, InputGroupAddon, Input, InputGroupText, Button } from 'reactstrap'
 
 // ** Custom Hooks
 import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
+import scannerService from '../../../../services/scannerService'
 
 const ProductsSearchbar = props => {
   // ** Props
@@ -50,6 +51,42 @@ const ProductsSearchbar = props => {
       setBarcodeInput('')
     }
   }, [barcodeInput, handleBarcodeScanned])
+  
+  // Test Socket Mobile connection (for development/testing)
+  const handleTestSocketMobile = useCallback(async () => {
+    try {
+      console.log('🧪 Testing Socket Mobile connection...')
+      
+      // Get diagnostics first
+      const diagnostics = scannerService.getDiagnostics()
+      console.log('📋 Scanner Diagnostics:', diagnostics)
+      
+      // Run connection test
+      const result = await scannerService.testConnection()
+      console.log('🧪 Test result:', result)
+      
+      // Provide detailed feedback
+      const message = `Socket Mobile Test: ${result.message}\n\n` +
+                     `✅ Initialized: ${result.details.initialization}\n` +
+                     `🔌 Connected: ${result.details.isConnected}\n` +
+                     `📡 Has Callback: ${result.details.hasCallback}\n` +
+                     `🔄 Attempts: ${result.details.attempts}`
+      
+      alert(message)
+    } catch (error) {
+      console.error('Socket Mobile test failed:', error)
+      
+      // Get diagnostics even on failure
+      try {
+        const diagnostics = scannerService.getDiagnostics()
+        console.log('📋 Scanner Diagnostics (on failure):', diagnostics)
+      } catch (diagError) {
+        console.error('Could not get diagnostics:', diagError)
+      }
+      
+      alert(`Socket Mobile Test Failed: ${error.message}\n\nCheck browser console for details.`)
+    }
+  }, [])
 
   return (
     <div id='ecommerce-searchbar' className='ecommerce-searchbar'>
@@ -95,6 +132,16 @@ const ProductsSearchbar = props => {
                     type='button'
                   >
                     <RefreshCcw size={14} />
+                  </Button>
+                )}
+                {process.env.NODE_ENV === 'development' && (
+                  <Button
+                    color='warning'
+                    onClick={handleTestSocketMobile}
+                    title='Test Socket Mobile connection'
+                    type='button'
+                  >
+                    <Activity size={14} />
                   </Button>
                 )}
               </InputGroupAddon>

@@ -11,7 +11,7 @@ import { Send, CheckCircle, Save, ArrowDownCircle, Info, PieChart } from 'react-
 
 const getItemNames = (items) => {
 	const arr = []
-	// console.log({items})
+	console.log({ items })
 	// const _items = process.env.NODE_ENV === 'production' ? JSON.parse(items) : JSON.parse(items)
 	items.forEach((item) => {
 		arr.push(item.name)
@@ -21,10 +21,28 @@ const getItemNames = (items) => {
 	return `${string.substring(0, 35)}...`
 }
 
+// const orderStatus = {
+// 	processing: 'light-warning',
+// 	completed: 'light-success',
+// 	cancelled: 'light-danger',
+// }
+
 const orderStatus = {
+	'order-pending': 'light-info', // Blue - awaiting processing
+	'order-processing': 'light-warning', // Yellow - being prepared
+	'order-at-local-facility': 'light-primary', // Purple - at facility
+	'order-out-for-delivery': 'light-secondary', // Gray - in transit
+	'order-completed': 'light-success', // Green - delivered/completed
+	'order-cancelled': 'light-danger', // Red - cancelled
+	'order-refunded': 'light-dark', // Dark - refunded
+	// Legacy support for old status values (without 'order-' prefix)
+	pending: 'light-info',
 	processing: 'light-warning',
+	'at-local-facility': 'light-primary',
+	'out-for-delivery': 'light-secondary',
 	completed: 'light-success',
-	cancelled: 'light-danger'
+	cancelled: 'light-danger',
+	refunded: 'light-dark',
 }
 
 // ** Table columns
@@ -44,22 +62,26 @@ export const columns = [
 		selector: 'amount',
 		sortable: true,
 		minWidth: '150px',
-		cell: (row) => <span>{(row.amount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
+		cell: (row) => <span>{Number(row.amount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
 	},
 	{
 		name: 'Status',
 		selector: 'status',
 		sortable: true,
 		minWidth: '100px',
-		cell: row => <Badge color={orderStatus[row.status]} pill>{row.status.toUpperCase()}</Badge>
+		cell: (row) => (
+			<Badge color={orderStatus[row.status]} pill>
+				{row.status.toUpperCase()}
+			</Badge>
+		),
 	},
-	{
-		name: 'Products ',
-		minWidth: '150px',
-		selector: 'products',
-		sortable: true,
-		cell: (row) => <span className="text-capitalize">{getItemNames(row.products)}</span>,
-	},
+	// {
+	// 	name: 'Products ',
+	// 	minWidth: '150px',
+	// 	selector: 'products',
+	// 	sortable: true,
+	// 	cell: (row) => <span className="text-capitalize">{getItemNames(row.order)}</span>,
+	// },
 	{
 		name: 'Date',
 		selector: 'createdAt',

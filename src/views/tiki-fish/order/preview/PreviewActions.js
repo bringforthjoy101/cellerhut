@@ -147,20 +147,22 @@ const PreviewActions = ({ id, data }) => {
           Send Invoice
         </Button.Ripple> */}
 
-				<Button.Ripple className="mb-75" color='success' onClick={() => handleCompleteOrder(data.id)} block disabled={data.status !== 'processing'}>
+				<Button.Ripple className="mb-75" color='success' onClick={() => handleCompleteOrder(data.id)} block disabled={data.status === 'order-completed'}>
 					Complete Order
 				</Button.Ripple>
-				<Button.Ripple className='mb-75' color='danger' outline onClick={() => handleNullifyOrder(data.id)} block disabled={data.status !== 'processing'}>
+				<Button.Ripple className='mb-75' color='danger' outline onClick={() => handleNullifyOrder(data.id)} block disabled={data.status === 'order-completed' || data.status === 'order-cancelled'}>
 					Cancel Order
 				</Button.Ripple>
         <Button.Ripple className='mb-75' color="success" onClick={() => handleDownloadOrder()} block outline>
 					Download
 				</Button.Ripple>
-				<Button.Ripple color="secondary" tag={Link} to={`/order/print/${id}`} block outline className="mb-75">
-					Print
+				<Button.Ripple color="info" tag={Link} to={`/order/print/${id}`} block outline className="mb-75" target="_blank">
+					🖨️ Print Receipt
 				</Button.Ripple>
 				
-				{/* <UpdateStatus /> */}
+				<div className="mb-75">
+					<UpdateStatus />
+				</div>
 				{/* <Button.Ripple tag={Link} to={`/apps/invoice/edit/${id}`} color='secondary' block outline className='mb-75'>
           Edit
         </Button.Ripple>

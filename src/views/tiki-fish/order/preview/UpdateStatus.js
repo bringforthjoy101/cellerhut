@@ -29,11 +29,12 @@ export const UpdateStatus = () => {
 		const body = JSON.stringify(userData)
 		try {
 			setIsSubmitting(true)
-			const response = await apiRequest({ url: `/sales/update/${id}`, method: 'POST', body }, dispatch)
+			const response = await apiRequest({ url: `/orders/update-status/${id}`, method: 'POST', body }, dispatch)
 			if (response) {
 				if (response.data.message) {
 					swal('Great job!', response.data.message, 'success')
 					dispatch(getOrder(id))
+					setModal(false)
 					setIsSubmitting(false)
 				} else {
 					swal('Oops!', response.data.message, 'error')
@@ -48,13 +49,18 @@ export const UpdateStatus = () => {
 
 	const StatusOptions = [
 		{ value: '', label: 'Select Status' },
-		{ value: 'delivered', label: 'Delivered' },
-		{ value: 'pending', label: 'Pending' },
+		{ value: 'order-pending', label: 'Pending' },
+		{ value: 'order-processing', label: 'Processing' },
+		{ value: 'order-at-local-facility', label: 'At Local Facility' },
+		{ value: 'order-out-for-delivery', label: 'Out for Delivery' },
+		{ value: 'order-completed', label: 'Completed' },
+		{ value: 'order-cancelled', label: 'Cancelled' },
+		{ value: 'order-refunded', label: 'Refunded' },
 	]
 
 	return (
 		<>
-			<Button.Ripple color="secondary" onClick={toggleModal} outline>
+			<Button.Ripple color="info" onClick={toggleModal} block outline>
 				Update Status
 			</Button.Ripple>
 			<Modal isOpen={modal} toggle={toggleModal} className="modal-dialog-centered" modalClassName="modal-info">

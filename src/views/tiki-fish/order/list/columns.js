@@ -17,7 +17,7 @@ const renderClient = (row) => {
 	if (row.avatar) {
 		return <Avatar className="mr-1" img={row.avatar} width="32" height="32" />
 	} else {
-		return <Avatar color={color || 'primary'} className="mr-1" content={`${row.fullName}` || 'Customer Name'} initials />
+		return <Avatar color={color || 'primary'} className="mr-1" content={`${row.name}` || 'Customer Name'} initials />
 	}
 }
 
@@ -34,9 +34,40 @@ const getItemNames = (items) => {
 }
 
 const orderStatus = {
+	'order-pending': 'light-info', // Blue - awaiting processing
+	'order-processing': 'light-warning', // Yellow - being prepared
+	'order-at-local-facility': 'light-primary', // Purple - at facility
+	'order-out-for-delivery': 'light-secondary', // Gray - in transit
+	'order-completed': 'light-success', // Green - delivered/completed
+	'order-cancelled': 'light-danger', // Red - cancelled
+	'order-refunded': 'light-dark', // Dark - refunded
+	// Legacy support for old status values (without 'order-' prefix)
+	pending: 'light-info',
 	processing: 'light-warning',
+	'at-local-facility': 'light-primary',
+	'out-for-delivery': 'light-secondary',
 	completed: 'light-success',
-	cancelled: 'light-danger'
+	cancelled: 'light-danger',
+	refunded: 'light-dark',
+}
+
+// Helper function to format status text for display
+const formatStatusText = (status) => {
+	if (!status) return 'Unknown'
+
+	// Remove 'order-' prefix if present
+	const cleanStatus = status.replace('order-', '')
+
+	// Convert hyphens to spaces and capitalize each word
+	return cleanStatus
+		.split('-')
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ')
+}
+
+// Helper function to get status color with fallback
+const getStatusColor = (status) => {
+	return orderStatus[status] || 'light-secondary' // Default to gray if status not found
 }
 
 export const columns = [
@@ -56,14 +87,18 @@ export const columns = [
 		width: '150px',
 		selector: 'amount',
 		sortable: true,
-		cell: (row) => <span className="text-capitalize">{row?.amount?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
+		cell: (row) => <span className="text-capitalize">{Number(row?.amount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
 	},
 	{
 		name: 'Status ',
-		minWidth: '100px',
+		minWidth: '130px',
 		selector: 'status',
 		sortable: true,
-		cell: (row) => <Badge color={orderStatus[row.status]} pill>{row.status.toUpperCase()}</Badge>
+		cell: (row) => (
+			<Badge color={getStatusColor(row.status)} pill>
+				{formatStatusText(row.status)}
+			</Badge>
+		),
 	},
 	{
 		name: 'Customer',
@@ -75,9 +110,7 @@ export const columns = [
 				{renderClient(row.customer)}
 				<div className="d-flex flex-column">
 					<Link to={`/customer/view/${row.customer.id}`} className="user-name text-truncate mb-0">
-						<span className="font-weight-bold">
-							{row.customer.fullName}
-						</span>
+						<span className="font-weight-bold">{row.customer.name}</span>
 					</Link>
 				</div>
 			</div>

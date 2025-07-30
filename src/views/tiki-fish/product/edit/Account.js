@@ -10,7 +10,25 @@ import { DragDrop } from '@uppy/react'
 
 // ** Third Party Components
 import { Lock, Edit, Trash2, Camera, X, RefreshCw, AlertCircle, CheckCircle, RefreshCcw } from 'react-feather'
-import { Media, Row, Col, Button, Form, Input, Label, FormGroup, Table, CustomInput, InputGroup, InputGroupAddon, Spinner, Card, CardBody, Alert, Badge } from 'reactstrap'
+import {
+	Media,
+	Row,
+	Col,
+	Button,
+	Form,
+	Input,
+	Label,
+	FormGroup,
+	Table,
+	CustomInput,
+	InputGroup,
+	InputGroupAddon,
+	Spinner,
+	Card,
+	CardBody,
+	Alert,
+	Badge,
+} from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
 import { getAllData, getProduct, getCategories } from '../store/action'
 import { swal, apiRequest, apiUrl, Storage } from '@utils'
@@ -18,14 +36,17 @@ import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
 
 const UserAccountTab = ({ selectedProduct }) => {
 	const dispatch = useDispatch()
-	const { categories, categoriesLoading, categoriesError } = useSelector(state => state.products)
-	
+	const { categories, categoriesLoading, categoriesError } = useSelector((state) => state.products)
+
 	// ** Uppy instance for image upload
-	const [uppy] = useState(() => new Uppy({
-		meta: { type: 'product-image' },
-		restrictions: { maxNumberOfFiles: 1 },
-		autoProceed: true
-	}))
+	const [uppy] = useState(
+		() =>
+			new Uppy({
+				meta: { type: 'product-image' },
+				restrictions: { maxNumberOfFiles: 1 },
+				autoProceed: true,
+			})
+	)
 
 	// ** States
 	const [img, setImg] = useState(null)
@@ -60,9 +81,9 @@ const UserAccountTab = ({ selectedProduct }) => {
 	}
 
 	// Initialize universal scanner hook
-	const { 
-		isConnected, 
-		isScanning, 
+	const {
+		isConnected,
+		isScanning,
 		isInitializing,
 		activeScanners,
 		bestScanner,
@@ -72,10 +93,10 @@ const UserAccountTab = ({ selectedProduct }) => {
 		recommendations,
 		lastError,
 		canRetry,
-		startScanning, 
+		startScanning,
 		stopScanning,
 		retryInitialization,
-		setPreferredScanner 
+		setPreferredScanner,
 	} = useUniversalScanner(handleBarcodeScanned)
 
 	// Composite product states
@@ -89,7 +110,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 		console.log('Uploading file:', file)
 		const formData = new FormData()
 		formData.append('image', file)
-		
+
 		const userData = Storage.getItem('userData')
 		const { accessToken } = userData
 
@@ -97,17 +118,17 @@ const UserAccountTab = ({ selectedProduct }) => {
 			const response = await fetch(`${apiUrl}/upload-images`, {
 				method: 'POST',
 				headers: {
-					Accept: 'application/json'
+					Accept: 'application/json',
 				},
-				body: formData
+				body: formData,
 			})
 
 			const data = await response.json()
 			console.log('Upload response:', data)
-			
+
 			if (data.status) {
 				const imageUrl = data.data.url
-				setProductData(prev => ({...prev, image: imageUrl}))
+				setProductData((prev) => ({ ...prev, image: imageUrl }))
 				return imageUrl
 			} else {
 				swal('Oops!', data.message || 'Failed to upload image', 'error')
@@ -122,14 +143,14 @@ const UserAccountTab = ({ selectedProduct }) => {
 
 	// ** Function to remove uploaded image
 	const removeImage = () => {
-		setProductData(prev => ({
-			...prev, 
-			image: ''
+		setProductData((prev) => ({
+			...prev,
+			image: '',
 		}))
 		setImagePreview('')
 		setImg(null)
 		// Clear all files from Uppy
-		uppy.getFiles().forEach(file => {
+		uppy.getFiles().forEach((file) => {
 			uppy.removeFile(file.id)
 		})
 	}
@@ -150,8 +171,8 @@ const UserAccountTab = ({ selectedProduct }) => {
 				method: 'GET',
 				headers: {
 					Accept: 'application/json',
-					Authorization: `Bearer ${accessToken}`
-				}
+					Authorization: `Bearer ${accessToken}`,
+				},
 			})
 
 			const data = await response.json()
@@ -182,13 +203,13 @@ const UserAccountTab = ({ selectedProduct }) => {
 				headers: {
 					'Content-Type': 'application/json',
 					Accept: 'application/json',
-					Authorization: `Bearer ${accessToken}`
+					Authorization: `Bearer ${accessToken}`,
 				},
 				body: JSON.stringify({
 					base_product_id: baseProductId,
 					composite_quantity: compositeQty,
-					discount_percentage: discountPercent
-				})
+					discount_percentage: discountPercent,
+				}),
 			})
 
 			const data = await response.json()
@@ -207,20 +228,16 @@ const UserAccountTab = ({ selectedProduct }) => {
 
 	// Handle composite product field changes
 	const handleCompositeFieldChange = (field, value) => {
-		setProductData(prev => {
+		setProductData((prev) => {
 			const updated = { ...prev, [field]: value }
-			
+
 			// Trigger price calculation when relevant fields change
 			if (['base_product_id', 'composite_quantity', 'discount_percentage'].includes(field)) {
 				setTimeout(() => {
-					calculateCompositePrice(
-						updated.base_product_id, 
-						updated.composite_quantity, 
-						updated.discount_percentage
-					)
+					calculateCompositePrice(updated.base_product_id, updated.composite_quantity, updated.discount_percentage)
 				}, 100)
 			}
-			
+
 			return updated
 		})
 	}
@@ -280,23 +297,23 @@ const UserAccountTab = ({ selectedProduct }) => {
 	// ** Setup Uppy for image upload
 	useEffect(() => {
 		uppy.use(thumbnailGenerator)
-		
+
 		uppy.on('thumbnail:generated', async (file, preview) => {
 			console.log('Uppy file object:', file)
 			setImagePreview(preview)
-			
+
 			// Get the actual file from Uppy
 			const fileToUpload = uppy.getFile(file.id)
 			console.log('File to upload:', fileToUpload)
-			
+
 			if (fileToUpload && fileToUpload.data) {
 				// Create a new File object with the correct name
 				const uploadFile = new File([fileToUpload.data], fileToUpload.name, {
-					type: fileToUpload.type || 'image/jpeg'
+					type: fileToUpload.type || 'image/jpeg',
 				})
 				const imageUrl = await uploadImage(uploadFile)
 				if (imageUrl) {
-					setProductData(prev => ({...prev, image: imageUrl}))
+					setProductData((prev) => ({ ...prev, image: imageUrl }))
 					setImg(imageUrl)
 				}
 			} else {
@@ -359,7 +376,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 			if (selectedProduct.image?.length) {
 				setImg(selectedProduct.image)
 				setImagePreview(selectedProduct.image)
-				setProductData(prev => ({...prev, image: selectedProduct.image}))
+				setProductData((prev) => ({ ...prev, image: selectedProduct.image }))
 			} else {
 				setImg(null)
 				setImagePreview('')
@@ -376,15 +393,13 @@ const UserAccountTab = ({ selectedProduct }) => {
 
 	// Calculate pricing when composite product is loaded or parameters change
 	useEffect(() => {
-		if (productData.product_type === 'composite' && 
-			productData.base_product_id && 
-			productData.composite_quantity && 
-			productData.discount_percentage !== undefined) {
-			calculateCompositePrice(
-				productData.base_product_id,
-				productData.composite_quantity,
-				productData.discount_percentage
-			)
+		if (
+			productData.product_type === 'composite' &&
+			productData.base_product_id &&
+			productData.composite_quantity &&
+			productData.discount_percentage !== undefined
+		) {
+			calculateCompositePrice(productData.base_product_id, productData.composite_quantity, productData.discount_percentage)
 		}
 	}, [productData.product_type, productData.base_product_id, productData.composite_quantity, productData.discount_percentage])
 
@@ -427,13 +442,13 @@ const UserAccountTab = ({ selectedProduct }) => {
 						<div className="d-flex flex-wrap mt-1 px-0">
 							{img && (
 								<>
-									<Button color='warning' size='sm' outline onClick={replaceImage} className='mr-75 mb-0'>
-										<RefreshCw size={14} className='mr-50' />
-										<span className='d-none d-sm-block'>Replace</span>
+									<Button color="warning" size="sm" outline onClick={replaceImage} className="mr-75 mb-0">
+										<RefreshCw size={14} className="mr-50" />
+										<span className="d-none d-sm-block">Replace</span>
 									</Button>
-									<Button color='danger' size='sm' outline onClick={removeImage}>
-										<X size={14} className='mr-50' />
-										<span className='d-none d-sm-block'>Remove</span>
+									<Button color="danger" size="sm" outline onClick={removeImage}>
+										<X size={14} className="mr-50" />
+										<span className="d-none d-sm-block">Remove</span>
 									</Button>
 								</>
 							)}
@@ -458,25 +473,23 @@ const UserAccountTab = ({ selectedProduct }) => {
 								{/* <Input type='text' id='name' placeholder='Name' defaultValue={selectedProduct.name} /> */}
 							</FormGroup>
 						</Col>
-						
+
 						{/* Product Type - Full Width */}
 						<Col md="12" sm="12">
 							<FormGroup>
 								<Label for="product_type">Product Type</Label>
-								<AvInput 
-									type='select' 
-									name='product_type' 
-									id='product_type' 
+								<AvInput
+									type="select"
+									name="product_type"
+									id="product_type"
 									value={productData.product_type}
-									onChange={e => handleCompositeFieldChange('product_type', e.target.value)}
+									onChange={(e) => handleCompositeFieldChange('product_type', e.target.value)}
 									required
 								>
-									<option value='simple'>Simple Product</option>
-									<option value='composite'>Composite Product (Bundle/Pack)</option>
+									<option value="simple">Simple Product</option>
+									<option value="composite">Composite Product (Bundle/Pack)</option>
 								</AvInput>
-								<small className='text-muted'>
-									Simple: Individual product | Composite: Bundle of multiple units with discount
-								</small>
+								<small className="text-muted">Simple: Individual product | Composite: Bundle of multiple units with discount</small>
 							</FormGroup>
 						</Col>
 
@@ -485,68 +498,65 @@ const UserAccountTab = ({ selectedProduct }) => {
 							<>
 								<Col md="6" sm="12">
 									<FormGroup>
-										<Label for='base_product_id'>Base Product *</Label>
-										<AvInput 
-											type='select' 
-											name='base_product_id' 
-											id='base_product_id' 
+										<Label for="base_product_id">Base Product *</Label>
+										<AvInput
+											type="select"
+											name="base_product_id"
+											id="base_product_id"
 											value={productData.base_product_id}
-											onChange={e => handleCompositeFieldChange('base_product_id', e.target.value)}
+											onChange={(e) => handleCompositeFieldChange('base_product_id', e.target.value)}
 											required={productData.product_type === 'composite'}
 											disabled={loadingBaseProducts}
 										>
-											<option value=''>
-												{loadingBaseProducts ? 'Loading products...' : 'Select Base Product'}
-											</option>
-											{baseProducts.map(product => (
+											<option value="">{loadingBaseProducts ? 'Loading products...' : 'Select Base Product'}</option>
+											{baseProducts.map((product) => (
 												<option key={product.id} value={product.id}>
-													{product.name} - ₦{product.price} (Stock: {product.qty})
+													{product.name} -{' '}
+													{Number(product.price).toLocaleString('en-ZA', {
+														style: 'currency',
+														currency: 'ZAR',
+													})}{' '}
+													(Stock: {product.qty})
 												</option>
 											))}
 										</AvInput>
-										<small className='text-muted'>
-											Choose the individual product that will be bundled
-										</small>
+										<small className="text-muted">Choose the individual product that will be bundled</small>
 									</FormGroup>
 								</Col>
-								
+
 								<Col md="3" sm="12">
 									<FormGroup>
-										<Label for='composite_quantity'>Bundle Quantity *</Label>
-										<AvInput 
-											type='number' 
-											name='composite_quantity' 
-											id='composite_quantity' 
-											placeholder='e.g., 6, 12, 24' 
+										<Label for="composite_quantity">Bundle Quantity *</Label>
+										<AvInput
+											type="number"
+											name="composite_quantity"
+											id="composite_quantity"
+											placeholder="e.g., 6, 12, 24"
 											value={productData.composite_quantity}
-											onChange={e => handleCompositeFieldChange('composite_quantity', parseInt(e.target.value) || 1)}
-											min='2'
+											onChange={(e) => handleCompositeFieldChange('composite_quantity', parseInt(e.target.value) || 1)}
+											min="2"
 											required={productData.product_type === 'composite'}
 										/>
-										<small className='text-muted'>
-											Units in bundle
-										</small>
+										<small className="text-muted">Units in bundle</small>
 									</FormGroup>
 								</Col>
-								
+
 								<Col md="3" sm="12">
 									<FormGroup>
-										<Label for='discount_percentage'>Discount % *</Label>
-										<AvInput 
-											type='number' 
-											name='discount_percentage' 
-											id='discount_percentage' 
-											placeholder='e.g., 10, 15' 
+										<Label for="discount_percentage">Discount % *</Label>
+										<AvInput
+											type="number"
+											name="discount_percentage"
+											id="discount_percentage"
+											placeholder="e.g., 10, 15"
 											value={productData.discount_percentage}
-											onChange={e => handleCompositeFieldChange('discount_percentage', parseFloat(e.target.value) || 0)}
-											min='0'
-											max='100'
-											step='0.01'
+											onChange={(e) => handleCompositeFieldChange('discount_percentage', parseFloat(e.target.value) || 0)}
+											min="0"
+											max="100"
+											step="0.01"
 											required={productData.product_type === 'composite'}
 										/>
-										<small className='text-muted'>
-											% discount
-										</small>
+										<small className="text-muted">% discount</small>
 									</FormGroup>
 								</Col>
 
@@ -555,25 +565,37 @@ const UserAccountTab = ({ selectedProduct }) => {
 									<Col md="12" sm="12">
 										<FormGroup>
 											<Label>Pricing Preview</Label>
-											<div className='border rounded p-2 bg-light'>
+											<div className="border rounded p-2 bg-light">
 												<Row>
 													<Col md="3">
-														<small className='d-block'>
-															<strong>Original:</strong> ₦{calculatedPricing.originalPrice}
+														<small className="d-block">
+															<strong>Original:</strong>{' '}
+															{Number(calculatedPricing.originalPrice).toLocaleString('en-ZA', {
+																style: 'currency',
+																currency: 'ZAR',
+															})}
 														</small>
 													</Col>
 													<Col md="3">
-														<small className='d-block'>
-															<strong>Discount:</strong> -₦{calculatedPricing.discountAmount}
+														<small className="d-block">
+															<strong>Discount:</strong> -
+															{Number(calculatedPricing.discountAmount).toLocaleString('en-ZA', {
+																style: 'currency',
+																currency: 'ZAR',
+															})}
 														</small>
 													</Col>
 													<Col md="3">
-														<small className='d-block'>
-															<strong>Final:</strong> ₦{calculatedPricing.price}
+														<small className="d-block">
+															<strong>Final:</strong>{' '}
+															{Number(calculatedPricing.price).toLocaleString('en-ZA', {
+																style: 'currency',
+																currency: 'ZAR',
+															})}
 														</small>
 													</Col>
 													<Col md="3">
-														<small className='d-block text-success'>
+														<small className="d-block text-success">
 															<strong>Savings:</strong> {productData.discount_percentage}% off
 														</small>
 													</Col>
@@ -686,86 +708,77 @@ const UserAccountTab = ({ selectedProduct }) => {
 									/>
 									<InputGroupAddon addonType="append">
 										{isScanning ? (
-											<Button 
-												color='warning'
-												onClick={stopScanning}
-												title='Stop scanning'
-											>
+											<Button color="warning" onClick={stopScanning} title="Stop scanning">
 												<X size={16} />
-												<Spinner size='sm' className='ml-1' />
+												<Spinner size="sm" className="ml-1" />
 											</Button>
 										) : (
-											<Button 
+											<Button
 												color={isConnected ? 'success' : 'secondary'}
 												onClick={startScanning}
 												disabled={!isConnected || isInitializing}
 												title={isConnected ? 'Scan Barcode' : 'Scanner not available'}
 											>
 												<Camera size={16} />
-												{isInitializing && <Spinner size='sm' className='ml-1' />}
+												{isInitializing && <Spinner size="sm" className="ml-1" />}
 											</Button>
 										)}
 										{lastError && canRetry && (
-											<Button 
-												color='info'
-												onClick={retryInitialization}
-												title='Retry scanner connection'
-												className='ml-1'
-											>
+											<Button color="info" onClick={retryInitialization} title="Retry scanner connection" className="ml-1">
 												<RefreshCcw size={16} />
 											</Button>
 										)}
 									</InputGroupAddon>
 								</InputGroup>
-								
+
 								{/* Enhanced Universal Scanner Status */}
-								<div className='mt-2'>
-									<div className='d-flex align-items-center mb-1'>
+								<div className="mt-2">
+									<div className="d-flex align-items-center mb-1">
 										{isInitializing && (
-											<Badge color='info' className='mr-2'>
-												<Spinner size='sm' className='mr-1' />
+											<Badge color="info" className="mr-2">
+												<Spinner size="sm" className="mr-1" />
 												Initializing...
 											</Badge>
 										)}
 										{isConnected && !isInitializing && (
-											<Badge color='success' className='mr-2'>
-												<CheckCircle size={12} className='mr-1' />
+											<Badge color="success" className="mr-2">
+												<CheckCircle size={12} className="mr-1" />
 												{scannerCount > 1 ? `${scannerCount} Scanners` : 'Scanner Ready'}
 											</Badge>
 										)}
 										{!isConnected && !isInitializing && (
-											<Badge color='secondary' className='mr-2'>
-												<AlertCircle size={12} className='mr-1' />
+											<Badge color="secondary" className="mr-2">
+												<AlertCircle size={12} className="mr-1" />
 												No Scanners
 											</Badge>
 										)}
 										{isScanning && (
-											<Badge color='warning'>
-												<Camera size={12} className='mr-1' />
+											<Badge color="warning">
+												<Camera size={12} className="mr-1" />
 												Scanning Active
 											</Badge>
 										)}
 									</div>
-									
+
 									{/* Scanner Selection for Multiple Scanners */}
 									{scannerCount > 1 && (
-										<div className='mb-2'>
-											<small className='text-muted d-block mb-1'>Available scanners:</small>
-											<div className='d-flex flex-wrap'>
-												{activeScanners.map(scanner => {
+										<div className="mb-2">
+											<small className="text-muted d-block mb-1">Available scanners:</small>
+											<div className="d-flex flex-wrap">
+												{activeScanners.map((scanner) => {
 													const scannerNames = {
 														socketMobile: 'Socket Mobile',
 														keyboardWedge: 'USB Scanner',
 														browserAPI: 'Camera',
-														manual: 'Manual'
+														manual: 'Manual',
 													}
 													const isActive = scanner === bestScanner
 													return (
 														<Button
 															key={scanner}
-															size='sm'
+															size="sm"
 															color={isActive ? 'primary' : 'outline-primary'}
-															className='mr-1 mb-1'
+															className="mr-1 mb-1"
 															onClick={() => setPreferredScanner(scanner)}
 														>
 															{scannerNames[scanner] || scanner}
@@ -776,48 +789,45 @@ const UserAccountTab = ({ selectedProduct }) => {
 											</div>
 										</div>
 									)}
-									
+
 									{lastError && (
-										<Alert color='warning' className='mb-2 p-2'>
-											<div className='d-flex justify-content-between align-items-start'>
+										<Alert color="warning" className="mb-2 p-2">
+											<div className="d-flex justify-content-between align-items-start">
 												<div>
 													<strong>Scanner Issue</strong>
-													<div className='small'>{lastError.message}</div>
+													<div className="small">{lastError.message}</div>
 												</div>
 												{canRetry && (
-													<Button 
-														size='sm' 
-														color='warning' 
-														outline
-														onClick={retryInitialization}
-														className='ml-2'
-													>
-														<RefreshCcw size={14} className='mr-1' />
+													<Button size="sm" color="warning" outline onClick={retryInitialization} className="ml-2">
+														<RefreshCcw size={14} className="mr-1" />
 														Retry
 													</Button>
 												)}
 											</div>
 										</Alert>
 									)}
-									
+
 									{/* Recommendations */}
 									{recommendations && recommendations.length > 0 && (
-										<div className='mb-2'>
-											<small className='text-info'>
-												💡 {recommendations[0]}
-											</small>
+										<div className="mb-2">
+											<small className="text-info">💡 {recommendations[0]}</small>
 										</div>
 									)}
-									
-									<small className='text-muted'>
-										{isConnected 
-											? isScanning 
-												? `📷 Scanning with ${bestScanner === 'socketMobile' ? 'Socket Mobile' : 
-													bestScanner === 'keyboardWedge' ? 'USB scanner' : 
-													bestScanner === 'browserAPI' ? 'camera' : bestScanner}...`
+
+									<small className="text-muted">
+										{isConnected
+											? isScanning
+												? `📷 Scanning with ${
+														bestScanner === 'socketMobile'
+															? 'Socket Mobile'
+															: bestScanner === 'keyboardWedge'
+															? 'USB scanner'
+															: bestScanner === 'browserAPI'
+															? 'camera'
+															: bestScanner
+												  }...`
 												: `✅ ${statusSummary} - click scan button or enter manually`
-											: '⚠️ No scanners available - manual entry only'
-										}
+											: '⚠️ No scanners available - manual entry only'}
 									</small>
 								</div>
 							</FormGroup>
@@ -827,13 +837,11 @@ const UserAccountTab = ({ selectedProduct }) => {
 						{!img && (
 							<Col md="12" sm="12">
 								<FormGroup>
-									<Label for='productImage'>Product Image</Label>
+									<Label for="productImage">Product Image</Label>
 									<Card>
 										<CardBody>
 											<DragDrop uppy={uppy} />
-											<small className='text-muted'>
-												Drag and drop an image file here or click to browse
-											</small>
+											<small className="text-muted">Drag and drop an image file here or click to browse</small>
 										</CardBody>
 									</Card>
 								</FormGroup>
@@ -852,13 +860,13 @@ const UserAccountTab = ({ selectedProduct }) => {
 									onChange={(e) => setProductData({ ...productData, categoryId: e.target.value })}
 									disabled={categoriesLoading}
 								>
-									<option value="">
-										{categoriesLoading ? 'Loading categories...' : 'Select Product Category'}
-									</option>
+									<option value="">{categoriesLoading ? 'Loading categories...' : 'Select Product Category'}</option>
 									{categoriesError ? (
-										<option value='' disabled>Error loading categories</option>
+										<option value="" disabled>
+											Error loading categories
+										</option>
 									) : (
-										categories.map(category => (
+										categories.map((category) => (
 											<option key={category.id} value={category.id}>
 												{category.name}
 											</option>

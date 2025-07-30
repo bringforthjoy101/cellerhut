@@ -41,10 +41,42 @@ const PreviewCard = ({ data }) => {
 		})
 	}
 
-	const statusObj = {
+	// Enhanced status mapping for all order statuses
+	const orderStatus = {
+		'order-pending': 'light-info', // Blue - awaiting processing
+		'order-processing': 'light-warning', // Yellow - being prepared
+		'order-at-local-facility': 'light-primary', // Purple - at facility
+		'order-out-for-delivery': 'light-secondary', // Gray - in transit
+		'order-completed': 'light-success', // Green - delivered/completed
+		'order-cancelled': 'light-danger', // Red - cancelled
+		'order-refunded': 'light-dark', // Dark - refunded
+		// Legacy support for old status values (without 'order-' prefix)
+		pending: 'light-info',
 		processing: 'light-warning',
+		'at-local-facility': 'light-primary',
+		'out-for-delivery': 'light-secondary',
 		completed: 'light-success',
-		cancelled: 'light-danger'
+		cancelled: 'light-danger',
+		refunded: 'light-dark',
+	}
+
+	// Helper function to format status text for display
+	const formatStatusText = (status) => {
+		if (!status) return 'Unknown'
+
+		// Remove 'order-' prefix if present
+		const cleanStatus = status.replace('order-', '')
+
+		// Convert hyphens to spaces and capitalize each word
+		return cleanStatus
+			.split('-')
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ')
+	}
+
+	// Helper function to get status color with fallback
+	const getStatusColor = (status) => {
+		return orderStatus[status] || 'light-secondary' // Default to gray if status not found
 	}
 
 
@@ -104,8 +136,9 @@ const PreviewCard = ({ data }) => {
 						</div>
 						<div className="invoice-date-wrapper">
 							<p className="invoice-date-title">Order Status:</p>
-							<Badge className='invoice-date' color={statusObj[data.status]}>{data.status.toUpperCase()}</Badge>
-							{/* <p className="invoice-date">{data.paymentMode.toUpperCase()}</p> */}
+							<Badge className='invoice-date' color={getStatusColor(data.status)} pill>
+								{formatStatusText(data.status)}
+							</Badge>
 						</div>
 					</div>
 				</div>

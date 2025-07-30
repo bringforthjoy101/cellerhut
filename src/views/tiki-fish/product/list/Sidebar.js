@@ -96,6 +96,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 				method: 'POST',
 				headers: {
 					Accept: 'application/json',
+					Authorization: `Bearer ${accessToken}`,
 					// Don't set Content-Type, let the browser set it with the boundary
 				},
 				body: formData,
@@ -229,6 +230,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 
 		uppy.on('thumbnail:generated', async (file, preview) => {
 			console.log('Uppy file object:', file)
+			console.log('Uppy state before upload:', {
+				filesCount: uppy.getFiles().length,
+				uppyState: uppy.getState(),
+			})
 			setProductData((prev) => ({ ...prev, imagePreview: preview }))
 
 			// Get the actual file from Uppy
@@ -240,9 +245,13 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 				const uploadFile = new File([fileToUpload.data], fileToUpload.name, {
 					type: fileToUpload.type || 'image/jpeg',
 				})
+				console.log('Calling uploadImage with file:', uploadFile)
 				const imageUrl = await uploadImage(uploadFile)
 				if (imageUrl) {
+					console.log('Image uploaded successfully:', imageUrl)
 					setProductData((prev) => ({ ...prev, image: imageUrl }))
+				} else {
+					console.error('Upload failed - no image URL returned')
 				}
 			} else {
 				console.error('No file data found in Uppy file object')
@@ -260,7 +269,24 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 			swal('Error!', 'Failed to upload image', 'error')
 		})
 
-		return () => uppy.close()
+		// Only cleanup on component unmount, not on re-renders
+		return () => {
+			console.log('Cleaning up Uppy event listeners')
+			uppy.off('thumbnail:generated')
+			uppy.off('upload-success')
+			uppy.off('upload-error')
+			// Don't close uppy here - it might be needed for subsequent uploads
+		}
+	}, [])
+
+	// Separate useEffect for component unmount cleanup
+	useEffect(() => {
+		return () => {
+			console.log('Component unmounting - closing Uppy instance')
+			if (uppy) {
+				uppy.close()
+			}
+		}
 	}, [])
 
 	// ** Function to remove uploaded image
@@ -335,6 +361,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 						composite_quantity: 6,
 						discount_percentage: 0,
 					})
+					// Clear Uppy files to ensure clean state for next upload
+					uppy.getFiles().forEach((file) => {
+						uppy.removeFile(file.id)
+					})
 					toggleSidebar()
 				} else {
 					setIsSubmitting(false)
@@ -362,6 +392,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 						base_product_id: '',
 						composite_quantity: 6,
 						discount_percentage: 0,
+					})
+					// Clear Uppy files to ensure clean state for next upload
+					uppy.getFiles().forEach((file) => {
+						uppy.removeFile(file.id)
 					})
 					toggleSidebar()
 				}
@@ -467,16 +501,33 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 								<Label>Pricing Preview</Label>
 								<div className="border rounded p-2 bg-light">
 									<small className="d-block">
-										<strong>Original Price:</strong> ₦{calculatedPricing.originalPrice}
+										<strong>Original Price:</strong>{' '}
+										{Number(calculatedPricing.originalPrice).toLocaleString('en-ZA', {
+											style: 'currency',
+											currency: 'ZAR',
+										})}
 									</small>
 									<small className="d-block">
-										<strong>Discount:</strong> -₦{calculatedPricing.discountAmount}
+										<strong>Discount:</strong> -
+										{Number(calculatedPricing.discountAmount).toLocaleString('en-ZA', {
+											style: 'currency',
+											currency: 'ZAR',
+										})}
 									</small>
 									<small className="d-block">
-										<strong>Final Price:</strong> ₦{calculatedPricing.price}
+										<strong>Final Price:</strong>{' '}
+										{Number(calculatedPricing.price).toLocaleString('en-ZA', {
+											style: 'currency',
+											currency: 'ZAR',
+										})}
 									</small>
 									<small className="d-block text-success">
-										<strong>Savings:</strong> ₦{calculatedPricing.discountAmount}({productData.discount_percentage}% off)
+										<strong>Savings:</strong>{' '}
+										{Number(calculatedPricing.discountAmount).toLocaleString('en-ZA', {
+											style: 'currency',
+											currency: 'ZAR',
+										})}
+										({productData.discount_percentage}% off)
 									</small>
 								</div>
 							</FormGroup>

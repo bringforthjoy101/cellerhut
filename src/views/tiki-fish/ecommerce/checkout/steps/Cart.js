@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux'
 import classnames from 'classnames'
 import { X, Heart, Star } from 'react-feather'
 import Select from 'react-select'
-import { Card, CardBody, CardText, Button, Badge, FormGroup, Label, Spinner, InputGroup, InputGroupAddon, Input, InputGroupText } from 'reactstrap'
+import { Card, CardBody, CardText, Button, Badge, FormGroup, Label, Spinner } from 'reactstrap'
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
 import { swal, apiRequest, selectThemeColors } from '@utils'
 
@@ -123,31 +123,23 @@ const Cart = (props) => {
 	}
 
 	const subTotal = products.reduce((n, { amount }) => n + amount, 0)
-	const [selectedOption, setSelectedOption] = useState('')
 	const [selectedPaymentMode, setSelectedPaymentMode] = useState({ value: 'cash', label: 'CASH' })
 	const [discount, setDiscount] = useState(0)
-	const [logistics, setLogistics] = useState(0)
 	const [orderData, setOrderData] = useState({
-		location: '',
-		logistics,
+		location: 'Shop', // Default location
+		logistics: 0, // Default logistics cost
 		discount,
 		subTotal,
 		products,
-		customerId: selectedOption.value,
 		paymentMode: selectedPaymentMode.value,
 	})
-	const [totalAmount, setTotalAmount] = useState(Number(subTotal) + Number(orderData.logistics) - Number(orderData.discount))
-	const [customers, setCustomers] = useState([])
+	const [totalAmount, setTotalAmount] = useState(Number(subTotal) - Number(orderData.discount))
 	
 	const store = useSelector((state) => state.customers)
 
 	// ** Get data on mount
 	useEffect(() => {
-		apiRequest({ url: '/customers', method: 'GET' }).then(customerResponse => {
-			console.log({customerResponse})
-			setCustomers(customerResponse.data.data)
-		})
-		setTotalAmount(Number(subTotal) + Number(logistics) - Number(discount))
+		setTotalAmount(Number(subTotal) - Number(discount))
 		console.log({ selectedPaymentMode }, orderData.paymentMode)
 		if (store.length) {
 			dispatch(getAllData(JSON.parse(localStorage.getItem('userData')).role))
@@ -156,21 +148,13 @@ const Cart = (props) => {
 			...orderData,
 			amount: totalAmount,
 			products,
-			customerId: selectedOption.value,
+			location: 'Shop',
+			logistics: 0,
 			paymentMode: selectedPaymentMode.value,
 			subTotal: products.reduce((n, { amount }) => n + amount, 0),
 		})
-	}, [dispatch, subTotal, products, selectedOption, selectedPaymentMode, discount, logistics])
+	}, [dispatch, subTotal, products, selectedPaymentMode, discount])
 
-	
-	const renderCustomers = (customers) => {
-		console.log(customers)
-		return customers
-			.filter((customer) => customer.is_active)
-			.map((customer) => {
-				return { value: customer.id, label: `${customer.name} (${customer.phone})` }
-			})
-	}
 
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -182,7 +166,7 @@ const Cart = (props) => {
 		if (errors && !errors.length) {
 			setIsSubmitting(true)
 			console.log({ orderData })
-			const body = JSON.stringify({...orderData, logistics, discount, amount: totalAmount})
+			const body = JSON.stringify({...orderData, discount, amount: totalAmount})
 			try {
 				const response = await apiRequest({ url: '/orders/create', method: 'POST', body }, dispatch)
 				console.log({ response })
@@ -194,11 +178,10 @@ const Cart = (props) => {
 					setOrderData({
 						subTotal,
 						discount: 0,
-						location: '',
+						location: 'Shop',
 						logistics: 0,
 						products,
 						paymentMode: selectedPaymentMode?.value,
-						customerId: selectedOption?.value,
 					})
 					history.push(`/order/preview/${response.data.data}`)
 				} else {
@@ -208,11 +191,10 @@ const Cart = (props) => {
 					setOrderData({
 						subTotal,
 						discount: 0,
-						location: '',
+						location: 'Shop',
 						logistics: 0,
 						products,
 						paymentMode: selectedPaymentMode?.value,
-						customerId: selectedOption?.value,
 					})
 					history.push(`/apps/ecommerce/shop`)
 				}
@@ -232,29 +214,6 @@ const Cart = (props) => {
 					<CardBody>
 						<AvForm onSubmit={onSubmit}>
 							<FormGroup>
-								<Label for="customerId">Select Customer</Label>
-								<Select
-									theme={selectThemeColors}
-									className="react-select"
-									classNamePrefix="select"
-									defaultValue={selectedOption}
-									options={renderCustomers(customers)}
-									isClearable={false}
-									onChange={setSelectedOption}
-									required
-								/>
-							</FormGroup>
-							<FormGroup>
-								<Label for="location">Location</Label>
-								<AvInput
-									name="location"
-									id="location"
-									placeholder="Pretoria, Gauteng"
-									value={orderData.location}
-									onChange={(e) => setOrderData({ ...orderData, location: e.target.value })}
-								/>
-							</FormGroup>
-							<FormGroup>
 								<Label for="discount">Discount</Label>
 								<AvInput
 									name="discount"
@@ -262,16 +221,6 @@ const Cart = (props) => {
 									placeholder="R 1000"
 									value={orderData.discount}
 									onChange={(e) => setDiscount(e.target.value || 0)}
-								/>
-							</FormGroup>
-							<FormGroup>
-								<Label for="logistics">Logistics</Label>
-								<AvInput
-									name="logistics"
-									id="logistics"
-									placeholder="R 1000"
-									value={orderData.logistics}
-									onChange={(e) => setLogistics(e.target.value || 0)}
 								/>
 							</FormGroup>
 							<FormGroup>
@@ -302,11 +251,7 @@ const Cart = (props) => {
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Discount</div>
-										<div className="detail-amt font-weight-bolder">{Number(discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
-									</li>
-									<li className="price-detail">
-										<div className="detail-title detail-total">Logistics</div>
-										<div className="detail-amt font-weight-bolder">{Number(logistics).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
+										<div className="detail-amt font-weight-bolder">-{Number(discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Total</div>
