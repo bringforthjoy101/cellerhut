@@ -14,7 +14,7 @@ import { Media, Row, Col, Button, Form, Input, Label, FormGroup, Table, CustomIn
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
 import { getAllData, getProduct, getCategories } from '../store/action'
 import { swal, apiRequest, apiUrl, Storage } from '@utils'
-import { useProductScanner } from '../../../../hooks/useProductScanner'
+import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
 
 const UserAccountTab = ({ selectedProduct }) => {
 	const dispatch = useDispatch()
@@ -47,6 +47,11 @@ const UserAccountTab = ({ selectedProduct }) => {
 		origin: selectedProduct.origin || '',
 		categoryId: selectedProduct.categoryId || '',
 		image: selectedProduct.image || '',
+		// Composite product fields
+		product_type: selectedProduct.product_type || 'simple',
+		base_product_id: selectedProduct.base_product_id || '',
+		composite_quantity: selectedProduct.composite_quantity || 6,
+		discount_percentage: selectedProduct.discount_percentage || 0,
 	})
 
 	// Handle barcode scanning
@@ -54,17 +59,30 @@ const UserAccountTab = ({ selectedProduct }) => {
 		setProductData((prev) => ({ ...prev, barcode }))
 	}
 
-	// Initialize scanner hook with enhanced features
+	// Initialize universal scanner hook
 	const { 
 		isConnected, 
 		isScanning, 
 		isInitializing,
+		activeScanners,
+		bestScanner,
+		scannerCount,
+		statusSummary,
+		statusLevel,
+		recommendations,
 		lastError,
 		canRetry,
 		startScanning, 
 		stopScanning,
-		retryInitialization 
-	} = useProductScanner(handleBarcodeScanned)
+		retryInitialization,
+		setPreferredScanner 
+	} = useUniversalScanner(handleBarcodeScanned)
+
+	// Composite product states
+	const [baseProducts, setBaseProducts] = useState([])
+	const [loadingBaseProducts, setLoadingBaseProducts] = useState(false)
+	const [calculatedPricing, setCalculatedPricing] = useState(null)
+	const [loadingPricing, setLoadingPricing] = useState(false)
 
 	// ** Image upload function
 	const uploadImage = async (file) => {
@@ -119,6 +137,92 @@ const UserAccountTab = ({ selectedProduct }) => {
 	// ** Function to replace image
 	const replaceImage = () => {
 		removeImage()
+	}
+
+	// Fetch base products for composite product editing
+	const fetchBaseProducts = async () => {
+		setLoadingBaseProducts(true)
+		try {
+			const userData = Storage.getItem('userData')
+			const { accessToken } = userData
+
+			const response = await fetch(`${apiUrl}/products/base-products`, {
+				method: 'GET',
+				headers: {
+					Accept: 'application/json',
+					Authorization: `Bearer ${accessToken}`
+				}
+			})
+
+			const data = await response.json()
+			if (data.status) {
+				setBaseProducts(data.data || [])
+			} else {
+				swal('Error!', data.message || 'Failed to fetch base products', 'error')
+			}
+		} catch (error) {
+			console.error('Error fetching base products:', error)
+			swal('Error!', 'Failed to fetch base products', 'error')
+		} finally {
+			setLoadingBaseProducts(false)
+		}
+	}
+
+	// Calculate composite pricing
+	const calculateCompositePrice = async (baseProductId, compositeQty, discountPercent) => {
+		if (!baseProductId || !compositeQty || discountPercent === undefined) return
+
+		setLoadingPricing(true)
+		try {
+			const userData = Storage.getItem('userData')
+			const { accessToken } = userData
+
+			const response = await fetch(`${apiUrl}/products/composite-price`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+					Authorization: `Bearer ${accessToken}`
+				},
+				body: JSON.stringify({
+					base_product_id: baseProductId,
+					composite_quantity: compositeQty,
+					discount_percentage: discountPercent
+				})
+			})
+
+			const data = await response.json()
+			if (data.status) {
+				setCalculatedPricing(data.data)
+			} else {
+				swal('Error!', data.message || 'Failed to calculate pricing', 'error')
+			}
+		} catch (error) {
+			console.error('Error calculating pricing:', error)
+			swal('Error!', 'Failed to calculate pricing', 'error')
+		} finally {
+			setLoadingPricing(false)
+		}
+	}
+
+	// Handle composite product field changes
+	const handleCompositeFieldChange = (field, value) => {
+		setProductData(prev => {
+			const updated = { ...prev, [field]: value }
+			
+			// Trigger price calculation when relevant fields change
+			if (['base_product_id', 'composite_quantity', 'discount_percentage'].includes(field)) {
+				setTimeout(() => {
+					calculateCompositePrice(
+						updated.base_product_id, 
+						updated.composite_quantity, 
+						updated.discount_percentage
+					)
+				}, 100)
+			}
+			
+			return updated
+		})
 	}
 
 	const onSubmit = async (event, errors) => {
@@ -240,6 +344,11 @@ const UserAccountTab = ({ selectedProduct }) => {
 				origin: selectedProduct.origin || '',
 				categoryId: selectedProduct.categoryId || '',
 				image: selectedProduct.image || '',
+				// Composite product fields
+				product_type: selectedProduct.product_type || 'simple',
+				base_product_id: selectedProduct.base_product_id || '',
+				composite_quantity: selectedProduct.composite_quantity || 6,
+				discount_percentage: selectedProduct.discount_percentage || 0,
 			})
 		}
 	}, [selectedProduct])
@@ -257,6 +366,27 @@ const UserAccountTab = ({ selectedProduct }) => {
 			}
 		}
 	}, [selectedProduct])
+
+	// Fetch base products when product type changes to composite
+	useEffect(() => {
+		if (productData.product_type === 'composite') {
+			fetchBaseProducts()
+		}
+	}, [productData.product_type])
+
+	// Calculate pricing when composite product is loaded or parameters change
+	useEffect(() => {
+		if (productData.product_type === 'composite' && 
+			productData.base_product_id && 
+			productData.composite_quantity && 
+			productData.discount_percentage !== undefined) {
+			calculateCompositePrice(
+				productData.base_product_id,
+				productData.composite_quantity,
+				productData.discount_percentage
+			)
+		}
+	}, [productData.product_type, productData.base_product_id, productData.composite_quantity, productData.discount_percentage])
 
 	// ** Renders User
 	const renderUserAvatar = () => {
@@ -328,6 +458,133 @@ const UserAccountTab = ({ selectedProduct }) => {
 								{/* <Input type='text' id='name' placeholder='Name' defaultValue={selectedProduct.name} /> */}
 							</FormGroup>
 						</Col>
+						
+						{/* Product Type - Full Width */}
+						<Col md="12" sm="12">
+							<FormGroup>
+								<Label for="product_type">Product Type</Label>
+								<AvInput 
+									type='select' 
+									name='product_type' 
+									id='product_type' 
+									value={productData.product_type}
+									onChange={e => handleCompositeFieldChange('product_type', e.target.value)}
+									required
+								>
+									<option value='simple'>Simple Product</option>
+									<option value='composite'>Composite Product (Bundle/Pack)</option>
+								</AvInput>
+								<small className='text-muted'>
+									Simple: Individual product | Composite: Bundle of multiple units with discount
+								</small>
+							</FormGroup>
+						</Col>
+
+						{/* Composite Product Fields */}
+						{productData.product_type === 'composite' && (
+							<>
+								<Col md="6" sm="12">
+									<FormGroup>
+										<Label for='base_product_id'>Base Product *</Label>
+										<AvInput 
+											type='select' 
+											name='base_product_id' 
+											id='base_product_id' 
+											value={productData.base_product_id}
+											onChange={e => handleCompositeFieldChange('base_product_id', e.target.value)}
+											required={productData.product_type === 'composite'}
+											disabled={loadingBaseProducts}
+										>
+											<option value=''>
+												{loadingBaseProducts ? 'Loading products...' : 'Select Base Product'}
+											</option>
+											{baseProducts.map(product => (
+												<option key={product.id} value={product.id}>
+													{product.name} - ₦{product.price} (Stock: {product.qty})
+												</option>
+											))}
+										</AvInput>
+										<small className='text-muted'>
+											Choose the individual product that will be bundled
+										</small>
+									</FormGroup>
+								</Col>
+								
+								<Col md="3" sm="12">
+									<FormGroup>
+										<Label for='composite_quantity'>Bundle Quantity *</Label>
+										<AvInput 
+											type='number' 
+											name='composite_quantity' 
+											id='composite_quantity' 
+											placeholder='e.g., 6, 12, 24' 
+											value={productData.composite_quantity}
+											onChange={e => handleCompositeFieldChange('composite_quantity', parseInt(e.target.value) || 1)}
+											min='2'
+											required={productData.product_type === 'composite'}
+										/>
+										<small className='text-muted'>
+											Units in bundle
+										</small>
+									</FormGroup>
+								</Col>
+								
+								<Col md="3" sm="12">
+									<FormGroup>
+										<Label for='discount_percentage'>Discount % *</Label>
+										<AvInput 
+											type='number' 
+											name='discount_percentage' 
+											id='discount_percentage' 
+											placeholder='e.g., 10, 15' 
+											value={productData.discount_percentage}
+											onChange={e => handleCompositeFieldChange('discount_percentage', parseFloat(e.target.value) || 0)}
+											min='0'
+											max='100'
+											step='0.01'
+											required={productData.product_type === 'composite'}
+										/>
+										<small className='text-muted'>
+											% discount
+										</small>
+									</FormGroup>
+								</Col>
+
+								{/* Pricing Preview */}
+								{calculatedPricing && (
+									<Col md="12" sm="12">
+										<FormGroup>
+											<Label>Pricing Preview</Label>
+											<div className='border rounded p-2 bg-light'>
+												<Row>
+													<Col md="3">
+														<small className='d-block'>
+															<strong>Original:</strong> ₦{calculatedPricing.originalPrice}
+														</small>
+													</Col>
+													<Col md="3">
+														<small className='d-block'>
+															<strong>Discount:</strong> -₦{calculatedPricing.discountAmount}
+														</small>
+													</Col>
+													<Col md="3">
+														<small className='d-block'>
+															<strong>Final:</strong> ₦{calculatedPricing.price}
+														</small>
+													</Col>
+													<Col md="3">
+														<small className='d-block text-success'>
+															<strong>Savings:</strong> {productData.discount_percentage}% off
+														</small>
+													</Col>
+												</Row>
+											</div>
+										</FormGroup>
+									</Col>
+								)}
+							</>
+						)}
+
 						<Col md="6" sm="12">
 							<FormGroup>
 								<Label for="costPrice">Product Cost Price</Label>
@@ -461,7 +718,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 									</InputGroupAddon>
 								</InputGroup>
 								
-								{/* Enhanced Scanner Status */}
+								{/* Enhanced Universal Scanner Status */}
 								<div className='mt-2'>
 									<div className='d-flex align-items-center mb-1'>
 										{isInitializing && (
@@ -473,13 +730,13 @@ const UserAccountTab = ({ selectedProduct }) => {
 										{isConnected && !isInitializing && (
 											<Badge color='success' className='mr-2'>
 												<CheckCircle size={12} className='mr-1' />
-												Scanner Ready
+												{scannerCount > 1 ? `${scannerCount} Scanners` : 'Scanner Ready'}
 											</Badge>
 										)}
 										{!isConnected && !isInitializing && (
 											<Badge color='secondary' className='mr-2'>
 												<AlertCircle size={12} className='mr-1' />
-												Scanner Unavailable
+												No Scanners
 											</Badge>
 										)}
 										{isScanning && (
@@ -490,11 +747,41 @@ const UserAccountTab = ({ selectedProduct }) => {
 										)}
 									</div>
 									
+									{/* Scanner Selection for Multiple Scanners */}
+									{scannerCount > 1 && (
+										<div className='mb-2'>
+											<small className='text-muted d-block mb-1'>Available scanners:</small>
+											<div className='d-flex flex-wrap'>
+												{activeScanners.map(scanner => {
+													const scannerNames = {
+														socketMobile: 'Socket Mobile',
+														keyboardWedge: 'USB Scanner',
+														browserAPI: 'Camera',
+														manual: 'Manual'
+													}
+													const isActive = scanner === bestScanner
+													return (
+														<Button
+															key={scanner}
+															size='sm'
+															color={isActive ? 'primary' : 'outline-primary'}
+															className='mr-1 mb-1'
+															onClick={() => setPreferredScanner(scanner)}
+														>
+															{scannerNames[scanner] || scanner}
+															{isActive && ' ✓'}
+														</Button>
+													)
+												})}
+											</div>
+										</div>
+									)}
+									
 									{lastError && (
 										<Alert color='warning' className='mb-2 p-2'>
 											<div className='d-flex justify-content-between align-items-start'>
 												<div>
-													<strong>{lastError.title}</strong>
+													<strong>Scanner Issue</strong>
 													<div className='small'>{lastError.message}</div>
 												</div>
 												{canRetry && (
@@ -513,12 +800,23 @@ const UserAccountTab = ({ selectedProduct }) => {
 										</Alert>
 									)}
 									
+									{/* Recommendations */}
+									{recommendations && recommendations.length > 0 && (
+										<div className='mb-2'>
+											<small className='text-info'>
+												💡 {recommendations[0]}
+											</small>
+										</div>
+									)}
+									
 									<small className='text-muted'>
 										{isConnected 
 											? isScanning 
-												? '📷 Point scanner at barcode to scan'
-												: '✅ Scanner ready - click scan button or enter barcode manually'
-											: lastError?.action || '⚠️ Scanner not available - manual entry only'
+												? `📷 Scanning with ${bestScanner === 'socketMobile' ? 'Socket Mobile' : 
+													bestScanner === 'keyboardWedge' ? 'USB scanner' : 
+													bestScanner === 'browserAPI' ? 'camera' : bestScanner}...`
+												: `✅ ${statusSummary} - click scan button or enter manually`
+											: '⚠️ No scanners available - manual entry only'
 										}
 									</small>
 								</div>
