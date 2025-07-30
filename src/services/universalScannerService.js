@@ -33,6 +33,12 @@ class UniversalScannerService {
 			autoDetectScanners: true,
 			fallbackToManual: true,
 			debugLogging: true,
+			// Socket Mobile priority settings
+			socketMobilePriority: true,      // Always prefer Socket Mobile when available
+			socketMobileOnly: false,         // Only use Socket Mobile, disable others
+			socketMobileTimeout: 5000,       // Timeout for Socket Mobile initialization (ms)
+			socketMobileRetryInterval: 10000, // Auto-retry interval for Socket Mobile (ms)
+			waitForSocketMobile: true,       // Wait for Socket Mobile before initializing others
 			// Socket Mobile config
 			socketMobileConfig: null,
 			// Keyboard wedge config
@@ -98,15 +104,74 @@ class UniversalScannerService {
 	}
 
 	/**
-	 * Detect and initialize all available scanner types
+	 * Check Socket Mobile Companion service availability
 	 */
-	async detectAndInitializeScanners() {
-		const initPromises = []
-
-		// Try Socket Mobile initialization
-		if (this.config.enableSocketMobile) {
-			initPromises.push(this.initializeSocketMobile())
+	async checkSocketMobileService() {
+		try {
+			if (this.config.debugLogging) {
+				console.log('🔍 Checking Socket Mobile Companion service...')
+			}
+			
+			// Check if the scannerService can perform a health check
+			if (scannerService.checkCompanionService) {
+				const isAvailable = await scannerService.checkCompanionService()
+				if (this.config.debugLogging) {
+					console.log(`📋 Socket Mobile service check: ${isAvailable ? 'Available' : 'Not available'}`)
+				}
+				return isAvailable
+			}
+			
+			return true // Assume available if no health check method
+		} catch (error) {
+			if (this.config.debugLogging) {
+				console.log('⚠️ Socket Mobile service check failed:', error.message)
+			}
+			return false
 		}
+	}
+
+	/**
+	 * Try Socket Mobile initialization first (priority mode)
+	 */
+	async trySocketMobileFirst() {
+		try {
+			if (this.config.debugLogging) {
+				console.log('🎯 Attempting Socket Mobile priority initialization...')
+			}
+
+			// Quick health check first
+			const isServiceAvailable = await this.checkSocketMobileService()
+			if (!isServiceAvailable) {
+				throw new Error('Socket Mobile Companion service not available')
+			}
+
+			// Initialize Socket Mobile with timeout
+			await Promise.race([
+				this.initializeSocketMobile(),
+				new Promise((_, reject) => 
+					setTimeout(() => reject(new Error('Socket Mobile initialization timeout')), 
+					this.config.socketMobileTimeout)
+				)
+			])
+
+			if (this.config.debugLogging) {
+				console.log('✅ Socket Mobile priority initialization successful')
+			}
+			return true
+
+		} catch (error) {
+			if (this.config.debugLogging) {
+				console.log('❌ Socket Mobile priority initialization failed:', error.message)
+			}
+			return false
+		}
+	}
+
+	/**
+	 * Initialize other scanners (non-Socket Mobile)
+	 */
+	async initializeOtherScanners() {
+		const initPromises = []
 
 		// Try Keyboard Wedge initialization
 		if (this.config.enableKeyboardWedge) {
@@ -120,6 +185,32 @@ class UniversalScannerService {
 
 		// Wait for all initialization attempts (don't fail if some fail)
 		await Promise.allSettled(initPromises)
+	}
+
+	/**
+	 * Detect and initialize all available scanner types with Socket Mobile priority
+	 */
+	async detectAndInitializeScanners() {
+		// Phase 1: Try Socket Mobile first if priority mode is enabled
+		if (this.config.enableSocketMobile && this.config.waitForSocketMobile) {
+			const socketMobileSuccess = await this.trySocketMobileFirst()
+			
+			// If Socket Mobile-only mode and it succeeded, skip other scanners
+			if (socketMobileSuccess && this.config.socketMobileOnly) {
+				console.log('🎯 Socket Mobile-only mode: Skipping other scanners')
+				return
+			}
+		} else if (this.config.enableSocketMobile) {
+			// Initialize Socket Mobile without waiting (parallel mode)
+			this.initializeSocketMobile().catch(error => {
+				if (this.config.debugLogging) {
+					console.log('Socket Mobile parallel initialization failed:', error.message)
+				}
+			})
+		}
+
+		// Phase 2: Initialize other scanners
+		await this.initializeOtherScanners()
 	}
 
 	/**
@@ -330,13 +421,26 @@ class UniversalScannerService {
 	 * @returns {string|null}
 	 */
 	getBestAvailableScanner() {
-		// If user has a preference and it's available, use it
+		// Always prefer Socket Mobile if available and priority mode is enabled
+		if (this.config.socketMobilePriority && this.activeScanners.has('socketMobile')) {
+			return 'socketMobile'
+		}
+
+		// If user has a preference and it's available, use it (unless Socket Mobile priority overrides)
 		if (this.preferredScannerType && this.activeScanners.has(this.preferredScannerType)) {
+			// Still prefer Socket Mobile over user preference if priority mode is on
+			if (this.config.socketMobilePriority && this.activeScanners.has('socketMobile')) {
+				return 'socketMobile'
+			}
 			return this.preferredScannerType
 		}
 
-		// If we had a previously successful scanner, prefer it
+		// If we had a previously successful scanner, prefer it (unless Socket Mobile priority overrides)
 		if (this.lastSuccessfulScanner && this.activeScanners.has(this.lastSuccessfulScanner)) {
+			// Still prefer Socket Mobile over last successful if priority mode is on
+			if (this.config.socketMobilePriority && this.activeScanners.has('socketMobile')) {
+				return 'socketMobile'
+			}
 			return this.lastSuccessfulScanner
 		}
 
@@ -455,16 +559,32 @@ class UniversalScannerService {
 	}
 
 	/**
-	 * Retry failed scanner initializations
+	 * Retry failed scanner initializations with Socket Mobile priority
 	 */
 	async retryFailedScanners() {
 		console.log('🔄 Retrying failed scanner initializations...')
 		
+		// Phase 1: Retry Socket Mobile first (priority)
+		if (this.config.enableSocketMobile && !this.activeScanners.has('socketMobile')) {
+			if (this.config.debugLogging) {
+				console.log('🎯 Retrying Socket Mobile first (priority)...')
+			}
+			
+			const socketMobileSuccess = await this.trySocketMobileFirst()
+			
+			// If Socket Mobile succeeded and we're in Socket Mobile-only mode, skip others
+			if (socketMobileSuccess && this.config.socketMobileOnly) {
+				console.log('🎯 Socket Mobile retry successful - skipping other scanners (Socket Mobile-only mode)')
+				return
+			}
+		}
+
+		// Phase 2: Retry other scanners
 		const retryPromises = []
 
-		// Retry Socket Mobile if failed
-		if (this.config.enableSocketMobile && !this.activeScanners.has('socketMobile')) {
-			retryPromises.push(this.initializeSocketMobile())
+		// Retry Keyboard Wedge if failed
+		if (this.config.enableKeyboardWedge && !this.activeScanners.has('keyboardWedge')) {
+			retryPromises.push(this.initializeKeyboardWedge())
 		}
 
 		// Retry Browser API if failed

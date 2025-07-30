@@ -83,7 +83,13 @@ const ProductsPage = props => {
             })}
             onClick={() => setSidebarOpen(false)}
           ></div>
-          <ProductsSearchbar dispatch={dispatch} getProducts={getProducts} store={store} />
+          <ProductsSearchbar 
+            dispatch={dispatch} 
+            getProducts={getProducts} 
+            store={store}
+            addToCart={addToCart}
+            getCartItems={getCartItems}
+          />
           {store.filtered?.length ? (
             <Fragment>
               <ProductCards

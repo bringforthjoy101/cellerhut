@@ -1,128 +1,199 @@
 // ** React Imports
 import { Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 // ** Third Party Components
 import classnames from 'classnames'
-import { Star, ShoppingCart, Heart } from 'react-feather'
-import { Card, CardBody, CardText, Button, Badge } from 'reactstrap'
+import { Star, ShoppingCart, Heart, CheckCircle, AlertCircle, Camera } from 'react-feather'
+import { Card, CardBody, CardText, Button, Badge, Spinner } from 'reactstrap'
 
 // ** Custom Hooks
-import { useScanner } from '../../../../hooks/useScanner'
+import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
 
-const ProductCards = props => {
-  // ** Props
-  const {
-    store,
-    products,
-    activeView,
-    addToCart,
-    dispatch,
-    getProducts,
-    getCartItems,
-    addToWishlist,
-    deleteWishlistItem
-  } = props
+const ProductCards = (props) => {
+	// ** Props
+	const { store, products, activeView, addToCart, dispatch, getProducts, getCartItems, addToWishlist, deleteWishlistItem } = props
 
-  // Initialize scanner
-  const { isConnected } = useScanner(products)
+	// Handle barcode scanning for cart operations
+	const handleBarcodeScanned = useCallback(
+		(barcode, scannerType) => {
+			// Find product by barcode
+			const product = products.find((p) => p.barcode === barcode)
 
-  // ** Handle Move/Add to cart
-  const handleCartBtn = (id, val) => {
-    if (val === false) {
-      dispatch(addToCart(id))
-    }
-    dispatch(getCartItems())
-    dispatch(getProducts(store.params))
-  }
+			if (product) {
+				// Add product to cart
+				dispatch(addToCart(product.id))
+				dispatch(getCartItems())
+				dispatch(getProducts(store.params))
+			} else {
+				console.warn(`Product with barcode ${barcode} not found`)
+			}
+		},
+		[dispatch, products, addToCart, getCartItems, getProducts, store.params]
+	)
 
-  // ** Handle Wishlist item toggle
-  const handleWishlistClick = (id, val) => {
-    if (val) {
-      dispatch(deleteWishlistItem(id))
-    } else {
-      dispatch(addToWishlist(id))
-    }
-    dispatch(getProducts(store.params))
-  }
+	// Initialize universal scanner
+	const {
+		isInitialized,
+		isInitializing,
+		isConnected,
+		isScanning,
+		activeScanners,
+		bestScanner,
+		scannerCount,
+		statusSummary,
+		statusLevel,
+		recommendations,
+		lastError,
+		canRetry,
+		startScanning,
+		stopScanning,
+		retryInitialization,
+		setPreferredScanner,
+	} = useUniversalScanner(handleBarcodeScanned)
 
-  // ** Renders products
-  const renderProducts = () => {
-    if (products.length) {
-      return products.map(item => {
-        const CartBtnTag = item.isInCart ? Link : 'button'
-        const itemQty = store.stable.find(p => p.id === item.id).qty
-        return (
-          <Card className='ecommerce-card' key={item.id}>
-            <div className='item-img text-center mx-auto'>
-              <Link to={`#`}>
-                <img className='img-fluid card-img-top' src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} />
-              </Link>
-            </div>
-            <CardBody>
-              <div className='item-wrapper'>
-                <div className='item-rating'>
-                  <h6 className='item-name'>
-                    {item.name} ({item.unitValue}{item.unit})
-                  </h6>
-                </div>
-                <div className='item-cost'>
-                  <h6 className='item-price'>{item.price.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
-                </div>
-              </div>
-              <CardText className='item-description d-flex flex-row'>
-                <span className='mr-auto'>{(Number(itemQty) * Number(item.price)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-                <Badge className='ml-auto' color={itemQty > 5 ? 'light-success' : 'light-danger'}>{itemQty} {itemQty > 5 ? 'Available' : 'Left'}</Badge>
-              </CardText>
-            </CardBody>
-            <div className='item-options text-center'>
-              <Button
-                color='primary'
-                tag={CartBtnTag}
-                className='btn-cart move-cart'
-                onClick={() => handleCartBtn(item.id, item.isInCart)}
-                {...(item.isInCart ? { to: '/apps/ecommerce/checkout'} : {})}
-              >
-                <ShoppingCart className='mr-50' size={14} />
-                <span>{item.isInCart ? 'View In Cart' : 'Add To Cart'}</span>
-              </Button>
-            </div>
-          </Card>
-        )
-      })
-    }
-  }
+	// ** Handle Move/Add to cart
+	const handleCartBtn = (id, val) => {
+		if (val === false) {
+			dispatch(addToCart(id))
+		}
+		dispatch(getCartItems())
+		dispatch(getProducts(store.params))
+	}
 
-  return (
-    <>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-      {isConnected && (
-        <div className='scanner-status mb-1'>
-          <Badge color='success'>Scanner Connected</Badge>
-        </div>
-      )}
-      <div
-        className={classnames({
-          'grid-view': activeView === 'grid',
-          'list-view': activeView === 'list'
-        })}
-      >
-        {renderProducts()}
-      </div>
-    </>
-  )
+	// ** Handle Wishlist item toggle
+	const handleWishlistClick = (id, val) => {
+		if (val) {
+			dispatch(deleteWishlistItem(id))
+		} else {
+			dispatch(addToWishlist(id))
+		}
+		dispatch(getProducts(store.params))
+	}
+
+	// ** Renders products
+	const renderProducts = () => {
+		if (products.length) {
+			return products.map((item) => {
+				const CartBtnTag = item.isInCart ? Link : 'button'
+				const itemQty = store.stable.find((p) => p.id === item.id).qty
+				return (
+					<Card className="ecommerce-card" key={item.id}>
+						<div className="item-img text-center mx-auto">
+							<Link to={`#`}>
+								<img
+									className="img-fluid card-img-top"
+									src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`}
+									alt={item.name}
+								/>
+							</Link>
+						</div>
+						<CardBody>
+							<div className="item-wrapper">
+								<div className="item-rating">
+									<h6 className="item-name">
+										{item.name} ({item.unitValue}
+										{item.unit})
+									</h6>
+								</div>
+								<div className="item-cost">
+									<h6 className="item-price">{Number(item.price).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</h6>
+								</div>
+							</div>
+							<CardText className="item-description d-flex flex-row">
+								<span className="mr-auto">
+									{(Number(itemQty) * Number(item.price)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
+								</span>
+								<Badge className="ml-auto" color={itemQty > 5 ? 'light-success' : 'light-danger'}>
+									{itemQty} {itemQty > 5 ? 'Available' : 'Left'}
+								</Badge>
+							</CardText>
+						</CardBody>
+						<div className="item-options text-center">
+							<Button
+								color="primary"
+								tag={CartBtnTag}
+								className="btn-cart move-cart"
+								onClick={() => handleCartBtn(item.id, item.isInCart)}
+								{...(item.isInCart ? { to: '/apps/ecommerce/checkout' } : {})}
+							>
+								<ShoppingCart className="mr-50" size={14} />
+								<span>{item.isInCart ? 'View In Cart' : 'Add To Cart'}</span>
+							</Button>
+						</div>
+					</Card>
+				)
+			})
+		}
+	}
+
+	return (
+		<>
+			<ToastContainer
+				position="top-right"
+				autoClose={3000}
+				hideProgressBar={false}
+				newestOnTop
+				closeOnClick
+				rtl={false}
+				pauseOnFocusLoss
+				draggable
+				pauseOnHover
+			/>
+			{/* Enhanced Scanner Status Display */}
+			<div className="scanner-status mb-2">
+				<div className="d-flex align-items-center flex-wrap">
+					{isInitializing && (
+						<Badge color="info" className="mr-2 mb-1">
+							<Spinner size="sm" className="mr-1" />
+							Initializing...
+						</Badge>
+					)}
+					{isConnected && !isInitializing && (
+						<Badge color="success" className="mr-2 mb-1">
+							<CheckCircle size={12} className="mr-1" />
+							{scannerCount > 1 ? `${scannerCount} Scanners Ready` : 'Scanner Ready'}
+						</Badge>
+					)}
+					{!isConnected && !isInitializing && (
+						<Badge color="secondary" className="mr-2 mb-1">
+							<AlertCircle size={12} className="mr-1" />
+							No Scanners
+						</Badge>
+					)}
+					{isScanning && (
+						<Badge color="warning" className="mr-2 mb-1">
+							<Camera size={12} className="mr-1" />
+							Scanning Active
+						</Badge>
+					)}
+					{bestScanner && isConnected && !isInitializing && (
+						<Badge color="light-info" className="mr-2 mb-1">
+							Using:{' '}
+							{bestScanner === 'socketMobile'
+								? 'Socket Mobile'
+								: bestScanner === 'keyboardWedge'
+								? 'USB Scanner'
+								: bestScanner === 'browserAPI'
+								? 'Camera'
+								: bestScanner}
+						</Badge>
+					)}
+				</div>
+				{statusSummary && <small className="text-muted d-block mt-1">{statusSummary}</small>}
+			</div>
+			<div
+				className={classnames({
+					'grid-view': activeView === 'grid',
+					'list-view': activeView === 'list',
+				})}
+			>
+				{renderProducts()}
+			</div>
+		</>
+	)
 }
 
 export default ProductCards
