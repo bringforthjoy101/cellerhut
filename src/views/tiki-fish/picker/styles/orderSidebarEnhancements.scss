@@ -1,0 +1,78 @@
+// OrderSidebar enhancements for tab integration
+.picker-sidebar {
+  .card {
+    display: flex;
+    flex-direction: column;
+    
+    .order-sidebar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      
+      .order-items {
+        flex: 1;
+        overflow-y: auto;
+        max-height: calc(100vh - 400px);
+        
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+        }
+        
+        &::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+      }
+      
+      .sidebar-header {
+        .order-info {
+          .unsaved-indicator {
+            color: #ff6b6b;
+            font-size: 1.2rem;
+            margin-left: 0.5rem;
+            animation: pulse 2s infinite;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive adjustments for mobile
+@media (max-width: 768px) {
+  .picker-sidebar {
+    .order-tabs {
+      padding: 0.25rem 0.5rem;
+      
+      .tabs-container .tabs-scroll {
+        gap: 0.125rem;
+      }
+    }
+    
+    .order-sidebar {
+      .order-items {
+        max-height: calc(100vh - 350px);
+      }
+    }
+  }
+}
+
+// Animation for unsaved changes
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

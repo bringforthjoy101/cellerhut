@@ -31,7 +31,7 @@ module.exports = {
 		'no-use-before-define': 'error',
 
 		// Stylistic Issues
-		'array-bracket-newline': ['error', { multiline: true, minItems: null }],
+		'array-bracket-newline': ['off', { multiline: null, minItems: null }],
 		'array-bracket-spacing': 'error',
 		'brace-style': ['error', '1tbs', { allowSingleLine: true }],
 		'block-spacing': 'error',

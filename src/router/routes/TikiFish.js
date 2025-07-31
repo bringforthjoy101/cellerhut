@@ -6,6 +6,10 @@ const userData = JSON.parse(localStorage.getItem('userData'))
 
 const ManagerRoutes = [
     {
+        path: '/picker',
+        component: lazy(() => import('../../views/tiki-fish/picker'))
+    },
+    {
         path: '/apps/ecommerce/shop',
         className: 'ecommerce-application',
         component: lazy(() => import('../../views/tiki-fish/ecommerce/shop'))
@@ -204,6 +208,10 @@ const ManagerRoutes = [
 
 const BursaryRoutes = [
   {
+    path: '/picker',
+    component: lazy(() => import('../../views/tiki-fish/picker'))
+  },
+  {
     path: '/apps/ecommerce/shop',
     className: 'ecommerce-application',
     component: lazy(() => import('../../views/tiki-fish/ecommerce/shop'))
@@ -297,6 +305,10 @@ const BursaryRoutes = [
 
 const SalesRepRoutes = [
   {
+    path: '/picker',
+    component: lazy(() => import('../../views/tiki-fish/picker'))
+  },
+  {
     path: '/apps/ecommerce/shop',
     className: 'ecommerce-application',
     component: lazy(() => import('../../views/tiki-fish/ecommerce/shop'))
@@ -382,6 +394,10 @@ const SalesRepRoutes = [
 ]
 
 const StoreRoutes = [
+  {
+    path: '/picker',
+    component: lazy(() => import('../../views/tiki-fish/picker'))
+  },
   {
     path: '/apps/ecommerce/shop',
     className: 'ecommerce-application',

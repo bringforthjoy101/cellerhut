@@ -1,0 +1,338 @@
+// Order Tabs Styles
+.order-tabs {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.5rem 1rem;
+  
+  .tabs-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    .tabs-scroll {
+      display: flex;
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      gap: 0.25rem;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e0 transparent;
+      
+      &::-webkit-scrollbar {
+        height: 4px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 2px;
+      }
+      
+      &::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+      }
+    }
+    
+    .new-tab-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      
+      &:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+        color: #495057;
+      }
+      
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+  }
+  
+  .tabs-info {
+    margin-top: 0.25rem;
+    text-align: center;
+  }
+}
+
+.order-tab {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  min-width: 200px;
+  max-width: 250px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  
+  &:hover {
+    border-color: #7367f0;
+    box-shadow: 0 2px 4px rgba(115, 103, 240, 0.1);
+  }
+  
+  &.active {
+    background: #7367f0;
+    border-color: #7367f0;
+    color: #fff;
+    
+    .tab-title {
+      color: #fff;
+      font-weight: 600;
+    }
+    
+    .tab-info {
+      color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .total-badge {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #fff !important;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .tab-close-btn,
+    .tab-menu-btn {
+      color: #fff;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+  
+  &.empty {
+    border-style: dashed;
+    opacity: 0.7;
+    
+    .tab-title {
+      font-style: italic;
+    }
+  }
+  
+  .tab-content {
+    flex: 1;
+    overflow: hidden;
+    
+    .tab-header {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-bottom: 0.125rem;
+      
+      .tab-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #495057;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+      }
+      
+      .tab-name-input {
+        font-size: 0.875rem;
+        padding: 0.125rem 0.25rem;
+        border: 1px solid #7367f0;
+        border-radius: 3px;
+        background: #fff;
+        color: #495057;
+        width: 100%;
+        min-width: 80px;
+      }
+      
+      .unsaved-indicator {
+        color: #ff6b6b;
+        font-size: 1.2rem;
+        line-height: 1;
+        animation: pulse 2s infinite;
+      }
+    }
+    
+    .tab-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #6c757d;
+      
+      .item-count {
+        white-space: nowrap;
+      }
+      
+      .total-badge {
+        font-size: 0.65rem;
+        padding: 0.125rem 0.375rem;
+        font-weight: 500;
+        background: #e9ecef;
+        color: #495057;
+        border: none;
+      }
+    }
+  }
+  
+  .tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    margin-left: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    
+    .tab-menu-btn,
+    .tab-close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      border-radius: 3px;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      
+      &:hover {
+        background: #e9ecef;
+        color: #495057;
+      }
+      
+      &:active {
+        transform: scale(0.9);
+      }
+    }
+    
+    .tab-close-btn {
+      &:hover {
+        background: #ff6b6b;
+        color: #fff;
+      }
+    }
+  }
+  
+  &:hover .tab-actions {
+    opacity: 1;
+  }
+  
+  &.active .tab-actions {
+    opacity: 1;
+  }
+}
+
+// Pulse animation for unsaved changes indicator
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .order-tab {
+    min-width: 150px;
+    max-width: 180px;
+    padding: 0.375rem 0.5rem;
+    
+    .tab-content {
+      .tab-header .tab-title {
+        font-size: 0.8rem;
+      }
+      
+      .tab-info {
+        font-size: 0.7rem;
+        
+        .total-badge {
+          font-size: 0.6rem;
+          padding: 0.1rem 0.3rem;
+        }
+      }
+    }
+    
+    .tab-actions {
+      .tab-menu-btn,
+      .tab-close-btn {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+  
+  .order-tabs .tabs-container .new-tab-btn {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+// Dark mode support (if needed)
+@media (prefers-color-scheme: dark) {
+  .order-tabs {
+    background: #2d3748;
+    border-bottom-color: #4a5568;
+    
+    .order-tab {
+      background: #1a202c;
+      border-color: #4a5568;
+      color: #e2e8f0;
+      
+      .tab-title {
+        color: #e2e8f0;
+      }
+      
+      .tab-info {
+        color: #a0aec0;
+        
+        .total-badge {
+          background: #4a5568;
+          color: #e2e8f0;
+        }
+      }
+      
+      &:hover {
+        border-color: #7367f0;
+      }
+      
+      .tab-actions {
+        .tab-menu-btn,
+        .tab-close-btn {
+          color: #a0aec0;
+          
+          &:hover {
+            background: #4a5568;
+            color: #e2e8f0;
+          }
+        }
+      }
+    }
+    
+    .new-tab-btn {
+      background: #1a202c;
+      border-color: #4a5568;
+      color: #a0aec0;
+      
+      &:hover {
+        background: #2d3748;
+        color: #e2e8f0;
+      }
+    }
+  }
+}

@@ -26,11 +26,13 @@ import email from '@src/views/apps/email/store/reducer'
 import invoice from '@src/views/invoiceApp/store/reducer'
 import calendar from '@src/views/apps/calendar/store/reducer'
 import ecommerce from '@src/views/tiki-fish/ecommerce/store/reducer'
+import picker from '@src/views/tiki-fish/picker/store/reducer'
 import dataTables from '@src/views/tables/data-tables/store/reducer'
 
 const rootReducer = combineReducers({
   auth,
   ecommerce,
+  picker,
   todo,
   chat,
   email,

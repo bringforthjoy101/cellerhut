@@ -1,13 +1,16 @@
 // ** React Imports
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 // ** Third Party Components
-import { Search, Camera, RefreshCcw, Activity } from 'react-feather'
+import { Search, Camera, RefreshCcw, Activity, CheckCircle, AlertTriangle } from 'react-feather'
 import { Row, Col, InputGroup, InputGroupAddon, Input, InputGroupText, Button } from 'reactstrap'
 
 // ** Custom Hooks
 import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
 import scannerService from '../../../../services/scannerService'
+import platformDetectionService from '../../../../services/platformDetectionService'
+import scannerTestingService from '../../../../services/scannerTestingService'
+import scannerDiagnosticsService from '../../../../services/scannerDiagnosticsService'
 
 const ProductsSearchbar = props => {
   // ** Props
@@ -15,10 +18,69 @@ const ProductsSearchbar = props => {
   
   // ** State
   const [barcodeInput, setBarcodeInput] = useState('')
+  const [isRumbaApp, setIsRumbaApp] = useState(false)
   
-  // Handle barcode scanning for cart operations
-  const handleBarcodeScanned = useCallback((barcode, scannerType) => {
-    // Find product by barcode
+  // Check if running in Rumba app on component mount
+  useEffect(() => {
+    const platformInfo = platformDetectionService.getPlatformInfo()
+    setIsRumbaApp(platformInfo.environment.app.isRumbaApp)
+    
+    if (platformInfo.environment.app.isRumbaApp) {
+      console.log('🔵 Running in Rumba app - cart integration enabled')
+      
+      // Prevent Rumba app from auto-populating search input
+      const preventRumbaAutoFill = (event) => {
+        const target = event.target
+        if (target && target.classList && target.classList.contains('search-product')) {
+          console.log('🔵 Preventing Rumba auto-fill in search field')
+          event.preventDefault()
+          event.stopPropagation()
+          target.blur() // Remove focus to prevent input
+          return false
+        }
+      }
+      
+      // Add event listeners to prevent auto-fill
+      document.addEventListener('input', preventRumbaAutoFill, true)
+      document.addEventListener('change', preventRumbaAutoFill, true)
+      document.addEventListener('keydown', preventRumbaAutoFill, true)
+      
+      // Cleanup function
+      return () => {
+        document.removeEventListener('input', preventRumbaAutoFill, true)
+        document.removeEventListener('change', preventRumbaAutoFill, true)
+        document.removeEventListener('keydown', preventRumbaAutoFill, true)
+      }
+    }
+  }, [])
+  
+  // Handle barcode scanning for cart operations with platform-specific behavior
+  const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
+    console.log(`📊 Barcode received from ${serviceName} (${scannerType}):`, barcode)
+    
+    // For Rumba app, always add to cart and prevent search field population
+    if (isRumbaApp || serviceName === 'rumbaSDK') {
+      console.log('🔵 Rumba app detected - adding to cart directly')
+      
+      // Find product by barcode
+      const product = store.products?.find(p => p.barcode === barcode) || 
+                     store.filtered?.find(p => p.barcode === barcode)
+      
+      if (product && addToCart && getCartItems) {
+        // Add product to cart
+        dispatch(addToCart(product.id))
+        dispatch(getCartItems())
+        dispatch(getProducts(store.params))
+        console.log('✅ Product added to cart via Rumba scanning')
+      } else {
+        console.warn(`❌ Product with barcode ${barcode} not found for cart addition`)
+      }
+      
+      // Prevent any search field population for Rumba app
+      return
+    }
+    
+    // For regular browser scanning, add to cart (don't populate search field)
     const product = store.products?.find(p => p.barcode === barcode) || 
                    store.filtered?.find(p => p.barcode === barcode)
     
@@ -27,10 +89,15 @@ const ProductsSearchbar = props => {
       dispatch(addToCart(product.id))
       dispatch(getCartItems())
       dispatch(getProducts(store.params))
+      console.log('✅ Product added to cart via regular scanning')
     } else {
-      console.warn(`Product with barcode ${barcode} not found for cart addition`)
+      console.warn(`❌ Product with barcode ${barcode} not found for cart addition`)
+      // As fallback, only for non-Rumba environments, put in search field
+      if (!isRumbaApp) {
+        setBarcodeInput(barcode)
+      }
     }
-  }, [dispatch, store.products, store.filtered, addToCart, getCartItems, getProducts, store.params])
+  }, [dispatch, store.products, store.filtered, addToCart, getCartItems, getProducts, store.params, isRumbaApp])
   
   // Initialize universal scanner
   const {
@@ -88,6 +155,79 @@ const ProductsSearchbar = props => {
     }
   }, [])
 
+  // Run comprehensive scanner integration tests
+  const handleRunAllTests = useCallback(async () => {
+    try {
+      console.log('🧪 Running comprehensive scanner integration tests...')
+      
+      const testResults = await scannerTestingService.runAllTests()
+      
+      const summary = testResults.summary
+      const message = `Scanner Integration Test Results:\n\n` +
+                     `✅ Passed: ${summary.passed}/${summary.totalTests}\n` +
+                     `❌ Failed: ${summary.failed}/${summary.totalTests}\n` +
+                     `📊 Success Rate: ${summary.successRate.toFixed(1)}%\n` +
+                     `⏱️ Total Time: ${summary.executionTime}ms\n\n` +
+                     `Platform: ${testResults.platformInfo.environment.app.context}\n` +
+                     `Recommended Service: ${testResults.platformInfo.recommendation.primary?.service || 'None'}`
+      
+      console.log('🧪 Full test results:', testResults)
+      alert(message)
+      
+    } catch (error) {
+      console.error('❌ Comprehensive tests failed:', error)
+      alert(`Test Suite Failed: ${error.message}\n\nCheck browser console for details.`)
+    }
+  }, [])
+
+  // Run quick smoke test
+  const handleSmokeTest = useCallback(async () => {
+    try {
+      console.log('🚀 Running smoke test...')
+      
+      const result = await scannerTestingService.runSmokeTest()
+      
+      const message = `Smoke Test ${result.passed ? 'PASSED' : 'FAILED'}:\n\n` +
+                     `📱 Platform Detection: ${result.results.platformDetection ? '✅' : '❌'}\n` +
+                     `🔧 Service Initialization: ${result.results.serviceInitialization ? '✅' : '❌'}\n` +
+                     `📊 Barcode Simulation: ${result.results.barcodeSimulation ? '✅' : '❌'}`
+      
+      console.log('🚀 Smoke test result:', result)
+      alert(message)
+      
+    } catch (error) {
+      console.error('❌ Smoke test failed:', error)
+      alert(`Smoke Test Failed: ${error.message}`)
+    }
+  }, [])
+
+  // Run diagnostics
+  const handleRunDiagnostics = useCallback(async () => {
+    try {
+      console.log('🔍 Running scanner diagnostics...')
+      
+      const diagnostics = await scannerDiagnosticsService.runFullDiagnostics()
+      
+      const issues = diagnostics.commonIssues || []
+      const highIssues = issues.filter(issue => issue.severity === 'high')
+      
+      const message = `Scanner Diagnostics Complete:\n\n` +
+                     `🌐 Platform: ${diagnostics.platform?.detected?.os} ${diagnostics.platform?.detected?.browser}\n` +
+                     `📱 Context: ${diagnostics.platform?.detected?.context}\n` +
+                     `🔧 Available APIs: ${diagnostics.platform?.scannerAPIs?.filter(api => api.available)?.length || 0}\n` +
+                     `⚠️ High Priority Issues: ${highIssues.length}\n` +
+                     `📋 Total Issues: ${issues.length}\n\n` +
+                     `Recommended Service: ${diagnostics.platform?.recommendation?.primary?.service || 'None'}`
+      
+      console.log('🔍 Full diagnostics:', diagnostics)
+      alert(message)
+      
+    } catch (error) {
+      console.error('❌ Diagnostics failed:', error)
+      alert(`Diagnostics Failed: ${error.message}`)
+    }
+  }, [])
+
   return (
     <div id='ecommerce-searchbar' className='ecommerce-searchbar'>
       <Row className='mt-1'>
@@ -135,20 +275,57 @@ const ProductsSearchbar = props => {
                   </Button>
                 )}
                 {process.env.NODE_ENV === 'development' && (
-                  <Button
-                    color='warning'
-                    onClick={handleTestSocketMobile}
-                    title='Test Socket Mobile connection'
-                    type='button'
-                  >
-                    <Activity size={14} />
-                  </Button>
+                  <>
+                    <Button
+                      color='warning'
+                      onClick={handleTestSocketMobile}
+                      title='Test Socket Mobile connection'
+                      type='button'
+                    >
+                      <Activity size={14} />
+                    </Button>
+                    <Button
+                      color='success'
+                      onClick={handleSmokeTest}
+                      title='Run quick smoke test'
+                      type='button'
+                    >
+                      <CheckCircle size={14} />
+                    </Button>
+                    <Button
+                      color='info'
+                      onClick={handleRunDiagnostics}
+                      title='Run full diagnostics'
+                      type='button'
+                    >
+                      <AlertTriangle size={14} />
+                    </Button>
+                  </>
                 )}
               </InputGroupAddon>
             </InputGroup>
           </form>
         </Col>
       </Row>
+      {process.env.NODE_ENV === 'development' && (
+        <Row className='mt-2'>
+          <Col sm='12'>
+            <div className='d-flex justify-content-center'>
+              <Button
+                color='primary'
+                onClick={handleRunAllTests}
+                className='mr-2'
+                title='Run comprehensive integration tests'
+              >
+                🧪 Run All Tests
+              </Button>
+              <small className='text-muted align-self-center'>
+                Development Testing Tools - Platform: {isRumbaApp ? 'Rumba App' : 'Regular Browser'}
+              </small>
+            </div>
+          </Col>
+        </Row>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react'
 import { toast } from 'react-toastify'
-import universalScannerService from '../services/universalScannerService'
+import unifiedScannerManager from '../services/unifiedScannerManager'
 
 export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 	const [isInitialized, setIsInitialized] = useState(false)
@@ -41,23 +41,26 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 		...options
 	}), [JSON.stringify(options)])
 
-	// Handle scanned barcode
-	const handleBarcodeScanned = useCallback((barcode, scannerType) => {
-		console.log(`📊 Barcode received from ${scannerType}:`, barcode)
+	// Handle scanned barcode - updated to handle the new unified scanner manager callback format
+	const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
+		console.log(`📊 Barcode received from ${serviceName} (${scannerType}):`, barcode)
 		setIsScanning(false)
 
 		if (onBarcodeCallbackRef.current && typeof onBarcodeCallbackRef.current === 'function') {
-			onBarcodeCallbackRef.current(barcode, scannerType)
+			// Call with the new format (serviceName, scannerType)
+			onBarcodeCallbackRef.current(barcode, serviceName, scannerType)
 			
-			// Show success toast with scanner type
-			const scannerNames = {
-				socketMobile: 'Socket Mobile',
+			// Show success toast with service and scanner type info
+			const serviceNames = {
+				rumbaSDK: 'Rumba SDK',
+				captureJS: 'Socket Mobile',
 				keyboardWedge: 'USB Scanner',
 				browserAPI: 'Camera',
 				manual: 'Manual'
 			}
 			
-			toast.success(`Barcode scanned via ${scannerNames[scannerType] || scannerType}: ${barcode}`, {
+			const displayName = serviceNames[serviceName] || serviceName
+			toast.success(`Barcode scanned via ${displayName}: ${barcode}`, {
 				position: 'top-right',
 				autoClose: 4000,
 				hideProgressBar: false
@@ -130,18 +133,22 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 
 	// Update scanner status
 	const updateStatus = useCallback(() => {
-		if (!universalScannerService.isInitialized) {
+		if (!unifiedScannerManager.isInitialized) {
 			return // Don't update status if service isn't initialized
 		}
 		
-		const status = universalScannerService.getStatus()
-		const summary = universalScannerService.getStatusSummary()
+		const status = unifiedScannerManager.getStatus()
+		const statusSummary = unifiedScannerManager.getServiceStatusSummary()
 		
 		setScannerStatus({
-			...status,
-			summary: summary.summary,
-			level: summary.level,
-			recommendations: summary.recommendations
+			activeScanners: statusSummary.initializedServices,
+			bestScanner: status.activeScannerService,
+			scannerStatus: status.serviceStatus,
+			capabilities: status.platformInfo || {},
+			summary: `${statusSummary.initializedServices.length} services ready (${status.activeScannerService})`,
+			level: statusSummary.initializedServices.length > 0 ? 'success' : 'error',
+			recommendations: statusSummary.failedServices.length > 0 ? 
+				[`Failed services: ${statusSummary.failedServices.join(', ')}`] : []
 		})
 	}, [])
 
@@ -157,7 +164,7 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 			}
 			
 			// Prevent multiple concurrent initializations at service level
-			if (universalScannerService.isInitialized) {
+			if (unifiedScannerManager.isInitialized) {
 				console.log('⚠️ useUniversalScanner: Service already initialized, skipping...')
 				hasInitializedRef.current = true
 				setIsInitialized(true)
@@ -174,19 +181,19 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 			}
 
 			try {
-				await universalScannerService.initialize(handleBarcodeScanned, memoizedOptions)
+				await unifiedScannerManager.initialize(handleBarcodeScanned, memoizedOptions)
 				
 				if (isActive) {
 					setIsInitialized(true)
 					updateStatus()
 					
-					const status = universalScannerService.getStatusSummary()
+					const statusSummary = unifiedScannerManager.getServiceStatusSummary()
 					
 					// Only show initialization notification if enabled and scanners are available
-					if (notificationSettings.showInitialization && status.activeScannerCount > 0) {
+					if (notificationSettings.showInitialization && statusSummary.initializedServices.length > 0) {
 						showSmartNotification(
 							'scanner_initialized',
-							`📱 Scanner ready: ${status.summary}`,
+							`📱 Scanner ready: ${statusSummary.initializedServices.length} services (${statusSummary.activeService})`,
 							{
 								toastType: 'success',
 								autoClose: 3000,
@@ -230,8 +237,8 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 			hasInitializedRef.current = false
 			
 			// Only cleanup if we were the ones who initialized it
-			if (universalScannerService.isInitialized) {
-				universalScannerService.cleanup()
+			if (unifiedScannerManager.isInitialized) {
+				unifiedScannerManager.cleanup()
 			}
 			
 			setIsInitialized(false)
@@ -244,7 +251,7 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 	// Stop scanning
 	const stopScanning = useCallback(() => {
 		console.log('🛑 Stopping universal scanner...')
-		universalScannerService.stopScanning()
+		unifiedScannerManager.stopScanning()
 		setIsScanning(false)
 		
 		toast.info('Scanning stopped', {
@@ -274,24 +281,25 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 		}
 
 		try {
-			const bestScanner = await universalScannerService.startScanning(scanningOptions)
+			const activeService = await unifiedScannerManager.startScanning(scanningOptions)
 			setIsScanning(true)
 			
-			const scannerNames = {
-				socketMobile: 'Socket Mobile scanner',
+			const serviceNames = {
+				rumbaSDK: 'Rumba SDK scanner',
+				captureJS: 'Socket Mobile scanner',
 				keyboardWedge: 'USB barcode scanner',
 				browserAPI: 'camera scanner',
 				manual: 'manual entry'
 			}
 			
-			toast.info(`Ready to scan with ${scannerNames[bestScanner] || bestScanner}`, {
+			toast.info(`Ready to scan with ${serviceNames[activeService] || activeService}`, {
 				position: 'top-right',
 				autoClose: 5000,
 				icon: '📷'
 			})
 
 			// Auto-stop scanning after 30 seconds for camera scanning
-			if (bestScanner === 'browserAPI') {
+			if (activeService === 'browserAPI') {
 				setTimeout(() => {
 					if (isScanning) {
 						stopScanning()
@@ -324,13 +332,13 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 		setLastError(null)
 
 		try {
-			await universalScannerService.retryFailedScanners()
+			await unifiedScannerManager.retryFailedServices()
 			updateStatus()
 			
-			const status = universalScannerService.getStatusSummary()
+			const statusSummary = unifiedScannerManager.getServiceStatusSummary()
 			showSmartNotification(
 				'scanner_retry_success',
-				`🔄 Retry successful: ${status.summary}`,
+				`🔄 Retry successful: ${statusSummary.initializedServices.length} services ready`,
 				{
 					toastType: 'success',
 					autoClose: 3000,
@@ -354,25 +362,40 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 		}
 	}, [updateStatus])
 
-	// Set preferred scanner
-	const setPreferredScanner = useCallback((scannerType) => {
-		universalScannerService.setPreferredScanner(scannerType)
-		updateStatus()
-		
-		showSmartNotification(
-			'scanner_preference_changed',
-			`🎯 Preferred scanner set to ${scannerType}`,
-			{
-				toastType: 'info',
-				autoClose: 2000,
-				toastId: 'scanner-preference'
-			}
-		)
+	// Switch to specific scanner service
+	const switchToService = useCallback(async (serviceName, options = {}) => {
+		try {
+			const activeService = await unifiedScannerManager.switchToService(serviceName, options)
+			updateStatus()
+			
+			showSmartNotification(
+				'scanner_service_switched',
+				`🔄 Switched to ${serviceName} service`,
+				{
+					toastType: 'info',
+					autoClose: 2000,
+					toastId: 'scanner-switch'
+				}
+			)
+			
+			return activeService
+		} catch (error) {
+			showSmartNotification(
+				'scanner_switch_failed',
+				`❌ Failed to switch to ${serviceName}: ${error.message}`,
+				{
+					toastType: 'error',
+					autoClose: 4000,
+					toastId: 'scanner-switch-error'
+				}
+			)
+			throw error
+		}
 	}, [updateStatus])
 
 	// Get detailed status
 	const getDetailedStatus = useCallback(() => {
-		return universalScannerService.getStatus()
+		return unifiedScannerManager.getStatus()
 	}, [])
 
 	// Return scanner interface
@@ -400,7 +423,7 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 		startScanning,
 		stopScanning,
 		retryInitialization,
-		setPreferredScanner,
+		switchToService,
 		getDetailedStatus,
 		
 		// Legacy compatibility
