@@ -17,6 +17,11 @@ class RumbaSDKService {
     this.isScanning = false
     this.scanningOptions = null
     
+    // Store Rumba instance reference
+    this.rumbaInstance = null
+    this.domain = null
+    this.configId = null
+    
     // Configuration
     this.config = {
       debugLogging: true,
@@ -27,13 +32,100 @@ class RumbaSDKService {
   }
 
   /**
+   * Resolve domain name for Rumba initialization
+   */
+  resolveDomain() {
+    try {
+      // Priority 1: Environment variable
+      if (process.env.REACT_APP_RUMBA_DOMAIN) {
+        const envDomain = process.env.REACT_APP_RUMBA_DOMAIN.trim()
+        if (this.isValidDomain(envDomain)) {
+          if (this.config.debugLogging) {
+            console.log(`✅ Using environment domain: ${envDomain}`)
+          }
+          return envDomain
+        }
+        console.warn(`⚠️ Invalid domain in environment variable: ${envDomain}`)
+        console.warn('💡 Domain must be a valid hostname (e.g., "cellerhut.com" or "localhost")')
+      }
+
+      // Priority 2: Auto-detect from current hostname
+      if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+        const hostname = window.location.hostname
+        if (this.isValidDomain(hostname)) {
+          return hostname
+        }
+      }
+
+      // Priority 3: Fallback
+      return 'localhost'
+    } catch (error) {
+      console.warn('⚠️ Error resolving domain:', error.message)
+      return 'localhost'
+    }
+  }
+
+  /**
+   * Validate domain name format
+   */
+  isValidDomain(domain) {
+    if (!domain || typeof domain !== 'string') return false
+    
+    // Trim whitespace
+    domain = domain.trim()
+    
+    // Special case for localhost
+    if (domain === 'localhost') return true
+    
+    // Check length limits
+    if (domain.length > 253) return false
+    
+    // Basic domain validation - must contain at least one dot for real domains
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
+    
+    // Additional checks
+    if (!domainRegex.test(domain)) return false
+    
+    // Ensure each label is not longer than 63 characters
+    const labels = domain.split('.')
+    for (const label of labels) {
+      if (label.length === 0 || label.length > 63) return false
+      if (label.startsWith('-') || label.endsWith('-')) return false
+    }
+    
+    return true
+  }
+
+  /**
+   * Resolve configuration change ID
+   */
+  resolveConfigId() {
+    // Use environment variable or generate a default
+    const configId = process.env.REACT_APP_RUMBA_CONFIG_ID || `cellerhut-rumba-${Date.now()}`
+    
+    if (this.config.debugLogging) {
+      if (process.env.REACT_APP_RUMBA_CONFIG_ID) {
+        console.log(`✅ Using environment config ID: ${configId}`)
+      } else {
+        console.log(`⚠️ No REACT_APP_RUMBA_CONFIG_ID found, generated: ${configId}`)
+        console.log('💡 Consider setting REACT_APP_RUMBA_CONFIG_ID for consistent configuration')
+      }
+    }
+    
+    return configId
+  }
+
+  /**
    * Check if Rumba JavaScript API is available
    * This indicates we're running in the Rumba app environment
    */
   isRumbaAPIAvailable() {
     try {
-      // Check for Rumba JavaScript API objects
-      const hasRumbaAPI = typeof window !== 'undefined' && (
+      // Check for Rumba constructor (new API)
+      const hasRumbaConstructor = typeof window !== 'undefined' && window.Rumba && typeof window.Rumba === 'function'
+      
+      // Check for legacy instances/objects
+      const hasLegacyRumbaAPI = typeof window !== 'undefined' && (
         window.RumbaJS || 
         window.rumbaJS ||
         window.socketmobile ||
@@ -46,9 +138,13 @@ class RumbaSDKService {
         ))
       )
       
+      const hasAnyRumbaAPI = hasRumbaConstructor || hasLegacyRumbaAPI
+      
       if (this.config.debugLogging) {
         console.log('🔍 Rumba API availability check:', {
-          hasRumbaAPI,
+          hasRumbaConstructor,
+          hasLegacyRumbaAPI,
+          hasAnyRumbaAPI,
           hasWebkit: !!window.webkit,
           hasMessageHandlers: !!(window.webkit && window.webkit.messageHandlers),
           userAgent: navigator.userAgent,
@@ -56,7 +152,7 @@ class RumbaSDKService {
         })
       }
       
-      return hasRumbaAPI
+      return hasAnyRumbaAPI
     } catch (error) {
       if (this.config.debugLogging) {
         console.log('⚠️ Error checking Rumba API availability:', error.message)
@@ -133,19 +229,46 @@ class RumbaSDKService {
     } catch (error) {
       const errorMessage = `Rumba SDK initialization failed: ${error.message}`
       
+      // Enhanced error diagnostics
+      const diagnostics = {
+        attempt: this.initializationAttempts,
+        error: {
+          message: error.message,
+          type: error.constructor.name,
+          stack: this.config.debugLogging ? error.stack : null
+        },
+        environment: {
+          hasRumbaConstructor: typeof window.Rumba === 'function',
+          hasRumbaJS: !!window.RumbaJS,
+          hasLegacyRumbaJS: !!window.rumbaJS,
+          hasWebkit: !!window.webkit,
+          domain: this.domain,
+          configId: this.configId
+        },
+        available: this.isAvailable,
+        canRetry: this.initializationAttempts < this.maxRetryAttempts,
+        timestamp: new Date().toISOString()
+      }
+      
       if (this.config.debugLogging) {
-        console.error('❌ Rumba SDK initialization error:', {
-          attempt: this.initializationAttempts,
-          error: error.message,
-          available: this.isAvailable,
-          canRetry: this.initializationAttempts < this.maxRetryAttempts
-        })
+        console.error('❌ Rumba SDK initialization error:', diagnostics)
+        
+        // Provide specific troubleshooting suggestions
+        if (!diagnostics.environment.hasRumbaConstructor && !diagnostics.environment.hasRumbaJS) {
+          console.error('💡 Troubleshooting: No Rumba API detected. Ensure you are running in Rumba app environment.')
+        } else if (error.message.includes('domain')) {
+          console.error('💡 Troubleshooting: Domain configuration issue. Check REACT_APP_RUMBA_DOMAIN environment variable.')
+        } else if (error.message.includes('configId') || error.message.includes('configuration')) {
+          console.error('💡 Troubleshooting: Configuration ID issue. Check REACT_APP_RUMBA_CONFIG_ID environment variable.')
+        }
       }
 
       const enhancedError = new Error(errorMessage)
       enhancedError.type = 'RUMBA_INIT_FAILED'
       enhancedError.attempt = this.initializationAttempts
       enhancedError.canRetry = this.initializationAttempts < this.maxRetryAttempts
+      enhancedError.diagnostics = diagnostics
+      enhancedError.context = 'rumbaSDK_initialization'
       
       throw enhancedError
     }
@@ -156,10 +279,10 @@ class RumbaSDKService {
    */
   async initializeRumbaAPI() {
     try {
-      // Method 1: Try direct RumbaJS API
-      if (window.RumbaJS) {
+      // Method 1: Try proper Rumba constructor or direct API
+      if (typeof window.Rumba === 'function' || window.RumbaJS) {
         if (this.config.debugLogging) {
-          console.log('🔌 Using RumbaJS direct API')
+          console.log('🔌 Using Rumba direct API (constructor or instance)')
         }
         await this.initializeDirectAPI()
         return
@@ -191,33 +314,107 @@ class RumbaSDKService {
   }
 
   /**
-   * Initialize using direct RumbaJS API
+   * Initialize using direct RumbaJS API with proper constructor
    */
   async initializeDirectAPI() {
     try {
+      // Resolve domain and config ID
+      this.domain = this.resolveDomain()
+      this.configId = this.resolveConfigId()
+
+      if (this.config.debugLogging) {
+        console.log('🔧 Initializing Rumba with parameters:', {
+          domain: this.domain,
+          configId: this.configId
+        })
+      }
+
+      // Create proper Rumba instance according to official documentation
+      if (typeof window.Rumba === 'function') {
+        // Use the proper constructor with domain and config ID
+        this.rumbaInstance = new window.Rumba(this.domain, this.configId)
+        
+        if (this.config.debugLogging) {
+          console.log('✅ Rumba instance created successfully with constructor')
+        }
+      } else if (window.RumbaJS) {
+        // Fallback to legacy API if constructor not available
+        console.warn('⚠️ Using legacy RumbaJS API - proper constructor not available')
+        this.rumbaInstance = window.RumbaJS
+      } else {
+        throw new Error('Neither Rumba constructor nor RumbaJS instance available')
+      }
+
       // Set up barcode scanning callback
-      window.RumbaJS.onBarcodeScanned = (barcodeData) => {
-        this.handleBarcodeScanned(barcodeData)
+      if (this.rumbaInstance.onBarcodeScanned !== undefined) {
+        this.rumbaInstance.onBarcodeScanned = (barcodeData) => {
+          this.handleBarcodeScanned(barcodeData)
+        }
+      } else if (this.rumbaInstance.setBarcodeCallback) {
+        this.rumbaInstance.setBarcodeCallback((barcodeData) => {
+          this.handleBarcodeScanned(barcodeData)
+        })
+      } else {
+        throw new Error('No supported barcode callback method found')
       }
 
       // Enable barcode scanning if available
-      if (window.RumbaJS.enableBarcodeScanning) {
-        await window.RumbaJS.enableBarcodeScanning(true)
+      if (this.rumbaInstance.enableBarcodeScanning) {
+        await this.rumbaInstance.enableBarcodeScanning(true)
+      } else if (this.rumbaInstance.enableScanning) {
+        await this.rumbaInstance.enableScanning(true)
       }
 
       // Get device info if available
-      if (window.RumbaJS.getDeviceInfo) {
-        this.deviceInfo = await window.RumbaJS.getDeviceInfo()
+      if (this.rumbaInstance.getDeviceInfo) {
+        this.deviceInfo = await this.rumbaInstance.getDeviceInfo()
       }
 
       if (this.config.debugLogging) {
-        console.log('✅ RumbaJS direct API initialized', {
-          deviceInfo: this.deviceInfo
+        console.log('✅ Rumba direct API initialized successfully', {
+          hasInstance: !!this.rumbaInstance,
+          domain: this.domain,
+          configId: this.configId,
+          deviceInfo: this.deviceInfo,
+          availableMethods: Object.keys(this.rumbaInstance || {}).filter(key => 
+            typeof this.rumbaInstance[key] === 'function'
+          )
         })
       }
 
     } catch (error) {
-      throw new Error(`Direct API initialization failed: ${error.message}`)
+      // Enhanced error context for direct API initialization  
+      const errorContext = {
+        method: 'initializeDirectAPI',
+        domain: this.domain,
+        configId: this.configId,
+        hasRumbaConstructor: typeof window.Rumba === 'function',
+        hasRumbaJS: !!window.RumbaJS,
+        hasInstance: !!this.rumbaInstance,
+        timestamp: new Date().toISOString()
+      }
+      
+      if (this.config.debugLogging) {
+        console.error('❌ Direct API initialization failed:', {
+          error: error.message,
+          context: errorContext
+        })
+        
+        // Specific troubleshooting for direct API failures
+        if (error.message.includes('Neither Rumba constructor nor RumbaJS')) {
+          console.error('💡 Troubleshooting: Rumba API not available. Verify you are in Rumba app environment.')
+        } else if (error.message.includes('barcode callback')) {
+          console.error('💡 Troubleshooting: Rumba instance does not support expected callback methods. API version mismatch possible.')
+        } else if (error.message.includes('domain') || error.message.includes('configId')) {
+          console.error('💡 Troubleshooting: Invalid domain or config ID parameters for Rumba constructor.')
+        }
+      }
+      
+      const enhancedError = new Error(`Direct API initialization failed: ${error.message}`)
+      enhancedError.context = errorContext
+      enhancedError.originalError = error
+      
+      throw enhancedError
     }
   }
 
@@ -329,13 +526,19 @@ class RumbaSDKService {
     this.scanningOptions = options
 
     try {
-      // Method 1: Direct API
+      // Method 1: Use our Rumba instance if available
+      if (this.rumbaInstance && this.rumbaInstance.startScanning) {
+        await this.rumbaInstance.startScanning(options)
+        return
+      }
+
+      // Method 2: Direct API fallback
       if (window.RumbaJS && window.RumbaJS.startScanning) {
         await window.RumbaJS.startScanning(options)
         return
       }
 
-      // Method 2: Webkit handlers
+      // Method 3: Webkit handlers
       if (window.webkit && window.webkit.messageHandlers) {
         const handlers = ['rumba', 'socketmobile', 'barcode']
         for (const handlerName of handlers) {
@@ -350,7 +553,7 @@ class RumbaSDKService {
         }
       }
 
-      // Method 3: Legacy API
+      // Method 4: Legacy API
       if (window.rumbaJS && window.rumbaJS.startScanning) {
         window.rumbaJS.startScanning(options)
         return
@@ -390,13 +593,19 @@ class RumbaSDKService {
     this.isScanning = false
 
     try {
-      // Method 1: Direct API
+      // Method 1: Use our Rumba instance if available
+      if (this.rumbaInstance && this.rumbaInstance.stopScanning) {
+        this.rumbaInstance.stopScanning()
+        return
+      }
+
+      // Method 2: Direct API fallback
       if (window.RumbaJS && window.RumbaJS.stopScanning) {
         window.RumbaJS.stopScanning()
         return
       }
 
-      // Method 2: Webkit handlers
+      // Method 3: Webkit handlers
       if (window.webkit && window.webkit.messageHandlers) {
         const handlers = ['rumba', 'socketmobile', 'barcode']
         for (const handlerName of handlers) {
@@ -408,7 +617,7 @@ class RumbaSDKService {
         }
       }
 
-      // Method 3: Legacy API
+      // Method 4: Legacy API
       if (window.rumbaJS && window.rumbaJS.stopScanning) {
         window.rumbaJS.stopScanning()
         return
@@ -458,12 +667,22 @@ class RumbaSDKService {
         maxAttempts: this.maxRetryAttempts
       },
       api: {
+        hasRumbaConstructor: typeof window.Rumba === 'function',
         hasRumbaJS: !!window.RumbaJS,
         hasLegacyRumbaJS: !!window.rumbaJS,
         hasWebkit: !!window.webkit,
         hasMessageHandlers: !!(window.webkit && window.webkit.messageHandlers),
         messageHandlers: window.webkit && window.webkit.messageHandlers ? 
           Object.keys(window.webkit.messageHandlers) : []
+      },
+      rumbaInstance: {
+        hasInstance: !!this.rumbaInstance,
+        domain: this.domain,
+        configId: this.configId,
+        availableMethods: this.rumbaInstance ? 
+          Object.keys(this.rumbaInstance).filter(key => 
+            typeof this.rumbaInstance[key] === 'function'
+          ) : []
       },
       device: {
         deviceInfo: this.deviceInfo,
@@ -497,6 +716,21 @@ class RumbaSDKService {
       delete window.rumbaJSCallback
     }
 
+    // Clean up Rumba instance
+    if (this.rumbaInstance) {
+      try {
+        // Try to properly cleanup the instance if it has cleanup methods
+        if (this.rumbaInstance.cleanup) {
+          this.rumbaInstance.cleanup()
+        } else if (this.rumbaInstance.destroy) {
+          this.rumbaInstance.destroy()
+        }
+      } catch (error) {
+        console.warn('⚠️ Error cleaning up Rumba instance:', error.message)
+      }
+      this.rumbaInstance = null
+    }
+
     // Reset state
     this.isInitialized = false
     this.isAvailable = false
@@ -505,6 +739,8 @@ class RumbaSDKService {
     this.deviceInfo = null
     this.initializationAttempts = 0
     this.scanningOptions = null
+    this.domain = null
+    this.configId = null
 
     if (this.config.debugLogging) {
       console.log('✅ Rumba SDK Service cleanup complete')

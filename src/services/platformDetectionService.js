@@ -147,7 +147,12 @@ class PlatformDetectionService {
    */
   isRunningInRumbaApp() {
     try {
-      // Check for Rumba-specific JavaScript API objects
+      // Check for proper Rumba constructor (new API)
+      const hasRumbaConstructor = typeof window !== 'undefined' && 
+        window.Rumba && 
+        typeof window.Rumba === 'function'
+      
+      // Check for Rumba-specific JavaScript API objects (legacy)
       const hasRumbaAPI = !!(
         window.RumbaJS || 
         window.rumbaJS ||
@@ -169,7 +174,7 @@ class PlatformDetectionService {
       const userAgent = navigator.userAgent || ''
       const hasRumbaUserAgent = /Rumba|SocketMobile/i.test(userAgent)
       
-      return hasRumbaAPI || hasRumbaWebkit || hasRumbaUserAgent
+      return hasRumbaConstructor || hasRumbaAPI || hasRumbaWebkit || hasRumbaUserAgent
     } catch (error) {
       return false
     }
@@ -268,7 +273,8 @@ class PlatformDetectionService {
    * Get Rumba API type
    */
   getRumbaAPIType() {
-    if (window.RumbaJS) return 'RumbaJS'
+    if (typeof window.Rumba === 'function') return 'Rumba (constructor)'
+    if (window.RumbaJS) return 'RumbaJS (instance)'
     if (window.rumbaJS) return 'rumbaJS (legacy)'
     if (window.webkit && window.webkit.messageHandlers) return 'webkit'
     return null
