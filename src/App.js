@@ -1,6 +1,13 @@
 // ** Router Import
 import Router from './router/Router'
 
-const App = props => <Router />
+// ** Scanner Context Provider
+import { ScannerProvider } from './contexts/ScannerContext'
+
+const App = props => (
+  <ScannerProvider>
+    <Router />
+  </ScannerProvider>
+)
 
 export default App

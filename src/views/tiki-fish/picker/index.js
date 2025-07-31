@@ -10,9 +10,10 @@ import ProductGrid from './components/ProductGrid'
 import OrderSidebar from './components/OrderSidebar'
 import OrderTabs from './components/OrderTabs'
 import FloatingActionButtons from './components/FloatingActionButtons'
+import ScannerDebugInfo from './components/ScannerDebugInfo'
 
-// ** Custom Hooks
-import { useUniversalScanner } from '../../../hooks/useUniversalScanner'
+// ** Custom Hooks and Contexts
+import { useScannerHandler, useScannerContext } from '../../../contexts/ScannerContext'
 
 // ** Store & Actions
 import { getProducts, getCategories, addToOrder } from './store/actions'
@@ -33,26 +34,31 @@ const PickerPage = () => {
 
   // ** Handle barcode scanning for adding products to order
   const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
-    console.log(`📊 Barcode scanned in Picker: ${barcode} from ${serviceName}`)
+    console.log(`🛒 Picker: Barcode scanned ${barcode} from ${serviceName}`)
     
     // Find product by barcode
     const product = products?.find(p => p.barcode === barcode)
     
     if (product) {
       dispatch(addToOrder(product))
-      console.log('✅ Product added to order via barcode scanning')
+      console.log('✅ Picker: Product added to order via barcode scanning')
     } else {
-      console.warn(`❌ Product with barcode ${barcode} not found`)
+      console.warn(`❌ Picker: Product with barcode ${barcode} not found`)
     }
   }, [dispatch, products])
 
-  // ** Initialize barcode scanner
+  // ** Register as high-priority scanner handler for picker page
+  useScannerHandler('picker', handleBarcodeScanned, 10, true)
+
+  // ** Get scanner status from context
   const {
     isConnected: scannerConnected,
     isInitializing: scannerInitializing,
     activeScanners,
-    bestScanner
-  } = useUniversalScanner(handleBarcodeScanned)
+    bestScanner,
+    activeHandlerId,
+    getHandlerStatus
+  } = useScannerContext()
 
   const scannerStatus = {
     connected: scannerConnected,
@@ -68,6 +74,15 @@ const PickerPage = () => {
     // Initialize order storage
     initializeOrderStorage()
   }, [dispatch])
+
+  // Debug: Log when picker becomes active scanner handler
+  useEffect(() => {
+    if (activeHandlerId) {
+      console.log(`📱 Active scanner handler: ${activeHandlerId}`)
+      const status = getHandlerStatus()
+      console.log('📊 Scanner handler status:', status)
+    }
+  }, [activeHandlerId, getHandlerStatus])
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed)
@@ -110,6 +125,9 @@ const PickerPage = () => {
               filterVisible={filterVisible}
             />
           </Card>
+          
+          {/* Scanner Debug Info - Development Only */}
+          <ScannerDebugInfo />
         </Col>
       </Row>
 

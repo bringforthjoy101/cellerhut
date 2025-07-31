@@ -9,7 +9,7 @@ import { DragDrop } from '@uppy/react'
 
 import { swal, apiUrl, Storage, apiRequest } from '@utils'
 import { getAllData, getFilteredData, getCategories } from '../store/action'
-import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
+import { useScannerHandler, useScannerContext } from '../../../../contexts/ScannerContext'
 
 // ** Third Party Components
 import { Button, FormGroup, Label, Spinner, CustomInput, Card, CardBody, InputGroup, InputGroupAddon, Alert, Badge } from 'reactstrap'
@@ -59,12 +59,16 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 	const [calculatedPricing, setCalculatedPricing] = useState(null)
 	const [loadingPricing, setLoadingPricing] = useState(false)
 
-	// Handle barcode scanning
-	const handleBarcodeScanned = (barcode) => {
+	// Handle barcode scanning for product creation form
+	const handleBarcodeScanned = (barcode, serviceName, scannerType) => {
+		console.log(`📝 Product Form: Barcode scanned ${barcode} from ${serviceName}`)
 		setProductData((prev) => ({ ...prev, barcode }))
 	}
 
-	// Initialize universal scanner hook
+	// Register as medium-priority scanner handler for product form
+	useScannerHandler('product-form', handleBarcodeScanned, 5, open)
+
+	// Get scanner status from context
 	const {
 		isConnected,
 		isScanning,
@@ -79,9 +83,8 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		canRetry,
 		startScanning,
 		stopScanning,
-		retryInitialization,
-		setPreferredScanner,
-	} = useUniversalScanner(handleBarcodeScanned)
+		retryInitialization
+	} = useScannerContext()
 
 	const uploadImage = async (file) => {
 		console.log('Uploading file:', file)

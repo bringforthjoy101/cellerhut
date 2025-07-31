@@ -5,8 +5,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { Search, Camera, RefreshCcw, Activity, CheckCircle, AlertTriangle } from 'react-feather'
 import { Row, Col, InputGroup, InputGroupAddon, Input, InputGroupText, Button } from 'reactstrap'
 
-// ** Custom Hooks
-import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
+// ** Custom Hooks and Contexts
+import { useScannerHandler, useScannerContext } from '../../../../contexts/ScannerContext'
 import scannerService from '../../../../services/scannerService'
 import platformDetectionService from '../../../../services/platformDetectionService'
 import scannerTestingService from '../../../../services/scannerTestingService'
@@ -56,11 +56,11 @@ const ProductsSearchbar = props => {
   
   // Handle barcode scanning for cart operations with platform-specific behavior
   const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
-    console.log(`📊 Barcode received from ${serviceName} (${scannerType}):`, barcode)
+    console.log(`🛍️ ProductsSearchbar: Barcode received from ${serviceName} (${scannerType}):`, barcode)
     
     // For Rumba app, always add to cart and prevent search field population
     if (isRumbaApp || serviceName === 'rumbaSDK') {
-      console.log('🔵 Rumba app detected - adding to cart directly')
+      console.log('🔵 ProductsSearchbar: Rumba app detected - adding to cart directly')
       
       // Find product by barcode
       const product = store.products?.find(p => p.barcode === barcode) || 
@@ -71,9 +71,9 @@ const ProductsSearchbar = props => {
         dispatch(addToCart(product.id))
         dispatch(getCartItems())
         dispatch(getProducts(store.params))
-        console.log('✅ Product added to cart via Rumba scanning')
+        console.log('✅ ProductsSearchbar: Product added to cart via Rumba scanning')
       } else {
-        console.warn(`❌ Product with barcode ${barcode} not found for cart addition`)
+        console.warn(`❌ ProductsSearchbar: Product with barcode ${barcode} not found for cart addition`)
       }
       
       // Prevent any search field population for Rumba app
@@ -89,17 +89,18 @@ const ProductsSearchbar = props => {
       dispatch(addToCart(product.id))
       dispatch(getCartItems())
       dispatch(getProducts(store.params))
-      console.log('✅ Product added to cart via regular scanning')
+      console.log('✅ ProductsSearchbar: Product added to cart via regular scanning')
     } else {
-      console.warn(`❌ Product with barcode ${barcode} not found for cart addition`)
-      // As fallback, only for non-Rumba environments, put in search field
-      if (!isRumbaApp) {
-        setBarcodeInput(barcode)
-      }
+      console.warn(`❌ ProductsSearchbar: Product with barcode ${barcode} not found for cart addition`)
+      // REMOVED: No longer populate search field as fallback - let higher priority handlers manage this
+      console.log('ℹ️ ProductsSearchbar: Deferring to higher priority scanner handlers')
     }
   }, [dispatch, store.products, store.filtered, addToCart, getCartItems, getProducts, store.params, isRumbaApp])
   
-  // Initialize universal scanner
+  // Register as lower-priority scanner handler (only active when no higher priority handlers)
+  useScannerHandler('ecommerce-shop', handleBarcodeScanned, 1, true)
+  
+  // Get scanner status from context
   const {
     isConnected,
     isInitializing,
@@ -107,8 +108,9 @@ const ProductsSearchbar = props => {
     startScanning,
     retryInitialization,
     lastError,
-    canRetry
-  } = useUniversalScanner(handleBarcodeScanned)
+    canRetry,
+    activeHandlerId
+  } = useScannerContext()
   
   // Handle manual barcode input
   const handleBarcodeInputSubmit = useCallback((e) => {

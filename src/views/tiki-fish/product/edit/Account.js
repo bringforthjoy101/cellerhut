@@ -32,7 +32,7 @@ import {
 import { AvForm, AvInput } from 'availity-reactstrap-validation-safe'
 import { getAllData, getProduct, getCategories } from '../store/action'
 import { swal, apiRequest, apiUrl, Storage } from '@utils'
-import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
+import { useScannerHandler, useScannerContext } from '../../../../contexts/ScannerContext'
 
 const UserAccountTab = ({ selectedProduct }) => {
 	const dispatch = useDispatch()
@@ -75,12 +75,16 @@ const UserAccountTab = ({ selectedProduct }) => {
 		discount_percentage: selectedProduct.discount_percentage || 0,
 	})
 
-	// Handle barcode scanning
-	const handleBarcodeScanned = (barcode) => {
+	// Handle barcode scanning for product edit form
+	const handleBarcodeScanned = (barcode, serviceName, scannerType) => {
+		console.log(`✏️ Product Edit: Barcode scanned ${barcode} from ${serviceName}`)
 		setProductData((prev) => ({ ...prev, barcode }))
 	}
 
-	// Initialize universal scanner hook
+	// Register as medium-priority scanner handler for product edit form
+	useScannerHandler('product-edit', handleBarcodeScanned, 5, true)
+
+	// Get scanner status from context
 	const {
 		isConnected,
 		isScanning,
@@ -95,9 +99,8 @@ const UserAccountTab = ({ selectedProduct }) => {
 		canRetry,
 		startScanning,
 		stopScanning,
-		retryInitialization,
-		setPreferredScanner,
-	} = useUniversalScanner(handleBarcodeScanned)
+		retryInitialization
+	} = useScannerContext()
 
 	// Composite product states
 	const [baseProducts, setBaseProducts] = useState([])

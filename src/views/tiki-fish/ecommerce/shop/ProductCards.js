@@ -9,8 +9,8 @@ import classnames from 'classnames'
 import { Star, ShoppingCart, Heart, CheckCircle, AlertCircle, Camera } from 'react-feather'
 import { Card, CardBody, CardText, Button, Badge, Spinner } from 'reactstrap'
 
-// ** Custom Hooks
-import { useUniversalScanner } from '../../../../hooks/useUniversalScanner'
+// ** Custom Hooks and Contexts
+import { useScannerHandler, useScannerContext } from '../../../../contexts/ScannerContext'
 
 const ProductCards = (props) => {
 	// ** Props
@@ -18,7 +18,9 @@ const ProductCards = (props) => {
 
 	// Handle barcode scanning for cart operations
 	const handleBarcodeScanned = useCallback(
-		(barcode, scannerType) => {
+		(barcode, serviceName, scannerType) => {
+			console.log(`🛒 ProductCards: Barcode scanned ${barcode} from ${serviceName}`)
+			
 			// Find product by barcode
 			const product = products.find((p) => p.barcode === barcode)
 
@@ -27,14 +29,18 @@ const ProductCards = (props) => {
 				dispatch(addToCart(product.id))
 				dispatch(getCartItems())
 				dispatch(getProducts(store.params))
+				console.log('✅ ProductCards: Product added to cart via barcode scanning')
 			} else {
-				console.warn(`Product with barcode ${barcode} not found`)
+				console.warn(`❌ ProductCards: Product with barcode ${barcode} not found`)
 			}
 		},
 		[dispatch, products, addToCart, getCartItems, getProducts, store.params]
 	)
 
-	// Initialize universal scanner
+	// Register as medium-priority scanner handler for product cards
+	useScannerHandler('product-cards', handleBarcodeScanned, 5, true)
+
+	// Get scanner status from context
 	const {
 		isInitialized,
 		isInitializing,
@@ -51,8 +57,8 @@ const ProductCards = (props) => {
 		startScanning,
 		stopScanning,
 		retryInitialization,
-		setPreferredScanner,
-	} = useUniversalScanner(handleBarcodeScanned)
+		activeHandlerId
+	} = useScannerContext()
 
 	// ** Handle Move/Add to cart
 	const handleCartBtn = (id, val) => {
