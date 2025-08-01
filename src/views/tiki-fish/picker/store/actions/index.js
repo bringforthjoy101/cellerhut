@@ -137,6 +137,16 @@ export const placeOrder = (orderData) => async (dispatch) => {
 	try {
 		dispatch(setPlacingOrder(true))
 
+		// Map payment method values for backend
+		const getBackendPaymentMode = (paymentMethod) => {
+			switch (paymentMethod) {
+				case 'card': return 'pos'
+				case 'mobile': return 'transfer'
+				case 'cash': return 'cash'
+				default: return paymentMethod
+			}
+		}
+
 		// Format order data to match checkout format
 		const body = JSON.stringify({
 			subTotal: orderData.subtotal,
@@ -144,7 +154,7 @@ export const placeOrder = (orderData) => async (dispatch) => {
 			amount: orderData.total,
 			location: 'Shop',
 			logistics: 0,
-			paymentMode: orderData.paymentMethod,
+			paymentMode: getBackendPaymentMode(orderData.paymentMethod),
 			products: orderData.items.map((item) => ({
 				id: item.id,
 				name: item.name,

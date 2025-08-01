@@ -126,8 +126,8 @@ const PickerPage = () => {
             />
           </Card>
           
-          {/* Scanner Debug Info - Development Only */}
-          <ScannerDebugInfo />
+          {/* Scanner Debug Info - Always available for iPad debugging */}
+          <ScannerDebugInfo showInProduction={true} />
         </Col>
       </Row>
 

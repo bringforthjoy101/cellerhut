@@ -10,6 +10,7 @@ import platformDetectionService from './platformDetectionService'
 import keyboardWedgeScanner from './keyboardWedgeScanner'
 import browserBarcodeScanner from './browserBarcodeScanner'
 import scannerDiagnosticsService from './scannerDiagnosticsService'
+import { PerformantLogger } from '../utils/performantLogger'
 
 class UnifiedScannerManager {
 	constructor() {
@@ -46,9 +47,12 @@ class UnifiedScannerManager {
 		this.errorRecoveryAttempts = 0
 		this.maxErrorRecoveryAttempts = 3
 
-		// Configuration
+		// Performance-optimized logger
+		this.logger = new PerformantLogger('UNIFIED_SCANNER')
+
+		// Configuration - optimized for performance
 		this.config = {
-			debugLogging: true,
+			debugLogging: process.env.REACT_APP_DEBUG_SCANNERS === 'true' || process.env.NODE_ENV === 'development',
 			enableAutomaticFallback: true,
 			enablePlatformOptimizedSelection: true,
 			enableErrorRecovery: true,
@@ -78,18 +82,16 @@ class UnifiedScannerManager {
 	 * Initialize the unified scanner manager
 	 */
 	async initialize(onBarcodeCallback, options = {}) {
-		if (this.config.debugLogging) {
-			console.log('🌐 Initializing Unified Scanner Manager...')
-			console.log('Initialization attempt:', ++this.initializationAttempts)
-		}
+		this.logger.info('Initializing Unified Scanner Manager...')
+		this.logger.debug('Initialization attempt:', ++this.initializationAttempts)
 
 		if (this.isInitialized) {
-			console.warn('⚠️ Unified Scanner Manager already initialized')
+			this.logger.warn('Unified Scanner Manager already initialized')
 			return
 		}
 
 		if (this.isInitializing) {
-			console.warn('⚠️ Unified Scanner Manager is currently initializing')
+			this.logger.warn('Unified Scanner Manager is currently initializing')
 			return
 		}
 
@@ -197,9 +199,7 @@ class UnifiedScannerManager {
 		}
 
 		try {
-			if (this.config.debugLogging) {
-				console.log(`🔌 Initializing ${serviceName} service...`)
-			}
+			this.logger.debug(`Initializing ${serviceName} service...`)
 
 			// Create wrapped callback that identifies the source service
 			const wrappedCallback = (barcode, scannerType) => {
@@ -244,9 +244,7 @@ class UnifiedScannerManager {
 				isPrimary,
 			}
 
-			if (this.config.debugLogging) {
-				console.log(`✅ ${serviceName} service initialized successfully`)
-			}
+			this.logger.info(`${serviceName} service initialized successfully`)
 		} catch (error) {
 			// Update service status with error
 			this.serviceStatus[serviceName] = {
@@ -256,9 +254,7 @@ class UnifiedScannerManager {
 				isPrimary,
 			}
 
-			if (this.config.debugLogging) {
-				console.error(`❌ ${serviceName} service initialization failed:`, error.message)
-			}
+			this.logger.error(`${serviceName} service initialization failed:`, error.message)
 
 			// Re-throw error for primary services, log for alternatives
 			if (isPrimary) {
@@ -328,20 +324,18 @@ class UnifiedScannerManager {
 	 * Handle barcode scanned from any service
 	 */
 	handleBarcodeScanned(barcode, serviceName, scannerType) {
-		if (this.config.debugLogging) {
-			console.log(`📊 Barcode scanned via ${serviceName}:`, {
-				barcode,
-				serviceName,
-				scannerType,
-				timestamp: new Date().toISOString(),
-			})
-		}
+		this.logger.debug(`Barcode scanned via ${serviceName}:`, {
+			barcode,
+			serviceName,
+			scannerType,
+			timestamp: new Date().toISOString(),
+		})
 
 		// Call the main callback with service information
 		if (this.onBarcodeCallback && typeof this.onBarcodeCallback === 'function') {
 			this.onBarcodeCallback(barcode, serviceName, scannerType)
 		} else {
-			console.warn('⚠️ No barcode callback registered in Unified Scanner Manager')
+			this.logger.warn('No barcode callback registered in Unified Scanner Manager')
 		}
 	}
 

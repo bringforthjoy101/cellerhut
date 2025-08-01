@@ -85,8 +85,8 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
 
   const paymentMethods = [
     { id: 'cash', name: 'Cash', icon: DollarSign },
-    { id: 'card', name: 'Card', icon: CreditCard },
-    { id: 'mobile', name: 'Mobile', icon: Smartphone }
+    { id: 'card', name: 'POS', icon: CreditCard },
+    { id: 'mobile', name: 'Bank Transfer', icon: Smartphone }
   ]
 
   if (collapsed) {

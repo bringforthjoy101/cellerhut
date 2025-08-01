@@ -4,6 +4,8 @@
  * Documentation: https://docs.socketmobile.dev/rumba/en/latest/rumbaJsApi.html
  */
 
+import { PerformantLogger } from '../utils/performantLogger'
+
 class RumbaSDKService {
 	constructor() {
 		this.isInitialized = false
@@ -22,9 +24,12 @@ class RumbaSDKService {
 		this.domain = null
 		this.configId = null
 
-		// Configuration
+		// Performance-optimized logger
+		this.logger = new PerformantLogger('RUMBA_SDK')
+
+		// Configuration - debug logging disabled by default for performance
 		this.config = {
-			debugLogging: true,
+			debugLogging: process.env.REACT_APP_DEBUG_SCANNERS === 'true' || process.env.NODE_ENV === 'development',
 			autoStartScanning: true,
 			scanTimeout: 30000, // 30 seconds timeout
 			retryDelay: 1000, // 1 second retry delay
@@ -50,13 +55,11 @@ class RumbaSDKService {
 			if (process.env.REACT_APP_RUMBA_DOMAIN) {
 				const envDomain = process.env.REACT_APP_RUMBA_DOMAIN.trim()
 				if (this.isValidDomain(envDomain)) {
-					if (this.config.debugLogging) {
-						console.log(`✅ Using environment domain: ${envDomain}`)
-					}
+					this.logger.debug(`Using environment domain: ${envDomain}`)
 					return envDomain
 				}
-				console.warn(`⚠️ Invalid domain in environment variable: ${envDomain}`)
-				console.warn('💡 Domain must be a valid hostname (e.g., "cellerhut.com" or "localhost")')
+				this.logger.warn(`Invalid domain in environment variable: ${envDomain}`)
+				this.logger.warn('Domain must be a valid hostname (e.g., "cellerhut.com" or "localhost")')
 			}
 
 			// Priority 2: Auto-detect from current hostname
@@ -70,7 +73,7 @@ class RumbaSDKService {
 			// Priority 3: Fallback
 			return 'localhost'
 		} catch (error) {
-			console.warn('⚠️ Error resolving domain:', error.message)
+			this.logger.warn('Error resolving domain:', error.message)
 			return 'localhost'
 		}
 	}
@@ -113,13 +116,11 @@ class RumbaSDKService {
 		// Use environment variable or generate a default
 		const configId = process.env.REACT_APP_RUMBA_CONFIG_ID || `cellerhut-rumba-${Date.now()}`
 
-		if (this.config.debugLogging) {
-			if (process.env.REACT_APP_RUMBA_CONFIG_ID) {
-				console.log(`✅ Using environment config ID: ${configId}`)
-			} else {
-				console.log(`⚠️ No REACT_APP_RUMBA_CONFIG_ID found, generated: ${configId}`)
-				console.log('💡 Consider setting REACT_APP_RUMBA_CONFIG_ID for consistent configuration')
-			}
+		if (process.env.REACT_APP_RUMBA_CONFIG_ID) {
+			this.logger.debug(`Using environment config ID: ${configId}`)
+		} else {
+			this.logger.info(`No REACT_APP_RUMBA_CONFIG_ID found, generated: ${configId}`)
+			this.logger.info('Consider setting REACT_APP_RUMBA_CONFIG_ID for consistent configuration')
 		}
 
 		return configId
@@ -195,13 +196,11 @@ class RumbaSDKService {
 	 * Initialize Rumba SDK service
 	 */
 	async initialize(onBarcodeCallback, options = {}) {
-		if (this.config.debugLogging) {
-			console.log('🌐 Initializing Rumba SDK Service...')
-			console.log('Initialization attempt:', ++this.initializationAttempts)
-		}
+		this.logger.info('Initializing Rumba SDK Service...')
+		this.logger.debug('Initialization attempt:', ++this.initializationAttempts)
 
 		if (this.isInitialized) {
-			console.warn('⚠️ Rumba SDK service already initialized')
+			this.logger.warn('Rumba SDK service already initialized')
 			return
 		}
 
@@ -281,41 +280,42 @@ class RumbaSDKService {
 	}
 
 	/**
-	 * Initialize the Rumba JavaScript API
+	 * Initialize the Rumba JavaScript API with multiple fallback strategies
 	 */
 	async initializeRumbaAPI() {
-		try {
-			// Method 1: Try proper Rumba constructor or direct API
-			if (typeof window.Rumba === 'function' || window.RumbaJS) {
-				if (this.config.debugLogging) {
-					console.log('🔌 Using Rumba direct API (constructor or instance)')
-				}
-				await this.initializeDirectAPI()
-				return
-			}
+		const fallbackStrategies = [
+			{ name: 'Rumba Constructor', method: () => this.initializeDirectAPI() },
+			{ name: 'Global RumbaJS Instance', method: () => this.initializeGlobalRumbaJS() },
+			{ name: 'WebKit Message Handlers', method: () => this.initializeWebkitHandlers() },
+			{ name: 'Legacy rumbaJS', method: () => this.initializeLegacyAPI() },
+			{ name: 'Socket Mobile Bridge', method: () => this.initializeSocketMobileBridge() },
+			{ name: 'Polling Detection', method: () => this.initializePollingDetection() },
+		]
 
-			// Method 2: Try webkit message handlers
-			if (window.webkit && window.webkit.messageHandlers) {
+		let lastError = null
+		
+		for (const strategy of fallbackStrategies) {
+			try {
 				if (this.config.debugLogging) {
-					console.log('🔌 Using webkit message handlers')
+					console.log(`🔌 Trying ${strategy.name}...`)
 				}
-				await this.initializeWebkitHandlers()
-				return
-			}
-
-			// Method 3: Try legacy rumbaJS
-			if (window.rumbaJS) {
+				
+				await strategy.method()
+				
 				if (this.config.debugLogging) {
-					console.log('🔌 Using legacy rumbaJS API')
+					console.log(`✅ ${strategy.name} successful`)
 				}
-				await this.initializeLegacyAPI()
-				return
+				return strategy.name
+			} catch (error) {
+				lastError = error
+				if (this.config.debugLogging) {
+					console.log(`❌ ${strategy.name} failed:`, error.message)
+				}
+				continue
 			}
-
-			throw new Error('No compatible Rumba API found')
-		} catch (error) {
-			throw new Error(`Rumba API initialization failed: ${error.message}`)
 		}
+
+		throw new Error(`All Rumba API initialization strategies failed. Last error: ${lastError?.message}`)
 	}
 
 	/**
@@ -495,6 +495,10 @@ class RumbaSDKService {
 	 * Initialize using legacy rumbaJS API
 	 */
 	async initializeLegacyAPI() {
+		if (!window.rumbaJS) {
+			throw new Error('Legacy rumbaJS not available')
+		}
+
 		try {
 			// Set up callback
 			window.rumbaJS.setBarcodeCallback((barcodeData) => {
@@ -512,6 +516,180 @@ class RumbaSDKService {
 		} catch (error) {
 			throw new Error(`Legacy API initialization failed: ${error.message}`)
 		}
+	}
+
+	/**
+	 * Initialize using global RumbaJS instance detection
+	 */
+	async initializeGlobalRumbaJS() {
+		if (!window.RumbaJS && typeof window.Rumba !== 'function') {
+			throw new Error('No global Rumba instances found')
+		}
+
+		try {
+			let rumbaInstance = null
+
+			// Try different global object patterns
+			if (window.RumbaJS && typeof window.RumbaJS === 'object') {
+				rumbaInstance = window.RumbaJS
+			} else if (typeof window.Rumba === 'function') {
+				// Use proper constructor with domain and config
+				this.domain = this.resolveDomain()
+				this.configId = this.resolveConfigId()
+				rumbaInstance = new window.Rumba(this.domain, this.configId)
+			}
+
+			if (!rumbaInstance) {
+				throw new Error('Failed to create Rumba instance')
+			}
+
+			this.rumbaInstance = rumbaInstance
+
+			// Set up callback
+			if (rumbaInstance.onBarcodeScanned !== undefined) {
+				rumbaInstance.onBarcodeScanned = (barcodeData) => {
+					this.handleBarcodeScanned(barcodeData)
+				}
+			} else if (rumbaInstance.setBarcodeCallback) {
+				rumbaInstance.setBarcodeCallback((barcodeData) => {
+					this.handleBarcodeScanned(barcodeData)
+				})
+			} else {
+				throw new Error('No supported callback method on global RumbaJS instance')
+			}
+
+			// Enable scanning
+			if (rumbaInstance.enableBarcodeScanning) {
+				await rumbaInstance.enableBarcodeScanning(true)
+			} else if (rumbaInstance.enableScanning) {
+				await rumbaInstance.enableScanning(true)
+			}
+
+			if (this.config.debugLogging) {
+				console.log('✅ Global RumbaJS instance initialized')
+			}
+		} catch (error) {
+			throw new Error(`Global RumbaJS initialization failed: ${error.message}`)
+		}
+	}
+
+	/**
+	 * Initialize using Socket Mobile bridge detection
+	 */
+	async initializeSocketMobileBridge() {
+		// Check for various Socket Mobile bridge patterns
+		const bridgePatterns = [
+			'SocketMobile',
+			'socketMobile', 
+			'SOCKETMOBILE',
+			'SMBridge',
+			'CaptureSDK'
+		]
+
+		let bridgeObject = null
+		let bridgeName = null
+
+		for (const pattern of bridgePatterns) {
+			if (window[pattern]) {
+				bridgeObject = window[pattern]
+				bridgeName = pattern
+				break
+			}
+		}
+
+		if (!bridgeObject) {
+			throw new Error('No Socket Mobile bridge found')
+		}
+
+		try {
+			if (this.config.debugLogging) {
+				console.log(`Found Socket Mobile bridge: ${bridgeName}`)
+			}
+
+			// Try to initialize through the bridge
+			if (bridgeObject.initialize) {
+				await bridgeObject.initialize({
+					onBarcode: (barcodeData) => {
+						this.handleBarcodeScanned(barcodeData)
+					}
+				})
+			} else if (bridgeObject.setBarcodeCallback) {
+				bridgeObject.setBarcodeCallback((barcodeData) => {
+					this.handleBarcodeScanned(barcodeData)
+				})
+			} else {
+				throw new Error(`Bridge ${bridgeName} has no supported initialization method`)
+			}
+
+			this.rumbaInstance = bridgeObject
+
+			if (this.config.debugLogging) {
+				console.log(`✅ Socket Mobile bridge ${bridgeName} initialized`)
+			}
+		} catch (error) {
+			throw new Error(`Socket Mobile bridge initialization failed: ${error.message}`)
+		}
+	}
+
+	/**
+	 * Initialize using polling detection for late-loading APIs
+	 */
+	async initializePollingDetection() {
+		const maxAttempts = 10
+		const pollInterval = 500 // 500ms
+		let attempts = 0
+
+		if (this.config.debugLogging) {
+			console.log('Starting polling detection for late-loading Rumba APIs...')
+		}
+
+		return new Promise((resolve, reject) => {
+			const pollForAPI = () => {
+				attempts++
+
+				// Check for APIs that might load after page load
+				const apiChecks = [
+					() => window.Rumba && typeof window.Rumba === 'function',
+					() => window.RumbaJS,
+					() => window.rumbaJS,
+					() => window.webkit && window.webkit.messageHandlers && 
+					      (window.webkit.messageHandlers.rumba || window.webkit.messageHandlers.socketmobile)
+				]
+
+				for (let i = 0; i < apiChecks.length; i++) {
+					try {
+						if (apiChecks[i]()) {
+							if (this.config.debugLogging) {
+								console.log(`✅ Polling detected API after ${attempts} attempts`)
+							}
+							
+							// Try to initialize with the detected API
+							this.initializeDirectAPI()
+								.then(() => resolve('Polling Detection'))
+								.catch((error) => {
+									if (attempts >= maxAttempts) {
+										reject(new Error(`Polling detection failed after ${maxAttempts} attempts: ${error.message}`))
+									} else {
+										setTimeout(pollForAPI, pollInterval)
+									}
+								})
+							return
+						}
+					} catch (error) {
+						// Continue to next check
+						continue
+					}
+				}
+
+				if (attempts >= maxAttempts) {
+					reject(new Error(`Polling detection timeout after ${maxAttempts} attempts`))
+				} else {
+					setTimeout(pollForAPI, pollInterval)
+				}
+			}
+
+			pollForAPI()
+		})
 	}
 
 	/**
@@ -866,6 +1044,58 @@ class RumbaSDKService {
 		if (this.config.debugLogging) {
 			console.log('🔄 Callback statistics reset')
 		}
+	}
+
+	/**
+	 * Test individual initialization strategies for debugging
+	 */
+	async testInitializationStrategy(strategyName) {
+		const strategies = {
+			'Rumba Constructor': () => this.initializeDirectAPI(),
+			'Global RumbaJS Instance': () => this.initializeGlobalRumbaJS(),
+			'WebKit Message Handlers': () => this.initializeWebkitHandlers(),
+			'Legacy rumbaJS': () => this.initializeLegacyAPI(),
+			'Socket Mobile Bridge': () => this.initializeSocketMobileBridge(),
+			'Polling Detection': () => this.initializePollingDetection(),
+		}
+
+		if (!strategies[strategyName]) {
+			throw new Error(`Unknown strategy: ${strategyName}`)
+		}
+
+		if (this.config.debugLogging) {
+			console.log(`🧪 Testing strategy: ${strategyName}`)
+		}
+
+		try {
+			await strategies[strategyName]()
+			return {
+				success: true,
+				strategy: strategyName,
+				message: `${strategyName} initialization successful`
+			}
+		} catch (error) {
+			return {
+				success: false,
+				strategy: strategyName,
+				error: error.message,
+				message: `${strategyName} initialization failed: ${error.message}`
+			}
+		}
+	}
+
+	/**
+	 * Get available initialization strategies
+	 */
+	getAvailableStrategies() {
+		return [
+			'Rumba Constructor',
+			'Global RumbaJS Instance', 
+			'WebKit Message Handlers',
+			'Legacy rumbaJS',
+			'Socket Mobile Bridge',
+			'Polling Detection'
+		]
 	}
 
 	/**

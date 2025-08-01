@@ -19,6 +19,15 @@ const PrintReceipt = ({
     return parseFloat(price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
   }
 
+  const getPaymentMethodDisplay = (paymentMethod) => {
+    switch (paymentMethod?.toLowerCase()) {
+      case 'card': return 'POS'
+      case 'mobile': return 'BANK TRANSFER'
+      case 'cash': return 'CASH'
+      default: return (paymentMethod || 'CASH').toUpperCase()
+    }
+  }
+
   const generatePrintHTML = () => {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}')
     
@@ -171,7 +180,7 @@ const PrintReceipt = ({
               </div>
               <div class="info-row">
                 <span class="info-label">Payment:</span>
-                <span>${orderData?.paymentMethod?.toUpperCase() || 'CASH'}</span>
+                <span>${getPaymentMethodDisplay(orderData?.paymentMethod)}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Status:</span>
@@ -298,7 +307,7 @@ const PrintReceipt = ({
             </div>
             <div className="d-flex justify-content-between py-1">
               <span><strong>Payment:</strong></span>
-              <span>{orderData?.paymentMethod?.toUpperCase() || 'CASH'}</span>
+              <span>{getPaymentMethodDisplay(orderData?.paymentMethod)}</span>
             </div>
             <div className="d-flex justify-content-between py-1">
               <span><strong>Status:</strong></span>
