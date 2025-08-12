@@ -1,5 +1,5 @@
 // ** React Import
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // ** Custom Components
 import Sidebar from '@components/sidebar'
@@ -10,9 +10,9 @@ import { Check, X } from 'react-feather'
 
 // ** Store & Actions
 import { useDispatch } from 'react-redux'
-import { createSupplier } from '../store/action'
+import { createSupplier, updateSupplier } from '../store/action'
 
-const SidebarNewSupplier = ({ open, toggleSidebar }) => {
+const SidebarNewSupplier = ({ open, toggleSidebar, selectedSupplier }) => {
 	// ** State
 	const [data, setData] = useState({
 		name: '',
@@ -21,32 +21,12 @@ const SidebarNewSupplier = ({ open, toggleSidebar }) => {
 		address: '',
 		accountNumber: '',
 		bankName: '',
-		accountName: ''
+		accountName: '',
+		status: 'active'
 	})
 
 	// ** Store Vars
 	const dispatch = useDispatch()
-
-	// ** Function to handle form submit
-	const onSubmit = async (e) => {
-		e.preventDefault()
-		
-		if (data.name && data.email && data.phone) {
-			const result = await dispatch(createSupplier(data))
-			if (result.status) {
-				toggleSidebar()
-				setData({
-					name: '',
-					email: '',
-					phone: '',
-					address: '',
-					accountNumber: '',
-					bankName: '',
-					accountName: ''
-				})
-			}
-		}
-	}
 
 	// ** Function to handle form reset
 	const handleReset = () => {
@@ -57,15 +37,51 @@ const SidebarNewSupplier = ({ open, toggleSidebar }) => {
 			address: '',
 			accountNumber: '',
 			bankName: '',
-			accountName: ''
+			accountName: '',
+			status: 'active'
 		})
+	}
+
+	// ** Set data if editing
+	useEffect(() => {
+		if (selectedSupplier) {
+			setData({
+				name: selectedSupplier.name || '',
+				email: selectedSupplier.email || '',
+				phone: selectedSupplier.phone || '',
+				address: selectedSupplier.address || '',
+				accountNumber: selectedSupplier.accountNumber || '',
+				bankName: selectedSupplier.bankName || '',
+				accountName: selectedSupplier.accountName || '',
+				status: selectedSupplier.status || 'active'
+			})
+		}
+	}, [selectedSupplier])
+
+	// ** Function to handle form submit
+	const onSubmit = async (e) => {
+		e.preventDefault()
+		
+		if (data.name && data.email && data.phone) {
+			let result
+			if (selectedSupplier) {
+				result = await dispatch(updateSupplier(selectedSupplier.id, data))
+			} else {
+				result = await dispatch(createSupplier(data))
+			}
+			
+			if (result && result.status) {
+				toggleSidebar()
+				handleReset()
+			}
+		}
 	}
 
 	return (
 		<Sidebar
 			size="lg"
 			open={open}
-			title="New Supplier"
+			title={selectedSupplier ? "Edit Supplier" : "New Supplier"}
 			headerClassName="mb-1"
 			contentClassName="pt-0"
 			toggleSidebar={toggleSidebar}
@@ -153,8 +169,23 @@ const SidebarNewSupplier = ({ open, toggleSidebar }) => {
 						onChange={(e) => setData({ ...data, accountNumber: e.target.value })}
 					/>
 				</FormGroup>
+				{selectedSupplier && (
+					<FormGroup>
+						<Label for="status">Status</Label>
+						<Input
+							type="select"
+							name="status"
+							id="status"
+							value={data.status}
+							onChange={(e) => setData({ ...data, status: e.target.value })}
+						>
+							<option value="active">Active</option>
+							<option value="inactive">Inactive</option>
+						</Input>
+					</FormGroup>
+				)}
 				<Button type="submit" className="mr-1" color="primary">
-					Add
+					{selectedSupplier ? 'Update' : 'Add'}
 				</Button>
 				<Button type="reset" color="secondary" outline onClick={handleReset}>
 					Reset

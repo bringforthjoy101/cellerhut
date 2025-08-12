@@ -128,7 +128,7 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 								<DollarSign className="font-medium-2" />
 							</Badge>
 							<div className="ms-75">
-								<h4 className="mb-0">${parseFloat(selectedSupply.totalAmount || 0).toFixed(2)}</h4>
+								<h4 className="mb-0">R{parseFloat(selectedSupply.totalAmount || 0).toFixed(2)}</h4>
 								<small>Total Amount</small>
 							</div>
 						</div>
@@ -139,12 +139,19 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 							<ul className="list-unstyled">
 								<li className="mb-75">
 									<span className="fw-bolder me-25">Supply Number:</span>
-									<span>{selectedSupply.supplyNumber}</span>
+									<span className="text-capitalize">{selectedSupply.supplyNumber}</span>
 								</li>
 								<li className="mb-75">
 									<span className="fw-bolder me-25">Supply Date:</span>
-									<span>{new Date(selectedSupply.supplyDate).toLocaleDateString()}</span>
+									<span>{new Date(selectedSupply.supplyDate).toLocaleDateString('en-ZA')}</span>
 								</li>
+								<li className="mb-75">
+									<span className="fw-bolder me-25">Status:</span>
+									<Badge className="text-capitalize" color={selectedSupply.status === 'approved' ? 'light-success' : selectedSupply.status === 'rejected' ? 'light-danger' : 'light-warning'}>
+										{selectedSupply.status}
+									</Badge>
+								</li>
+								<hr className="my-1" />
 								<li className="mb-75">
 									<span className="fw-bolder me-25">Supplier:</span>
 									<Link to={`/supplier/view/${selectedSupply.supplier?.id}`} className="text-primary">
@@ -156,14 +163,38 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 									<span>{selectedSupply.supplier?.email || '-'}</span>
 								</li>
 								<li className="mb-75">
-									<span className="fw-bolder me-25">Status:</span>
-									<Badge className="text-capitalize" color={selectedSupply.status === 'approved' ? 'light-success' : selectedSupply.status === 'rejected' ? 'light-danger' : 'light-warning'}>
-										{selectedSupply.status}
-									</Badge>
+									<span className="fw-bolder me-25">Phone:</span>
+									<span>{selectedSupply.supplier?.phone || '-'}</span>
 								</li>
 								<li className="mb-75">
+									<span className="fw-bolder me-25">Address:</span>
+									<span className="text-wrap">{selectedSupply.supplier?.address || '-'}</span>
+								</li>
+								{selectedSupply.supplier?.bankName && (
+									<>
+										<hr className="my-1" />
+										<li className="mb-75">
+											<span className="fw-bolder me-25">Bank:</span>
+											<span>{selectedSupply.supplier.bankName}</span>
+										</li>
+										<li className="mb-75">
+											<span className="fw-bolder me-25">Account Name:</span>
+											<span>{selectedSupply.supplier.accountName || '-'}</span>
+										</li>
+										<li className="mb-75">
+											<span className="fw-bolder me-25">Account Number:</span>
+											<span>{selectedSupply.supplier.accountNumber || '-'}</span>
+										</li>
+									</>
+								)}
+								<hr className="my-1" />
+								<li className="mb-75">
 									<span className="fw-bolder me-25">Created By:</span>
-									<span>{selectedSupply.admin?.name || 'Unknown'}</span>
+									<span>
+										{selectedSupply.CreatedBy 
+											? `${selectedSupply.CreatedBy.firstName} ${selectedSupply.CreatedBy.lastName}`
+											: 'Unknown'}
+									</span>
 								</li>
 								{selectedSupply.approvedAt && (
 									<li className="mb-75">
@@ -171,10 +202,12 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 										<span>{new Date(selectedSupply.approvedAt).toLocaleString()}</span>
 									</li>
 								)}
-								{selectedSupply.approvedBy && (
+								{selectedSupply.ApprovedBy && (
 									<li className="mb-75">
 										<span className="fw-bolder me-25">Approved By:</span>
-										<span>{selectedSupply.approver?.name || 'Unknown'}</span>
+										<span>
+											{`${selectedSupply.ApprovedBy.firstName} ${selectedSupply.ApprovedBy.lastName}`}
+										</span>
 									</li>
 								)}
 							</ul>

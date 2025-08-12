@@ -1,8 +1,8 @@
 // ** React Imports
 import { Fragment, useState, useEffect } from 'react'
 
-// ** Invoice List Sidebar
-import Sidebar from './Sidebar'
+// ** Supplier List Modal
+import SupplierModal from './SupplierModal'
 
 // ** Columns
 import { columns } from './columns'
@@ -280,7 +280,7 @@ const SuppliersList = () => {
 				</CardBody>
 			</Card>
 
-			<Sidebar open={sidebarOpen} toggleSidebar={toggleSidebar} />
+			<SupplierModal open={sidebarOpen} toggleSidebar={toggleSidebar} />
 		</Fragment>
 	)
 }

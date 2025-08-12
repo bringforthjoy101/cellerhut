@@ -2,10 +2,13 @@
 import { Fragment } from 'react'
 
 // ** Reactstrap Imports
-import { Card, CardBody, CardHeader, CardTitle, Table, Badge } from 'reactstrap'
+import { Card, CardBody, CardHeader, CardTitle, Table, Badge, Row, Col } from 'reactstrap'
 
 // ** Icons Imports
 import { Package, DollarSign } from 'react-feather'
+
+// ** Currency Utils
+import { formatRandWithSeparator } from '../../shared/currencyUtils'
 
 const SupplyItems = ({ selectedSupply }) => {
 	// ** Calculate totals
@@ -33,60 +36,70 @@ const SupplyItems = ({ selectedSupply }) => {
 				<CardBody>
 					{selectedSupply?.supply_items && selectedSupply.supply_items.length > 0 ? (
 						<>
-							<Table responsive>
-								<thead>
-									<tr>
-										<th>Product</th>
-										<th className='text-center'>Quantity</th>
-										<th className='text-end'>Unit Price</th>
-										<th className='text-center'>VAT Rate</th>
-										<th className='text-end'>Net Amount</th>
-										<th className='text-end'>VAT Amount</th>
-										<th className='text-end'>Total Amount</th>
-									</tr>
-								</thead>
-								<tbody>
-									{selectedSupply.supply_items.map((item, index) => (
-										<tr key={index}>
-											<td>
-												<div className='d-flex flex-column'>
-													<span className='fw-bolder'>{item.product?.name || 'Unknown Product'}</span>
-													<small className='text-muted'>{item.product?.code || '-'}</small>
-												</div>
-											</td>
-											<td className='text-center'>
-												<Badge color='light-primary' pill>
-													{item.quantity}
-												</Badge>
-											</td>
-											<td className='text-end'>${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
-											<td className='text-center'>{parseFloat(item.vatRate || 0).toFixed(1)}%</td>
-											<td className='text-end'>${parseFloat(item.netAmount || 0).toFixed(2)}</td>
-											<td className='text-end'>${parseFloat(item.vatAmount || 0).toFixed(2)}</td>
-											<td className='text-end fw-bolder'>${parseFloat(item.totalAmount || 0).toFixed(2)}</td>
+							<div className='table-responsive'>
+								<Table hover className='mb-0'>
+									<thead>
+										<tr>
+											<th style={{ minWidth: '200px' }}>Product</th>
+											<th className='text-center' style={{ minWidth: '80px' }}>Qty</th>
+											<th className='text-end' style={{ minWidth: '120px' }}>Unit Price</th>
+											<th className='text-center' style={{ minWidth: '80px' }}>VAT %</th>
+											<th className='text-end' style={{ minWidth: '120px' }}>Net</th>
+											<th className='text-end' style={{ minWidth: '100px' }}>VAT</th>
+											<th className='text-end' style={{ minWidth: '120px' }}>Total</th>
 										</tr>
-									))}
-								</tbody>
-							</Table>
+									</thead>
+									<tbody>
+										{selectedSupply.supply_items.map((item, index) => (
+											<tr key={index}>
+												<td>
+													<div className='d-flex flex-column'>
+														<span className='fw-bolder text-nowrap'>{item.product?.name || 'Unknown Product'}</span>
+														<small className='text-muted'>{item.product?.sku || item.product?.code || '-'}</small>
+													</div>
+												</td>
+												<td className='text-center'>
+													<Badge color='light-primary' pill>
+														{item.quantity}
+													</Badge>
+												</td>
+												<td className='text-end text-nowrap'>{formatRandWithSeparator(item.unitPrice)}</td>
+												<td className='text-center'>{parseFloat(item.vatRate || 0).toFixed(1)}%</td>
+												<td className='text-end text-nowrap'>{formatRandWithSeparator(item.netAmount)}</td>
+												<td className='text-end text-nowrap'>{formatRandWithSeparator(item.vatAmount)}</td>
+												<td className='text-end fw-bolder text-nowrap'>{formatRandWithSeparator(item.totalAmount)}</td>
+											</tr>
+										))}
+									</tbody>
+								</Table>
+							</div>
 							
 							{/* Totals Section */}
-							<hr />
-							<div className='d-flex justify-content-end'>
-								<div className='invoice-total-wrapper' style={{ minWidth: '300px' }}>
-									<div className='invoice-total-item'>
-										<p className='invoice-total-title'>Subtotal:</p>
-										<p className='invoice-total-amount'>${subtotal.toFixed(2)}</p>
-									</div>
-									<div className='invoice-total-item'>
-										<p className='invoice-total-title'>Total VAT:</p>
-										<p className='invoice-total-amount'>${totalVAT.toFixed(2)}</p>
-									</div>
-									<hr className='my-50' />
-									<div className='invoice-total-item'>
-										<p className='invoice-total-title'>Grand Total:</p>
-										<p className='invoice-total-amount fw-bolder'>${grandTotal.toFixed(2)}</p>
-									</div>
-								</div>
+							<div className='mt-3 pt-2 border-top'>
+								<Row>
+									<Col xs={12} sm={6} className='order-sm-1 order-2 mt-3 mt-sm-0'>
+										{/* Can add notes or additional info here if needed */}
+									</Col>
+									<Col xs={12} sm={6} className='order-sm-2 order-1'>
+										<div className='d-flex justify-content-sm-end'>
+											<div style={{ minWidth: '250px', maxWidth: '350px' }}>
+												<div className='d-flex justify-content-between mb-2'>
+													<span className='fw-bold'>Subtotal:</span>
+													<span className='text-end'>{formatRandWithSeparator(subtotal)}</span>
+												</div>
+												<div className='d-flex justify-content-between mb-2'>
+													<span className='fw-bold'>Total VAT:</span>
+													<span className='text-end'>{formatRandWithSeparator(totalVAT)}</span>
+												</div>
+												<hr className='my-2' />
+												<div className='d-flex justify-content-between'>
+													<h5 className='mb-0'>Grand Total:</h5>
+													<h5 className='mb-0 text-primary'>{formatRandWithSeparator(grandTotal)}</h5>
+												</div>
+											</div>
+										</div>
+									</Col>
+								</Row>
 							</div>
 						</>
 					) : (

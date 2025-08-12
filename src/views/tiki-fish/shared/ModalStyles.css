@@ -1,0 +1,47 @@
+/* Shared Modal Styles for Standard Modals */
+
+/* Modal Footer Layout */
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Divider Styles */
+.divider {
+  position: relative;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.divider:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e3e6f0;
+}
+
+.divider-text {
+  position: relative;
+  display: inline-block;
+  padding: 0 1rem;
+  background: white;
+  color: #5e72e4;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+}
+
+/* Modal Animation */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: scale(0.9);
+}
+
+.modal.show .modal-dialog {
+  transform: scale(1);
+}
+

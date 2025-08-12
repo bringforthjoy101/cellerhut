@@ -1,6 +1,9 @@
 // ** React Imports
 import { Fragment, useState, useEffect } from 'react'
 
+// ** Supply List Modal
+import SupplyModal from './SupplyModal'
+
 // ** Columns
 import { columns } from './columns'
 
@@ -14,6 +17,8 @@ import ReactPaginate from 'react-paginate'
 import { ChevronDown, Share, Printer, FileText, File, Grid, Copy, Plus } from 'react-feather'
 import DataTable from 'react-data-table-component'
 import { selectThemeColors } from '@utils'
+import * as XLSX from 'xlsx'
+import * as FileSaver from 'file-saver'
 import {
 	Row,
 	Col,
@@ -98,7 +103,7 @@ const CustomHeader = ({ store, searchTerm, handlePerPage, rowsPerPage, handleFil
 					supply.supplyNumber,
 					supply.supplier?.name || 'Unknown',
 					supply.supply_items?.length || 0,
-					`$${parseFloat(supply.totalAmount || 0).toFixed(2)}`,
+					`R${parseFloat(supply.totalAmount || 0).toFixed(2)}`,
 					supply.status,
 					supply.admin?.name || 'Unknown'
 				])
@@ -364,6 +369,7 @@ const SuppliesList = () => {
 					/>
 				</div>
 			</Card>
+			<SupplyModal open={sidebarOpen} toggleSidebar={toggleSidebar} />
 		</Fragment>
 	)
 }

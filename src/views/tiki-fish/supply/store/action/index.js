@@ -1,4 +1,4 @@
-import { apiRequest } from '@utils'
+import { apiRequest, swal } from '@utils'
 
 // ** Get all Supplies
 export const getAllData = () => {
@@ -6,14 +6,17 @@ export const getAllData = () => {
 		try {
 			const response = await apiRequest({
 				method: 'GET',
-				path: '/supplies',
+				url: '/supplies'
 			})
-			dispatch({
-				type: 'GET_ALL_SUPPLIES_DATA',
-				data: response.data,
-			})
+			if (response?.data?.status && response?.data?.data) {
+				dispatch({
+					type: 'GET_ALL_SUPPLIES_DATA',
+					data: response.data.data
+				})
+			}
 		} catch (error) {
 			console.error('Error fetching all supplies:', error)
+			swal('Oops!', 'Failed to fetch supplies', 'error')
 		}
 	}
 }
@@ -24,15 +27,17 @@ export const getFilteredData = (params) => {
 		try {
 			const response = await apiRequest({
 				method: 'GET',
-				path: '/supplies',
-				params,
+				url: '/supplies',
+				params
 			})
-			dispatch({
-				type: 'GET_FILTERED_SUPPLIES_DATA',
-				data: response.data.supplies,
-				totalPages: response.data.totalPages,
-				params,
-			})
+			if (response?.data?.status && response?.data?.data) {
+				dispatch({
+					type: 'GET_FILTERED_SUPPLIES_DATA',
+					data: response.data.data,
+					totalPages: response.data.totalPages || response.data.data.length,
+					params
+				})
+			}
 		} catch (error) {
 			console.error('Error fetching filtered supplies:', error)
 		}
@@ -45,14 +50,17 @@ export const getSupply = (id) => {
 		try {
 			const response = await apiRequest({
 				method: 'GET',
-				path: `/supplies/${id}`,
+				url: `/supplies/get-detail/${id}`
 			})
-			dispatch({
-				type: 'GET_A_SUPPLY',
-				selectedSupply: response.data,
-			})
+			if (response?.data?.status && response?.data?.data) {
+				dispatch({
+					type: 'GET_A_SUPPLY',
+					selectedSupply: response.data.data
+				})
+			}
 		} catch (error) {
 			console.error('Error fetching supply:', error)
+			swal('Oops!', 'Failed to fetch supply details', 'error')
 		}
 	}
 }
@@ -63,16 +71,22 @@ export const createSupply = (supply) => {
 		try {
 			const response = await apiRequest({
 				method: 'POST',
-				path: '/supplies',
-				data: supply,
+				url: '/supplies/create',
+				body: JSON.stringify(supply)
 			})
-			dispatch({
-				type: 'CREATE_SUPPLY',
-				data: response.data,
-			})
-			return response
+			if (response?.data?.status) {
+				dispatch({
+					type: 'CREATE_SUPPLY',
+					data: response.data.data
+				})
+				swal('Success!', response.data.message || 'Supply created successfully', 'success')
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to create supply')
+			}
 		} catch (error) {
 			console.error('Error creating supply:', error)
+			swal('Oops!', error.message || 'Failed to create supply', 'error')
 			throw error
 		}
 	}
@@ -83,36 +97,23 @@ export const updateSupply = (id, supply) => {
 	return async (dispatch) => {
 		try {
 			const response = await apiRequest({
-				method: 'PUT',
-				path: `/supplies/${id}`,
-				data: supply,
+				method: 'POST',
+				url: `/supplies/update/${id}`,
+				body: JSON.stringify(supply)
 			})
-			dispatch({
-				type: 'UPDATE_SUPPLY',
-				data: response.data,
-			})
-			return response
+			if (response?.data?.status) {
+				dispatch({
+					type: 'UPDATE_SUPPLY',
+					data: response.data.data
+				})
+				swal('Success!', response.data.message || 'Supply updated successfully', 'success')
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to update supply')
+			}
 		} catch (error) {
 			console.error('Error updating supply:', error)
-			throw error
-		}
-	}
-}
-
-// ** Delete Supply
-export const deleteSupply = (id) => {
-	return async (dispatch) => {
-		try {
-			await apiRequest({
-				method: 'DELETE',
-				path: `/supplies/${id}`,
-			})
-			dispatch({
-				type: 'DELETE_SUPPLY',
-				id,
-			})
-		} catch (error) {
-			console.error('Error deleting supply:', error)
+			swal('Oops!', error.message || 'Failed to update supply', 'error')
 			throw error
 		}
 	}
@@ -124,35 +125,177 @@ export const approveSupply = (id) => {
 		try {
 			const response = await apiRequest({
 				method: 'POST',
-				path: `/supplies/${id}/approve`,
+				url: `/supplies/${id}/approve`,
+				body: JSON.stringify({})
 			})
-			dispatch({
-				type: 'APPROVE_SUPPLY',
-				data: response.data,
-			})
-			return response
+			if (response?.data?.status) {
+				dispatch({
+					type: 'APPROVE_SUPPLY',
+					data: response.data.data
+				})
+				dispatch(getAllData())
+				swal('Success!', 'Supply approved successfully', 'success')
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to approve supply')
+			}
 		} catch (error) {
 			console.error('Error approving supply:', error)
+			swal('Oops!', error.message || 'Failed to approve supply', 'error')
 			throw error
 		}
 	}
 }
 
 // ** Reject Supply
-export const rejectSupply = (id) => {
+export const rejectSupply = (id, notes) => {
 	return async (dispatch) => {
 		try {
 			const response = await apiRequest({
 				method: 'POST',
-				path: `/supplies/${id}/reject`,
+				url: `/supplies/${id}/reject`,
+				body: JSON.stringify({ notes })
 			})
-			dispatch({
-				type: 'REJECT_SUPPLY',
-				data: response.data,
-			})
-			return response
+			if (response?.data?.status) {
+				dispatch({
+					type: 'REJECT_SUPPLY',
+					data: response.data.data
+				})
+				dispatch(getAllData())
+				swal('Success!', 'Supply rejected successfully', 'success')
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to reject supply')
+			}
 		} catch (error) {
 			console.error('Error rejecting supply:', error)
+			swal('Oops!', error.message || 'Failed to reject supply', 'error')
+			throw error
+		}
+	}
+}
+
+// ** Pay Supply
+export const paySupply = (id, paymentData) => {
+	return async (dispatch) => {
+		try {
+			const response = await apiRequest({
+				method: 'POST',
+				url: `/supplies/pay/${id}`,
+				body: JSON.stringify(paymentData)
+			})
+			if (response?.data?.status) {
+				dispatch({
+					type: 'PAY_SUPPLY',
+					data: response.data.data
+				})
+				dispatch(getAllData())
+				swal('Success!', 'Payment recorded successfully', 'success')
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to record payment')
+			}
+		} catch (error) {
+			console.error('Error recording payment:', error)
+			swal('Oops!', error.message || 'Failed to record payment', 'error')
+			throw error
+		}
+	}
+}
+
+// ** Delete Supply
+export const deleteSupply = (id) => {
+	return async (dispatch) => {
+		try {
+			const response = await apiRequest({
+				method: 'GET',
+				url: `/supplies/delete/${id}`
+			})
+			if (response?.data?.status) {
+				dispatch({
+					type: 'DELETE_SUPPLY',
+					id
+				})
+				dispatch(getAllData())
+				swal('Success!', 'Supply deleted successfully', 'success')
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to delete supply')
+			}
+		} catch (error) {
+			console.error('Error deleting supply:', error)
+			swal('Oops!', error.message || 'Failed to delete supply', 'error')
+			throw error
+		}
+	}
+}
+
+// ** Get Supply Payments
+export const getSupplyPayments = (id) => {
+	return async (dispatch) => {
+		try {
+			const response = await apiRequest({
+				method: 'GET',
+				url: `/supplies/payments/${id}`
+			})
+			if (response?.data?.status) {
+				dispatch({
+					type: 'GET_SUPPLY_PAYMENTS',
+					data: response.data.data
+				})
+				return response.data
+			}
+		} catch (error) {
+			console.error('Error fetching supply payments:', error)
+			throw error
+		}
+	}
+}
+
+// ** Delete Supply Payment
+export const deleteSupplyPayment = (supplyId, paymentId) => {
+	return async (dispatch) => {
+		try {
+			const response = await apiRequest({
+				method: 'DELETE',
+				url: `/supplies/${supplyId}/payments/${paymentId}`
+			})
+			if (response?.data?.status) {
+				dispatch({
+					type: 'DELETE_SUPPLY_PAYMENT',
+					data: { supplyId, paymentId }
+				})
+				// Refresh supply data to update payment status
+				dispatch(getSupply(supplyId))
+				return response.data
+			} else {
+				throw new Error(response?.data?.message || 'Failed to delete payment')
+			}
+		} catch (error) {
+			console.error('Error deleting payment:', error)
+			throw error
+		}
+	}
+}
+
+// ** Get Supplies Summary
+export const getSuppliesSummary = (params) => {
+	return async (dispatch) => {
+		try {
+			const response = await apiRequest({
+				method: 'GET',
+				url: '/supplies/summary',
+				params
+			})
+			if (response?.data?.status) {
+				dispatch({
+					type: 'GET_SUPPLIES_SUMMARY',
+					data: response.data.data
+				})
+				return response.data
+			}
+		} catch (error) {
+			console.error('Error fetching supplies summary:', error)
 			throw error
 		}
 	}

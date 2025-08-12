@@ -12,6 +12,8 @@ import { Row, Col, Alert } from 'reactstrap'
 // ** Supply View Components
 import SupplyInfoCard from './SupplyInfoCard'
 import SupplyItems from './SupplyItems'
+import SupplyPaymentCard from './SupplyPaymentCard'
+import SupplyPaymentHistory from './SupplyPaymentHistory'
 
 // ** Styles
 import '@styles/react/apps/app-users.scss'
@@ -32,11 +34,16 @@ const SupplyView = () => {
 	return store.selectedSupply !== null && store.selectedSupply !== undefined ? (
 		<div className="app-user-view">
 			<Row>
-				<Col xl="4" lg="5" xs={{ order: 1 }} md={{ order: 0, size: 5 }}>
+				{/* Left Column - Supply Info */}
+				<Col xl="4" lg="5" md="5" sm="12">
 					<SupplyInfoCard selectedSupply={store.selectedSupply} />
+					<SupplyPaymentCard selectedSupply={store.selectedSupply} />
 				</Col>
-				<Col xl="8" lg="7" xs={{ order: 0 }} md={{ order: 1, size: 7 }}>
+				
+				{/* Right Column - Items and Payment History */}
+				<Col xl="8" lg="7" md="7" sm="12">
 					<SupplyItems selectedSupply={store.selectedSupply} />
+					<SupplyPaymentHistory selectedSupply={store.selectedSupply} />
 				</Col>
 			</Row>
 		</div>
