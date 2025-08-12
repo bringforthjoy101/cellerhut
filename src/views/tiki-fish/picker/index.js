@@ -34,16 +34,13 @@ const PickerPage = () => {
 
   // ** Handle barcode scanning for adding products to order
   const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
-    console.log(`🛒 Picker: Barcode scanned ${barcode} from ${serviceName}`)
-    
     // Find product by barcode
     const product = products?.find(p => p.barcode === barcode)
     
     if (product) {
       dispatch(addToOrder(product))
-      console.log('✅ Picker: Product added to order via barcode scanning')
     } else {
-      console.warn(`❌ Picker: Product with barcode ${barcode} not found`)
+      console.warn(`Product with barcode ${barcode} not found`)
     }
   }, [dispatch, products])
 
@@ -75,12 +72,11 @@ const PickerPage = () => {
     initializeOrderStorage()
   }, [dispatch])
 
-  // Debug: Log when picker becomes active scanner handler
+  // Debug: Log when picker becomes active scanner handler (development only)
   useEffect(() => {
-    if (activeHandlerId) {
-      console.log(`📱 Active scanner handler: ${activeHandlerId}`)
+    if (process.env.NODE_ENV === 'development' && activeHandlerId) {
       const status = getHandlerStatus()
-      console.log('📊 Scanner handler status:', status)
+      console.log('Scanner handler status:', status)
     }
   }, [activeHandlerId, getHandlerStatus])
 

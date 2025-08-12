@@ -1,7 +1,7 @@
 /**
  * Platform Detection Service  
  * Detects the current platform and scanning environment to determine
- * which scanner service should be used (CaptureJS vs Rumba SDK)
+ * which scanner service should be used (keyboard wedge vs browser API)
  */
 
 class PlatformDetectionService {
@@ -99,14 +99,13 @@ class PlatformDetectionService {
     const isFirefox = /Firefox|FxiOS/.test(userAgent)
     const isEdge = /Edge|Edg\//.test(userAgent)
     
-    // Device Type Detection
-    const isMobile = /Mobi|Android/i.test(userAgent) || isIOS
-    const isTablet = /Tablet|iPad/.test(userAgent) || 
-                     (isIOS && window.screen.width >= 768)
-    const isDesktop = !isMobile && !isTablet
+    // Mobile Detection
+    const isMobile = /Mobile|Android|iPhone|iPad|iPod/.test(userAgent) || 
+                     navigator.maxTouchPoints > 1
+    const isTablet = /iPad|Android(?!.*Mobile)/.test(userAgent) ||
+                     (platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     
-    // App Environment Detection
-    const isRumbaApp = this.isRunningInRumbaApp()
+    // App Environment
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                         window.navigator.standalone === true
     const isWebView = this.isRunningInWebView(userAgent)
@@ -114,69 +113,32 @@ class PlatformDetectionService {
     return {
       os: {
         isIOS,
-        isAndroid, 
+        isAndroid,
         isWindows,
         isMacOS,
         isLinux,
-        name: this.getOSName(isIOS, isAndroid, isWindows, isMacOS, isLinux)
+        name: this.getOSName(isIOS, isAndroid, isWindows, isMacOS, isLinux),
+        version: this.getOSVersion(userAgent)
       },
       browser: {
         isChrome,
         isSafari,
         isFirefox,
         isEdge,
-        name: this.getBrowserName(isChrome, isSafari, isFirefox, isEdge)
+        name: this.getBrowserName(isChrome, isSafari, isFirefox, isEdge),
+        version: this.getBrowserVersion(userAgent)
       },
       device: {
         isMobile,
         isTablet,
-        isDesktop,
-        type: this.getDeviceType(isMobile, isTablet, isDesktop)
+        isDesktop: !isMobile && !isTablet,
+        hasTouchScreen: navigator.maxTouchPoints > 0 || 'ontouchstart' in window
       },
       app: {
-        isRumbaApp,
         isStandalone,
         isWebView,
-        context: this.getAppContext(isRumbaApp, isStandalone, isWebView)
+        context: this.getAppContext(isStandalone, isWebView)
       }
-    }
-  }
-
-  /**
-   * Check if running in Rumba app environment
-   */
-  isRunningInRumbaApp() {
-    try {
-      // Check for proper Rumba constructor (new API)
-      const hasRumbaConstructor = typeof window !== 'undefined' && 
-        window.Rumba && 
-        typeof window.Rumba === 'function'
-      
-      // Check for Rumba-specific JavaScript API objects (legacy)
-      const hasRumbaAPI = !!(
-        window.RumbaJS || 
-        window.rumbaJS ||
-        window.socketmobile ||
-        window.SocketMobile
-      )
-      
-      // Check for Rumba-specific webkit message handlers
-      const hasRumbaWebkit = !!(
-        window.webkit && 
-        window.webkit.messageHandlers && (
-          window.webkit.messageHandlers.rumba ||
-          window.webkit.messageHandlers.socketmobile ||  
-          window.webkit.messageHandlers.barcode
-        )
-      )
-      
-      // Check user agent for Rumba signatures
-      const userAgent = navigator.userAgent || ''
-      const hasRumbaUserAgent = /Rumba|SocketMobile/i.test(userAgent)
-      
-      return hasRumbaConstructor || hasRumbaAPI || hasRumbaWebkit || hasRumbaUserAgent
-    } catch (error) {
-      return false
     }
   }
 
@@ -184,124 +146,49 @@ class PlatformDetectionService {
    * Check if running in a WebView
    */
   isRunningInWebView(userAgent) {
-    // Common WebView indicators
-    const webViewPatterns = [
-      /wv\)/i, // Android WebView
-      /Version\/[\d.]+.*Mobile.*Safari/i, // iOS WebView (partial)
-      /FB_IAB/i, // Facebook in-app browser
-      /FBAN|FBAV/i, // Facebook app
-      /Instagram/i, // Instagram in-app browser
-      /LinkedIn/i, // LinkedIn in-app browser
-      /Twitter/i, // Twitter in-app browser
-      /Line\//i // Line app browser
-    ]
-    
-    return webViewPatterns.some(pattern => pattern.test(userAgent))
+    return /WebView|wv|Version\/[\d\.]+.*Safari/.test(userAgent) && 
+           !/Chrome|CriOS|Firefox|FxiOS|Edge|Edg/.test(userAgent)
+  }
+
+  /**
+   * Get app context
+   */
+  getAppContext(isStandalone, isWebView) {
+    if (isWebView) return 'webview'
+    if (isStandalone) return 'standalone'
+    return 'browser'
   }
 
   /**
    * Detect available scanner APIs
    */
   detectScannerAPIs() {
-    const apis = {
-      // CaptureJS (Socket Mobile Capture API)
-      captureJS: {
-        available: this.isCaptureJSAvailable(),
-        version: this.getCaptureJSVersion(),
-        companionServiceRunning: null // Will be checked later
+    return {
+      // Keyboard Wedge (always available as it uses keyboard events)
+      keyboardWedge: {
+        available: true,
+        ready: true,
+        description: 'USB/Bluetooth scanners in keyboard emulation mode'
       },
       
-      // Rumba SDK  
-      rumbaSDK: {
-        available: this.isRumbaSDKAvailable(),
-        apiType: this.getRumbaAPIType(),
-        messageHandlers: this.getRumbaMessageHandlers()
-      },
-      
-      // Browser native barcode detection
+      // Browser Barcode Detection API
       browserAPI: {
-        available: this.isBrowserBarcodeAPIAvailable(),
-        support: this.getBrowserBarcodeSupport()
+        available: this.isBarcodeDetectorAvailable(),
+        supported: this.getSupportedBarcodeFormats()
       },
       
-      // Camera access for scanning
-      camera: {
-        available: this.isCameraAvailable(),
-        permissions: null // Will be checked on demand
+      // Camera API (for fallback scanning)
+      cameraAPI: {
+        available: this.isCameraAPIAvailable(),
+        permissions: this.getCameraPermissionState()
       }
     }
-    
-    return apis
   }
 
   /**
-   * Check CaptureJS API availability
+   * Check if Barcode Detector API is available
    */
-  isCaptureJSAvailable() {
-    try {
-      return typeof window !== 'undefined' && !!(
-        window.Capture || 
-        (window.socketmobile && window.socketmobile.Capture)
-      )
-    } catch (error) {
-      return false
-    }
-  }
-
-  /**
-   * Get CaptureJS version if available
-   */
-  getCaptureJSVersion() {
-    try {
-      if (window.Capture && window.Capture.version) {
-        return window.Capture.version
-      }
-      return null
-    } catch (error) {
-      return null
-    }
-  }
-
-  /**
-   * Check Rumba SDK availability
-   */
-  isRumbaSDKAvailable() {
-    return this.isRunningInRumbaApp()
-  }
-
-  /**
-   * Get Rumba API type
-   */
-  getRumbaAPIType() {
-    if (typeof window.Rumba === 'function') return 'Rumba (constructor)'
-    if (window.RumbaJS) return 'RumbaJS (instance)'
-    if (window.rumbaJS) return 'rumbaJS (legacy)'
-    if (window.webkit && window.webkit.messageHandlers) return 'webkit'
-    return null
-  }
-
-  /**
-   * Get available Rumba message handlers
-   */
-  getRumbaMessageHandlers() {
-    try {
-      if (window.webkit && window.webkit.messageHandlers) {
-        const allHandlers = Object.keys(window.webkit.messageHandlers)
-        const rumbaHandlers = allHandlers.filter(handler => 
-          /rumba|socketmobile|barcode/i.test(handler)
-        )
-        return rumbaHandlers
-      }
-      return []
-    } catch (error) {
-      return []
-    }
-  }
-
-  /**
-   * Check browser barcode detection API
-   */
-  isBrowserBarcodeAPIAvailable() {
+  isBarcodeDetectorAvailable() {
     try {
       return 'BarcodeDetector' in window
     } catch (error) {
@@ -310,64 +197,55 @@ class PlatformDetectionService {
   }
 
   /**
-   * Get browser barcode support details
+   * Get supported barcode formats
    */
-  getBrowserBarcodeSupport() {
+  async getSupportedBarcodeFormats() {
     try {
-      if ('BarcodeDetector' in window) {
-        return {
-          supported: true,
-          canDetect: typeof BarcodeDetector.getSupportedFormats === 'function'
-        }
+      if ('BarcodeDetector' in window && 'getSupportedFormats' in window.BarcodeDetector) {
+        return await window.BarcodeDetector.getSupportedFormats()
       }
-      return { supported: false }
     } catch (error) {
-      return { supported: false, error: error.message }
+      // Ignore errors
     }
+    return []
   }
 
   /**
-   * Check camera availability
+   * Check if Camera API is available
    */
-  isCameraAvailable() {
-    try {
-      return !!(
-        navigator.mediaDevices && 
-        navigator.mediaDevices.getUserMedia
-      )
-    } catch (error) {
-      return false
-    }
+  isCameraAPIAvailable() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
   }
 
   /**
-   * Detect connectivity information
+   * Get camera permission state
+   */
+  async getCameraPermissionState() {
+    try {
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'camera' })
+        return permission.state
+      }
+    } catch (error) {
+      // Permissions API not available or camera permission not queryable
+    }
+    return 'unknown'
+  }
+
+  /**
+   * Detect network connectivity
    */
   detectConnectivity() {
+    const connection = navigator.connection || 
+                      navigator.mozConnection || 
+                      navigator.webkitConnection
+    
     return {
       online: navigator.onLine,
-      connection: this.getConnectionInfo(),
-      serviceWorker: 'serviceWorker' in navigator
-    }
-  }
-
-  /**
-   * Get network connection information
-   */
-  getConnectionInfo() {
-    try {
-      if ('connection' in navigator) {
-        const conn = navigator.connection
-        return {
-          effectiveType: conn.effectiveType,
-          downlink: conn.downlink,
-          rtt: conn.rtt,
-          saveData: conn.saveData
-        }
-      }
-      return null
-    } catch (error) {
-      return null
+      type: connection?.effectiveType || 'unknown',
+      downlink: connection?.downlink || null,
+      rtt: connection?.rtt || null,
+      saveData: connection?.saveData || false
     }
   }
 
@@ -376,31 +254,33 @@ class PlatformDetectionService {
    */
   detectCapabilities() {
     return {
-      webAssembly: 'WebAssembly' in window,
-      webWorkers: 'Worker' in window,
-      webRTC: this.hasWebRTC(),
-      localStorage: this.hasLocalStorage(),
-      sessionStorage: this.hasSessionStorage(),
+      serviceWorker: 'serviceWorker' in navigator,
+      webWorker: typeof Worker !== 'undefined',
+      webAssembly: typeof WebAssembly !== 'undefined',
+      webRTC: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+      webGL: this.isWebGLAvailable(),
+      localStorage: this.isLocalStorageAvailable(),
       indexedDB: 'indexedDB' in window,
-      geolocation: 'geolocation' in navigator,
       notifications: 'Notification' in window,
-      pushMessaging: 'PushManager' in window,
-      touchEvents: 'ontouchstart' in window,
-      deviceMotion: 'DeviceMotionEvent' in window,
-      deviceOrientation: 'DeviceOrientationEvent' in window
+      geolocation: 'geolocation' in navigator,
+      deviceOrientation: 'DeviceOrientationEvent' in window,
+      vibration: 'vibrate' in navigator,
+      battery: 'getBattery' in navigator,
+      bluetooth: 'bluetooth' in navigator,
+      usb: 'usb' in navigator,
+      midi: 'requestMIDIAccess' in navigator,
+      clipboard: 'clipboard' in navigator,
+      share: 'share' in navigator
     }
   }
 
   /**
-   * Check WebRTC availability
+   * Check WebGL availability
    */
-  hasWebRTC() {
+  isWebGLAvailable() {
     try {
-      return !!(
-        window.RTCPeerConnection || 
-        window.webkitRTCPeerConnection || 
-        window.mozRTCPeerConnection
-      )
+      const canvas = document.createElement('canvas')
+      return !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
     } catch (error) {
       return false
     }
@@ -409,9 +289,9 @@ class PlatformDetectionService {
   /**
    * Check localStorage availability
    */
-  hasLocalStorage() {
+  isLocalStorageAvailable() {
     try {
-      const test = '__storage_test__'
+      const test = '__localStorage_test__'
       localStorage.setItem(test, test)
       localStorage.removeItem(test)
       return true
@@ -421,72 +301,7 @@ class PlatformDetectionService {
   }
 
   /**
-   * Check sessionStorage availability
-   */
-  hasSessionStorage() {
-    try {
-      const test = '__session_test__'
-      sessionStorage.setItem(test, test)
-      sessionStorage.removeItem(test)
-      return true
-    } catch (error) {
-      return false
-    }
-  }
-
-  /**
-   * Get recommended scanner service based on detection results
-   */
-  getRecommendedScannerService(environment, scannerAPIs) {
-    const recommendations = []
-    
-    // Primary recommendation: Rumba SDK for Rumba app
-    if (environment.app.isRumbaApp && scannerAPIs.rumbaSDK.available) {
-      recommendations.push({
-        service: 'rumbaSDK',
-        priority: 1,
-        reason: 'Running in Rumba app with Rumba SDK available',
-        confidence: 'high'
-      })
-    }
-    
-    // Secondary recommendation: CaptureJS for regular browsers
-    if (!environment.app.isRumbaApp && scannerAPIs.captureJS.available) {
-      recommendations.push({
-        service: 'captureJS',
-        priority: 2,
-        reason: 'Regular browser with CaptureJS available',
-        confidence: 'high'
-      })
-    }
-    
-    // Tertiary recommendation: Browser API for camera scanning
-    if (scannerAPIs.browserAPI.available && scannerAPIs.camera.available) {
-      recommendations.push({
-        service: 'browserAPI',
-        priority: 3,
-        reason: 'Browser barcode detection and camera available',
-        confidence: 'medium'
-      })
-    }
-    
-    // Fallback: Keyboard wedge scanning
-    recommendations.push({
-      service: 'keyboardWedge',
-      priority: 4,
-      reason: 'Universal fallback for USB/Bluetooth scanners',
-      confidence: 'low'
-    })
-    
-    return {
-      primary: recommendations[0] || null,
-      alternatives: recommendations.slice(1),
-      allOptions: recommendations
-    }
-  }
-
-  /**
-   * Helper methods for cleaner code
+   * Get OS name
    */
   getOSName(isIOS, isAndroid, isWindows, isMacOS, isLinux) {
     if (isIOS) return 'iOS'
@@ -497,106 +312,167 @@ class PlatformDetectionService {
     return 'Unknown'
   }
 
-  getBrowserName(isChrome, isSafari, isFirefox, isEdge) {
-    if (isChrome) return 'Chrome'
-    if (isSafari) return 'Safari'
-    if (isFirefox) return 'Firefox'
-    if (isEdge) return 'Edge'
+  /**
+   * Get OS version
+   */
+  getOSVersion(userAgent) {
+    // iOS Version
+    const iOSMatch = userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/)
+    if (iOSMatch) return `${iOSMatch[1]}.${iOSMatch[2]}.${iOSMatch[3] || 0}`
+    
+    // Android Version
+    const androidMatch = userAgent.match(/Android (\d+\.?\d*\.?\d*)/)
+    if (androidMatch) return androidMatch[1]
+    
+    // Windows Version
+    const windowsMatch = userAgent.match(/Windows NT (\d+\.\d+)/)
+    if (windowsMatch) {
+      const versionMap = {
+        '10.0': '10/11',
+        6.3: '8.1',
+        6.2: '8',
+        6.1: '7',
+        '6.0': 'Vista',
+        5.1: 'XP'
+      }
+      return versionMap[windowsMatch[1]] || windowsMatch[1]
+    }
+    
     return 'Unknown'
   }
 
-  getDeviceType(isMobile, isTablet, isDesktop) {
-    if (isTablet) return 'tablet'
-    if (isMobile) return 'mobile'
-    if (isDesktop) return 'desktop'
-    return 'unknown'
-  }
-
-  getAppContext(isRumbaApp, isStandalone, isWebView) {
-    if (isRumbaApp) return 'rumba'
-    if (isStandalone) return 'standalone'
-    if (isWebView) return 'webview'
-    return 'browser'
+  /**
+   * Get browser name
+   */
+  getBrowserName(isChrome, isSafari, isFirefox, isEdge) {
+    if (isEdge) return 'Edge'
+    if (isChrome) return 'Chrome'
+    if (isSafari) return 'Safari'
+    if (isFirefox) return 'Firefox'
+    return 'Unknown'
   }
 
   /**
-   * Check if specific scanner service is recommended
+   * Get browser version
    */
-  shouldUseRumbaSDK() {
-    const platformInfo = this.getPlatformInfo()
-    return platformInfo.recommendation.primary?.service === 'rumbaSDK'
+  getBrowserVersion(userAgent) {
+    const match = userAgent.match(/(Chrome|CriOS|Safari|Firefox|FxiOS|Edge|Edg)\/(\d+)/)
+    return match ? match[2] : 'Unknown'
   }
 
-  shouldUseCaptureJS() {
+  /**
+   * Get recommended scanner service based on platform
+   */
+  getRecommendedScannerService(environment, scannerAPIs) {
+    const recommendation = {
+      primary: null,
+      alternatives: [],
+      reasons: []
+    }
+
+    // Primary recommendation: Keyboard wedge for desktop/tablet with hardware scanners
+    if (environment.device.isDesktop || environment.device.isTablet) {
+      recommendation.primary = {
+        service: 'keyboardWedge',
+        confidence: 'high',
+        reason: 'Desktop/tablet environment ideal for USB/Bluetooth scanners'
+      }
+      recommendation.reasons.push('Hardware scanners work best on desktop/tablet devices')
+    } else if (environment.device.isMobile && scannerAPIs.browserAPI.available) {
+      // Secondary recommendation: Browser API for mobile devices
+      recommendation.primary = {
+        service: 'browserAPI',
+        confidence: 'high',
+        reason: 'Mobile device with camera scanning capability'
+      }
+      recommendation.reasons.push('Camera-based scanning optimal for mobile devices')
+    } else {
+      // Fallback to keyboard wedge
+      recommendation.primary = {
+        service: 'keyboardWedge',
+        confidence: 'medium',
+        reason: 'Universal compatibility with any input device'
+      }
+      recommendation.reasons.push('Keyboard wedge works with any scanner in HID mode')
+    }
+
+    // Always add alternatives
+    if (recommendation.primary?.service !== 'browserAPI' && scannerAPIs.browserAPI.available) {
+      recommendation.alternatives.push({
+        service: 'browserAPI',
+        reason: 'Camera-based scanning available as fallback'
+      })
+    }
+
+    if (recommendation.primary?.service !== 'keyboardWedge') {
+      recommendation.alternatives.push({
+        service: 'keyboardWedge',
+        reason: 'Hardware scanner support available'
+      })
+    }
+
+    return recommendation
+  }
+
+  /**
+   * Quick check methods for convenience
+   */
+  shouldUseKeyboardWedge() {
     const platformInfo = this.getPlatformInfo()
-    return platformInfo.recommendation.primary?.service === 'captureJS' ||
-           (platformInfo.recommendation.primary?.service !== 'rumbaSDK' && 
-            platformInfo.scannerAPIs.captureJS.available)
+    return platformInfo.recommendation.primary?.service === 'keyboardWedge'
   }
 
   shouldUseBrowserAPI() {
     const platformInfo = this.getPlatformInfo()
-    const primary = platformInfo.recommendation.primary?.service
-    return primary === 'browserAPI' || 
-           (!['rumbaSDK', 'captureJS'].includes(primary) && 
-            platformInfo.scannerAPIs.browserAPI.available)
+    return platformInfo.recommendation.primary?.service === 'browserAPI'
   }
 
   /**
-   * Get diagnostic summary for troubleshooting
+   * Get diagnostic summary
    */
   getDiagnosticSummary() {
     const platformInfo = this.getPlatformInfo()
-    
-    return {
-      environment: `${platformInfo.environment.os.name} ${platformInfo.environment.browser.name} (${platformInfo.environment.device.type})`,
-      context: platformInfo.environment.app.context,
-      recommendedService: platformInfo.recommendation.primary?.service || 'none',
-      availableAPIs: Object.keys(platformInfo.scannerAPIs).filter(
-        api => platformInfo.scannerAPIs[api].available
-      ),
-      issues: this.identifyPotentialIssues(platformInfo),
-      timestamp: platformInfo.timestamp
-    }
-  }
-
-  /**
-   * Identify potential issues based on platform detection
-   */
-  identifyPotentialIssues(platformInfo) {
     const issues = []
-    
-    if (platformInfo.environment.app.isRumbaApp && !platformInfo.scannerAPIs.rumbaSDK.available) {
-      issues.push('Running in Rumba app but Rumba SDK not available')
-    }
-    
-    if (!platformInfo.environment.app.isRumbaApp && !platformInfo.scannerAPIs.captureJS.available) {
-      issues.push('Not in Rumba app and CaptureJS not available')
-    }
-    
-    if (!platformInfo.connectivity.online) {
+    const recommendations = []
+
+    // Check for potential issues
+    if (!navigator.onLine) {
       issues.push('Device is offline')
     }
-    
-    if (!platformInfo.scannerAPIs.camera.available) {
-      issues.push('Camera access not available')
-    }
-    
-    return issues
-  }
 
-  /**
-   * Clear detection cache to force fresh detection
-   */
-  clearCache() {
-    this.detectionCache = null
-    this.lastDetectionTime = null
-    if (this.config.debugLogging) {
-      console.log('🗑️ Platform detection cache cleared')
+    if (!platformInfo.scannerAPIs.browserAPI.available && platformInfo.environment.device.isMobile) {
+      issues.push('Mobile device without Barcode Detection API support')
+      recommendations.push('Use keyboard wedge scanner or manual entry')
+    }
+
+    if (!platformInfo.scannerAPIs.cameraAPI.available && platformInfo.environment.device.isMobile) {
+      issues.push('Camera API not available on mobile device')
+    }
+
+    // Add recommendations based on platform
+    if (platformInfo.environment.device.isDesktop) {
+      recommendations.push('Connect USB or Bluetooth barcode scanner for best performance')
+    }
+
+    if (platformInfo.environment.device.isMobile && platformInfo.scannerAPIs.cameraAPI.available) {
+      recommendations.push('Use camera for barcode scanning')
+    }
+
+    return {
+      platform: platformInfo.environment.os.name,
+      browser: platformInfo.environment.browser.name,
+      recommendedService: platformInfo.recommendation.primary?.service,
+      issues,
+      recommendations,
+      capabilities: {
+        keyboardWedge: 'Always available',
+        browserAPI: platformInfo.scannerAPIs.browserAPI.available ? 'Available' : 'Not available',
+        camera: platformInfo.scannerAPIs.cameraAPI.available ? 'Available' : 'Not available'
+      }
     }
   }
 }
 
 // Export singleton instance
-export const platformDetectionService = new PlatformDetectionService()
+const platformDetectionService = new PlatformDetectionService()
 export default platformDetectionService

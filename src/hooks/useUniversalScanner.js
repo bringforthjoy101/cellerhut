@@ -52,8 +52,6 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 			
 			// Show success toast with service and scanner type info
 			const serviceNames = {
-				rumbaSDK: 'Rumba SDK',
-				captureJS: 'Socket Mobile',
 				keyboardWedge: 'USB Scanner',
 				browserAPI: 'Camera',
 				manual: 'Manual'
@@ -285,8 +283,6 @@ export const useUniversalScanner = (onBarcodeScanned, options = {}) => {
 			setIsScanning(true)
 			
 			const serviceNames = {
-				rumbaSDK: 'Rumba SDK scanner',
-				captureJS: 'Socket Mobile scanner',
 				keyboardWedge: 'USB barcode scanner',
 				browserAPI: 'camera scanner',
 				manual: 'manual entry'

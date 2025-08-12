@@ -1,11 +1,9 @@
 /**
  * Unified Scanner Manager
  * Intelligently manages barcode scanning across different platforms and environments
- * Handles Socket Mobile CaptureJS, Rumba SDK, keyboard wedge, and browser API scanning
+ * Handles keyboard wedge and browser API scanning
  */
 
-import scannerService from './scannerService'
-import rumbaSDKService from './rumbaSDKService'
 import platformDetectionService from './platformDetectionService'
 import keyboardWedgeScanner from './keyboardWedgeScanner'
 import browserBarcodeScanner from './browserBarcodeScanner'
@@ -23,16 +21,12 @@ class UnifiedScannerManager {
 
 		// Scanner service instances
 		this.services = {
-			captureJS: scannerService,
-			rumbaSDK: rumbaSDKService,
 			keyboardWedge: keyboardWedgeScanner,
 			browserAPI: browserBarcodeScanner,
 		}
 
 		// Service status tracking
 		this.serviceStatus = {
-			captureJS: { available: false, initialized: false, error: null },
-			rumbaSDK: { available: false, initialized: false, error: null },
 			keyboardWedge: { available: false, initialized: false, error: null },
 			browserAPI: { available: false, initialized: false, error: null },
 		}
@@ -57,16 +51,8 @@ class UnifiedScannerManager {
 			enablePlatformOptimizedSelection: true,
 			enableErrorRecovery: true,
 			enableDiagnostics: true,
-			priorityOrder: ['rumbaSDK', 'captureJS', 'keyboardWedge', 'browserAPI'],
+			priorityOrder: ['keyboardWedge', 'browserAPI'],
 			errorRecoveryDelay: 2000, // 2 seconds
-			rumbaSDKOptions: {
-				autoStartScanning: true,
-				scanTimeout: 30000,
-			},
-			captureJSOptions: {
-				retryAttempts: 3,
-				retryDelay: 1000,
-			},
 			keyboardWedgeOptions: {
 				minBarcodeLength: 3,
 				maxBarcodeLength: 50,
@@ -159,25 +145,17 @@ class UnifiedScannerManager {
 		const platformInfo = this.platformInfo
 		const initPromises = []
 
-		// Priority 1: Initialize recommended service first
-		const primaryService = platformInfo.recommendation.primary?.service
-		if (primaryService && this.services[primaryService]) {
-			if (this.config.debugLogging) {
-				console.log(`🎯 Initializing primary service: ${primaryService}`)
-			}
-			initPromises.push(this.initializeSpecificService(primaryService, true))
+		// Priority 1: Always try keyboard wedge first as it's most reliable
+		if (this.config.debugLogging) {
+			console.log(`🎯 Initializing primary service: keyboardWedge`)
 		}
+		initPromises.push(this.initializeSpecificService('keyboardWedge', true))
 
-		// Priority 2: Initialize alternative services in parallel
-		const alternativeServices = platformInfo.recommendation.alternatives || []
-		alternativeServices.forEach((alt) => {
-			if (alt.service && this.services[alt.service] && alt.service !== primaryService) {
-				if (this.config.debugLogging) {
-					console.log(`🔄 Initializing alternative service: ${alt.service}`)
-				}
-				initPromises.push(this.initializeSpecificService(alt.service, false))
-			}
-		})
+		// Priority 2: Initialize browser API as fallback
+		if (this.config.debugLogging) {
+			console.log(`🔄 Initializing alternative service: browserAPI`)
+		}
+		initPromises.push(this.initializeSpecificService('browserAPI', false))
 
 		// Wait for all initialization attempts
 		const results = await Promise.allSettled(initPromises)
@@ -211,19 +189,6 @@ class UnifiedScannerManager {
 
 			// Initialize the service
 			switch (serviceName) {
-				case 'rumbaSDK':
-					await rumbaSDKService.initialize(wrappedCallback, serviceOptions)
-					break
-
-				case 'captureJS':
-					const appInfo = {
-						appId: process.env.REACT_APP_SOCKETMOBILE_APP_ID,
-						developerId: process.env.REACT_APP_SOCKETMOBILE_DEVELOPER_ID,
-						appKey: process.env.REACT_APP_SOCKETMOBILE_APP_KEY,
-					}
-					await scannerService.initialize(appInfo, wrappedCallback)
-					break
-
 				case 'keyboardWedge':
 					keyboardWedgeScanner.initialize(wrappedCallback, serviceOptions)
 					break
@@ -268,10 +233,6 @@ class UnifiedScannerManager {
 	 */
 	getServiceOptions(serviceName) {
 		switch (serviceName) {
-			case 'rumbaSDK':
-				return { ...this.config.rumbaSDKOptions, debugLogging: this.config.debugLogging }
-			case 'captureJS':
-				return { ...this.config.captureJSOptions, debugLogging: this.config.debugLogging }
 			case 'keyboardWedge':
 				return { ...this.config.keyboardWedgeOptions, debugLogging: this.config.debugLogging }
 			case 'browserAPI':
@@ -285,36 +246,20 @@ class UnifiedScannerManager {
 	 * Select the best available scanner service
 	 */
 	selectBestScannerService() {
-		// If platform-optimized selection is enabled, use platform recommendation
-		if (this.config.enablePlatformOptimizedSelection && this.platformInfo) {
-			const primaryService = this.platformInfo.recommendation.primary?.service
-			if (primaryService && this.serviceStatus[primaryService]?.initialized) {
-				if (this.config.debugLogging) {
-					console.log(`🎯 Selected platform-recommended service: ${primaryService}`)
-				}
-				return primaryService
+		// Always prefer keyboard wedge if available
+		if (this.serviceStatus.keyboardWedge?.initialized) {
+			if (this.config.debugLogging) {
+				console.log(`🎯 Selected primary service: keyboardWedge`)
 			}
-
-			// Try alternatives from platform recommendation
-			const alternatives = this.platformInfo.recommendation.alternatives || []
-			for (const alt of alternatives) {
-				if (alt.service && this.serviceStatus[alt.service]?.initialized) {
-					if (this.config.debugLogging) {
-						console.log(`🔄 Selected alternative service: ${alt.service}`)
-					}
-					return alt.service
-				}
-			}
+			return 'keyboardWedge'
 		}
 
-		// Fallback to priority order
-		for (const serviceName of this.config.priorityOrder) {
-			if (this.serviceStatus[serviceName]?.initialized) {
-				if (this.config.debugLogging) {
-					console.log(`📋 Selected priority-based service: ${serviceName}`)
-				}
-				return serviceName
+		// Fallback to browser API
+		if (this.serviceStatus.browserAPI?.initialized) {
+			if (this.config.debugLogging) {
+				console.log(`🔄 Selected alternative service: browserAPI`)
 			}
+			return 'browserAPI'
 		}
 
 		return null
@@ -359,17 +304,6 @@ class UnifiedScannerManager {
 			const service = this.services[this.activeScannerService]
 
 			switch (this.activeScannerService) {
-				case 'rumbaSDK':
-					await rumbaSDKService.startScanning(options)
-					break
-
-				case 'captureJS':
-					// CaptureJS doesn't need explicit start - it's always listening
-					if (this.config.debugLogging) {
-						console.log('✅ CaptureJS scanner ready (always listening)')
-					}
-					break
-
 				case 'keyboardWedge':
 					// Keyboard wedge doesn't need explicit start - it's always listening
 					if (this.config.debugLogging) {
@@ -462,14 +396,6 @@ class UnifiedScannerManager {
 
 		try {
 			switch (this.activeScannerService) {
-				case 'rumbaSDK':
-					rumbaSDKService.stopScanning()
-					break
-
-				case 'captureJS':
-					// CaptureJS doesn't need explicit stop
-					break
-
 				case 'keyboardWedge':
 					// Keyboard wedge doesn't need explicit stop
 					break

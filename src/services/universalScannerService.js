@@ -1,10 +1,10 @@
 /**
  * Universal Scanner Service
  * Coordinates multiple barcode scanner input methods and provides a unified interface
- * Supports: Socket Mobile, Keyboard Wedge, Browser API, and Camera scanning
+ * Supports: Keyboard Wedge, Browser API, and Camera scanning
  */
 
-import scannerService from './scannerService' // Socket Mobile service
+import unifiedScannerManager from './unifiedScannerManager'
 import keyboardWedgeScanner from './keyboardWedgeScanner'
 import browserBarcodeScanner from './browserBarcodeScanner'
 
@@ -19,28 +19,18 @@ class UniversalScannerService {
 		
 		// Scanner type priorities (higher number = higher priority)
 		this.scannerPriorities = {
-			socketMobile: 4,    // Highest - most reliable for dedicated hardware
-			keyboardWedge: 3,   // High - works with most USB/Bluetooth scanners
+			keyboardWedge: 3,   // Highest - works with most USB/Bluetooth scanners
 			browserAPI: 2,      // Medium - good for camera scanning
 			manual: 1           // Lowest - fallback manual entry
 		}
 
 		// Configuration
 		this.config = {
-			enableSocketMobile: true,
 			enableKeyboardWedge: true,
 			enableBrowserAPI: true,
 			autoDetectScanners: true,
 			fallbackToManual: true,
 			debugLogging: true,
-			// Socket Mobile priority settings
-			socketMobilePriority: true,      // Always prefer Socket Mobile when available
-			socketMobileOnly: false,         // Only use Socket Mobile, disable others
-			socketMobileTimeout: 5000,       // Timeout for Socket Mobile initialization (ms)
-			socketMobileRetryInterval: 10000, // Auto-retry interval for Socket Mobile (ms)
-			waitForSocketMobile: true,       // Wait for Socket Mobile before initializing others
-			// Socket Mobile config
-			socketMobileConfig: null,
 			// Keyboard wedge config
 			keyboardWedgeConfig: {
 				minBarcodeLength: 3,
@@ -103,69 +93,7 @@ class UniversalScannerService {
 		}
 	}
 
-	/**
-	 * Check Socket Mobile Companion service availability
-	 */
-	async checkSocketMobileService() {
-		try {
-			if (this.config.debugLogging) {
-				console.log('🔍 Checking Socket Mobile Companion service...')
-			}
-			
-			// Check if the scannerService can perform a health check
-			if (scannerService.checkCompanionService) {
-				const isAvailable = await scannerService.checkCompanionService()
-				if (this.config.debugLogging) {
-					console.log(`📋 Socket Mobile service check: ${isAvailable ? 'Available' : 'Not available'}`)
-				}
-				return isAvailable
-			}
-			
-			return true // Assume available if no health check method
-		} catch (error) {
-			if (this.config.debugLogging) {
-				console.log('⚠️ Socket Mobile service check failed:', error.message)
-			}
-			return false
-		}
-	}
 
-	/**
-	 * Try Socket Mobile initialization first (priority mode)
-	 */
-	async trySocketMobileFirst() {
-		try {
-			if (this.config.debugLogging) {
-				console.log('🎯 Attempting Socket Mobile priority initialization...')
-			}
-
-			// Quick health check first
-			const isServiceAvailable = await this.checkSocketMobileService()
-			if (!isServiceAvailable) {
-				throw new Error('Socket Mobile Companion service not available')
-			}
-
-			// Initialize Socket Mobile with timeout
-			await Promise.race([
-				this.initializeSocketMobile(),
-				new Promise((_, reject) => 
-					setTimeout(() => reject(new Error('Socket Mobile initialization timeout')), 
-					this.config.socketMobileTimeout)
-				)
-			])
-
-			if (this.config.debugLogging) {
-				console.log('✅ Socket Mobile priority initialization successful')
-			}
-			return true
-
-		} catch (error) {
-			if (this.config.debugLogging) {
-				console.log('❌ Socket Mobile priority initialization failed:', error.message)
-			}
-			return false
-		}
-	}
 
 	/**
 	 * Initialize other scanners (non-Socket Mobile)
@@ -188,62 +116,32 @@ class UniversalScannerService {
 	}
 
 	/**
-	 * Detect and initialize all available scanner types with Socket Mobile priority
+	 * Detect and initialize all available scanner types
 	 */
 	async detectAndInitializeScanners() {
-		// Phase 1: Try Socket Mobile first if priority mode is enabled
-		if (this.config.enableSocketMobile && this.config.waitForSocketMobile) {
-			const socketMobileSuccess = await this.trySocketMobileFirst()
-			
-			// If Socket Mobile-only mode and it succeeded, skip other scanners
-			if (socketMobileSuccess && this.config.socketMobileOnly) {
-				console.log('🎯 Socket Mobile-only mode: Skipping other scanners')
-				return
-			}
-		} else if (this.config.enableSocketMobile) {
-			// Initialize Socket Mobile without waiting (parallel mode)
-			this.initializeSocketMobile().catch(error => {
-				if (this.config.debugLogging) {
-					console.log('Socket Mobile parallel initialization failed:', error.message)
-				}
-			})
-		}
-
-		// Phase 2: Initialize other scanners
+		// Initialize all available scanners
 		await this.initializeOtherScanners()
 	}
 
 	/**
-	 * Initialize Socket Mobile scanner
+	 * Delegate to unified scanner manager for initialization
 	 */
-	async initializeSocketMobile() {
+	async initializeUnifiedScanner() {
 		try {
-			console.log('🔌 Attempting Socket Mobile initialization...')
+			console.log('🔌 Attempting Unified Scanner initialization...')
 			
-			// Use existing scannerService (Socket Mobile)
-			const appInfo = this.config.socketMobileConfig || {
-				appId: process.env.REACT_APP_SOCKETMOBILE_APP_ID,
-				developerId: process.env.REACT_APP_SOCKETMOBILE_DEVELOPER_ID,
-				appKey: process.env.REACT_APP_SOCKETMOBILE_APP_KEY
-			}
-
-			await scannerService.initialize(appInfo, this.handleBarcodeDetected.bind(this, 'socketMobile'))
+			// Use unified scanner manager
+			await unifiedScannerManager.initialize(this.handleBarcodeDetected.bind(this), this.config)
 			
-			this.scannerStatus.socketMobile = {
-				available: true,
-				connected: scannerService.isConnected(),
-				error: null
-			}
-
-			this.activeScanners.add('socketMobile')
+			const status = unifiedScannerManager.getServiceStatusSummary()
+			this.activeScanners = new Set(status.initializedServices)
 			
 			if (this.config.debugLogging) {
-				console.log('✅ Socket Mobile scanner initialized')
+				console.log('✅ Unified Scanner initialized:', status)
 			}
 
 		} catch (error) {
-			this.scannerStatus.socketMobile = {
-				available: false,
+			this.scannerStatus = {
 				connected: false,
 				error: error.message
 			}
@@ -605,11 +503,10 @@ class UniversalScannerService {
 	async cleanup() {
 		console.log('🧹 Cleaning up Universal Scanner Service...')
 
-		// Cleanup individual scanners
-		if (this.activeScanners.has('socketMobile')) {
-			await scannerService.cleanup()
-		}
+		// Cleanup unified scanner manager
+		await unifiedScannerManager.cleanup()
 
+		// Cleanup individual scanners if needed
 		if (this.activeScanners.has('keyboardWedge')) {
 			keyboardWedgeScanner.cleanup()
 		}

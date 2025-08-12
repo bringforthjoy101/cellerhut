@@ -208,7 +208,7 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
                 }}
               />
               <div className="item-details">
-                <div className="item-name">{item.name}</div>
+                <div className="item-name" title={item.name}>{item.name}</div>
                 <div className="item-price">{formatPrice(item.price)} each</div>
               </div>
               <div className="item-quantity">

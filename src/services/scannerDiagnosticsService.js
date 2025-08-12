@@ -6,8 +6,8 @@
 
 import unifiedScannerManager from './unifiedScannerManager'
 import platformDetectionService from './platformDetectionService'
-import scannerService from './scannerService'
-import rumbaSDKService from './rumbaSDKService'
+import keyboardWedgeScanner from './keyboardWedgeScanner'
+import browserBarcodeScanner from './browserBarcodeScanner'
 
 class ScannerDiagnosticsService {
   constructor() {
@@ -166,30 +166,33 @@ class ScannerDiagnosticsService {
       }
     }
 
-    // CaptureJS Service
+    // Keyboard Wedge Scanner
     try {
-      services.captureJS = {
+      services.keyboardWedge = {
         available: true,
-        status: scannerService.getStatus(),
-        diagnostics: scannerService.getDiagnostics(),
-        companionService: await this.testSocketMobileCompanion()
+        status: keyboardWedgeScanner.getStatus(),
+        diagnostics: {
+          isActive: keyboardWedgeScanner.isActive,
+          config: keyboardWedgeScanner.config
+        }
       }
     } catch (error) {
-      services.captureJS = {
+      services.keyboardWedge = {
         available: false,
         error: error.message
       }
     }
 
-    // Rumba SDK Service
+    // Browser Barcode Scanner
     try {
-      services.rumbaSDK = {
-        available: true,
-        status: rumbaSDKService.getStatus(),
-        diagnostics: rumbaSDKService.getDiagnostics()
+      services.browserAPI = {
+        available: browserBarcodeScanner.constructor.isNativeAPISupported(),
+        hasCameraSupport: browserBarcodeScanner.constructor.isCameraSupported(),
+        status: browserBarcodeScanner.getStatus(),
+        capabilities: browserBarcodeScanner.constructor.getCapabilities()
       }
     } catch (error) {
-      services.rumbaSDK = {
+      services.browserAPI = {
         available: false,
         error: error.message
       }
@@ -198,29 +201,6 @@ class ScannerDiagnosticsService {
     return services
   }
 
-  /**
-   * Test Socket Mobile Companion service
-   */
-  async testSocketMobileCompanion() {
-    try {
-      if (scannerService.checkCompanionService) {
-        const result = await scannerService.checkCompanionService()
-        return {
-          available: result,
-          tested: true,
-          timestamp: new Date().toISOString()
-        }
-      }
-      return { available: false, tested: false, reason: 'No check method available' }
-    } catch (error) {
-      return {
-        available: false,
-        tested: true,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }
-    }
-  }
 
   /**
    * Get connectivity diagnostics
@@ -414,14 +394,11 @@ class ScannerDiagnosticsService {
     return {
       unifiedManager: unifiedScannerManager.config || {},
       services: {
-        captureJS: {
-          hasCredentials: !!(process.env.REACT_APP_SOCKETMOBILE_APP_ID && 
-                            process.env.REACT_APP_SOCKETMOBILE_DEVELOPER_ID && 
-                            process.env.REACT_APP_SOCKETMOBILE_APP_KEY),
-          maxRetryAttempts: scannerService.maxRetryAttempts || 'unknown'
-        },
-        rumbaSDK: rumbaSDKService.config || {}
-      }
+        keyboardWedge: keyboardWedgeScanner.config || {},
+        browserAPI: browserBarcodeScanner.config || {}
+      },
+      debugMode: process.env.REACT_APP_DEBUG_SCANNERS === 'true',
+      environment: process.env.NODE_ENV
     }
   }
 
@@ -432,25 +409,15 @@ class ScannerDiagnosticsService {
     const issues = []
     const platformInfo = platformDetectionService.getPlatformInfo()
 
-    // Environment issues
-    if (!process.env.REACT_APP_SOCKETMOBILE_APP_ID) {
+    // Scanner availability issues
+    const scannerStatus = unifiedScannerManager.getServiceStatusSummary()
+    if (scannerStatus.initializedServices.length === 0) {
       issues.push({
-        type: 'configuration',
+        type: 'scanner',
         severity: 'high',
-        title: 'Missing Socket Mobile App ID',
-        description: 'REACT_APP_SOCKETMOBILE_APP_ID environment variable is not set',
-        impact: 'CaptureJS scanner service will not work'
-      })
-    }
-
-    // Platform compatibility issues
-    if (platformInfo.environment.app.isRumbaApp && !platformInfo.scannerAPIs.rumbaSDK.available) {
-      issues.push({
-        type: 'compatibility',
-        severity: 'high',
-        title: 'Rumba SDK not available in Rumba app',
-        description: 'Running in Rumba app but Rumba JavaScript API is not accessible',
-        impact: 'Barcode scanning will not work properly in Rumba app'
+        title: 'No scanner services available',
+        description: 'No barcode scanner services could be initialized',
+        impact: 'Barcode scanning will not work'
       })
     }
 

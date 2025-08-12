@@ -140,10 +140,14 @@ export const placeOrder = (orderData) => async (dispatch) => {
 		// Map payment method values for backend
 		const getBackendPaymentMode = (paymentMethod) => {
 			switch (paymentMethod) {
-				case 'card': return 'pos'
-				case 'mobile': return 'transfer'
-				case 'cash': return 'cash'
-				default: return paymentMethod
+				case 'card':
+					return 'pos'
+				case 'mobile':
+					return 'transfer'
+				case 'cash':
+					return 'cash'
+				default:
+					return paymentMethod
 			}
 		}
 
@@ -160,7 +164,7 @@ export const placeOrder = (orderData) => async (dispatch) => {
 				name: item.name,
 				price: item.price,
 				qty: item.quantity,
-				amount: item.price * item.quantity
+				amount: item.price * item.quantity,
 			})),
 			// Add fields for held orders
 			heldOrderId: orderData.heldOrderId || null,
@@ -168,23 +172,23 @@ export const placeOrder = (orderData) => async (dispatch) => {
 			salesTax: orderData.tax || 0,
 			// Add cash handling fields
 			cashCollected: orderData.cashCollected || null,
-			changeAmount: orderData.changeAmount || null
+			changeAmount: orderData.changeAmount || null,
 		})
 
-		const response = await apiRequest({ url: '/orders/create', method: 'POST', body }, dispatch)
+		const response = await apiRequest({ url: '/orders/create?completeOrder=true', method: 'POST', body }, dispatch)
 
 		if (response.data.status) {
 			dispatch({
 				type: 'PICKER_PLACE_ORDER',
 			})
-			
+
 			dispatch(hideConfirmationModal())
 			dispatch(setPlacingOrder(false))
-			
+
 			return {
 				success: true,
 				orderId: response.data.data,
-				message: response.data.message
+				message: response.data.message,
 			}
 		} else {
 			throw new Error(response.data.message || 'Failed to place order')

@@ -18,13 +18,8 @@ export const ScannerProvider = ({ children }) => {
 
   // Global barcode handler that routes to the active handler
   const globalBarcodeHandler = useCallback((barcode, serviceName, scannerType) => {
-    console.log(`🌐 Global scanner received barcode: ${barcode} from ${serviceName}`)
-    
     if (currentHandlerRef.current && currentHandlerRef.current.callback) {
-      console.log(`📱 Routing to active handler: ${currentHandlerRef.current.id}`)
       currentHandlerRef.current.callback(barcode, serviceName, scannerType)
-    } else {
-      console.warn('❌ No active scanner handler registered')
     }
   }, [])
 
@@ -33,8 +28,6 @@ export const ScannerProvider = ({ children }) => {
 
   // Register a scanner handler with priority
   const registerHandler = useCallback((id, callback, priority = 0) => {
-    console.log(`📝 Registering scanner handler: ${id} with priority ${priority}`)
-    
     const handlerInfo = { id, callback, priority }
     
     setRegisteredHandlers(prev => {
@@ -46,7 +39,6 @@ export const ScannerProvider = ({ children }) => {
     // Update active handler if this has higher priority
     setActiveHandler(prevActive => {
       if (!prevActive || priority > prevActive.priority) {
-        console.log(`🔄 Setting ${id} as active handler (priority: ${priority})`)
         currentHandlerRef.current = handlerInfo
         return handlerInfo
       }
@@ -55,8 +47,6 @@ export const ScannerProvider = ({ children }) => {
 
     // Return cleanup function
     return () => {
-      console.log(`🗑️ Unregistering scanner handler: ${id}`)
-      
       setRegisteredHandlers(prev => {
         const newHandlers = new Map(prev)
         newHandlers.delete(id)
@@ -65,38 +55,35 @@ export const ScannerProvider = ({ children }) => {
 
       setActiveHandler(prevActive => {
         if (prevActive && prevActive.id === id) {
-          // Find next highest priority handler
-          const handlers = Array.from(registeredHandlers.values())
-            .filter(h => h.id !== id)
-            .sort((a, b) => b.priority - a.priority)
+          // Find next highest priority handler using functional update to get current handlers
+          let nextHandler = null
+          setRegisteredHandlers(currentHandlers => {
+            const handlers = Array.from(currentHandlers.values())
+              .filter(h => h.id !== id)
+              .sort((a, b) => b.priority - a.priority)
+            nextHandler = handlers[0] || null
+            return currentHandlers // Don't modify, just reading
+          })
           
-          const nextHandler = handlers[0] || null
           currentHandlerRef.current = nextHandler
-          
-          if (nextHandler) {
-            console.log(`🔄 Switching to next handler: ${nextHandler.id} (priority: ${nextHandler.priority})`)
-          } else {
-            console.log('📭 No scanner handlers remaining')
-          }
-          
           return nextHandler
         }
         return prevActive
       })
     }
-  }, [registeredHandlers])
+  }, [])
 
   // Force set active handler (for explicit control)
   const setActiveHandlerById = useCallback((id) => {
-    const handler = registeredHandlers.get(id)
-    if (handler) {
-      console.log(`🎯 Explicitly setting active handler: ${id}`)
-      setActiveHandler(handler)
-      currentHandlerRef.current = handler
-    } else {
-      console.warn(`❌ Handler not found: ${id}`)
-    }
-  }, [registeredHandlers])
+    setRegisteredHandlers(prev => {
+      const handler = prev.get(id)
+      if (handler) {
+        setActiveHandler(handler)
+        currentHandlerRef.current = handler
+      }
+      return prev
+    })
+  }, [])
 
   // Get status of all handlers
   const getHandlerStatus = useCallback(() => {

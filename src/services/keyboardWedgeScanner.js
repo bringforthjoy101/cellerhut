@@ -228,6 +228,11 @@ class KeyboardWedgeScanner {
 	 * @returns {string|null}
 	 */
 	getCharFromEvent(event) {
+		// Check if event.key exists
+		if (!event || !event.key) {
+			return null
+		}
+		
 		// For printable characters, use event.key
 		if (event.key.length === 1) {
 			return event.key
@@ -286,8 +291,6 @@ class KeyboardWedgeScanner {
 	 * Stop keyboard wedge scanner
 	 */
 	cleanup() {
-		console.log('🧹 Cleaning up Keyboard Wedge Scanner...')
-		
 		if (this.keyEventListener) {
 			document.removeEventListener('keydown', this.keyEventListener, true)
 			this.keyEventListener = null
@@ -296,8 +299,6 @@ class KeyboardWedgeScanner {
 		this.resetBuffer()
 		this.onBarcodeCallback = null
 		this.isActive = false
-		
-		console.log('✅ Keyboard Wedge Scanner cleanup complete')
 	}
 }
 

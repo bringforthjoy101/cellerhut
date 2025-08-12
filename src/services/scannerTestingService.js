@@ -1,14 +1,14 @@
 /**
  * Scanner Testing Service
- * Comprehensive testing utilities for Socket Mobile integration
- * Tests both Rumba app and regular browser environments
+ * Comprehensive testing utilities for barcode scanner integration
+ * Tests keyboard wedge and browser API scanner implementations
  */
 
 import unifiedScannerManager from './unifiedScannerManager'
 import platformDetectionService from './platformDetectionService'
 import scannerDiagnosticsService from './scannerDiagnosticsService'
-import scannerService from './scannerService'
-import rumbaSDKService from './rumbaSDKService'
+import keyboardWedgeScanner from './keyboardWedgeScanner'
+import browserBarcodeScanner from './browserBarcodeScanner'
 
 class ScannerTestingService {
   constructor() {
@@ -293,33 +293,26 @@ class ScannerTestingService {
 
     for (const testBarcode of testBarcodes) {
       try {
-        // Test CaptureJS simulation if available
-        if (scannerService.testConnection) {
-          const captureResult = await scannerService.testConnection()
+        // Test keyboard wedge simulation
+        const keyboardStatus = keyboardWedgeScanner.getStatus()
+        if (keyboardStatus.isActive) {
           simulationResults.push({
-            service: 'captureJS',
+            service: 'keyboardWedge',
             barcode: testBarcode,
-            success: captureResult.success,
-            details: captureResult.details
+            success: true,
+            details: 'Keyboard wedge scanner is active and ready'
           })
         }
 
-        // Test Rumba SDK simulation if available
-        const platformInfo = platformDetectionService.getPlatformInfo()
-        if (platformInfo.environment.app.isRumbaApp) {
-          // Simulate Rumba barcode event
-          if (window.rumbaJSCallback) {
-            window.rumbaJSCallback({
-              type: 'barcode',
-              value: testBarcode
-            })
-            simulationResults.push({
-              service: 'rumbaSDK',
-              barcode: testBarcode,
-              success: true,
-              method: 'rumbaJSCallback'
-            })
-          }
+        // Test browser API availability
+        const browserCapabilities = browserBarcodeScanner.constructor.getCapabilities()
+        if (browserCapabilities.nativeAPI) {
+          simulationResults.push({
+            service: 'browserAPI',
+            barcode: testBarcode,
+            success: true,
+            details: 'Browser barcode API is available'
+          })
         }
 
       } catch (error) {
@@ -429,23 +422,19 @@ class ScannerTestingService {
     }
 
     // Test Socket Mobile Companion
-    if (scannerService.checkCompanionService) {
-      try {
-        const companionAvailable = await scannerService.checkCompanionService()
-        features.push({
-          feature: 'socket-mobile-companion',
-          available: companionAvailable,
-          tested: true
-        })
-      } catch (error) {
-        features.push({
-          feature: 'socket-mobile-companion',
-          available: false,
-          tested: true,
-          error: error.message
-        })
-      }
-    }
+    // Test keyboard wedge feature
+    features.push({
+      feature: 'keyboard-wedge',
+      available: keyboardWedgeScanner.isActive,
+      tested: true
+    })
+    
+    // Test browser API feature
+    features.push({
+      feature: 'browser-barcode-api',
+      available: browserBarcodeScanner.constructor.isNativeAPISupported(),
+      tested: true
+    })
 
     return {
       platform: platformInfo.environment.app.context,
@@ -710,13 +699,9 @@ class ScannerTestingService {
       }
       results.serviceInitialization = unifiedScannerManager.isInitialized
       
-      // Quick barcode simulation test
-      if (scannerService.testConnection) {
-        const testResult = await scannerService.testConnection()
-        results.barcodeSimulation = testResult.success
-      } else {
-        results.barcodeSimulation = true // Skip if not available
-      }
+      // Quick scanner availability test
+      const scannerStatus = unifiedScannerManager.getServiceStatusSummary()
+      results.barcodeSimulation = scannerStatus.initializedServices.length > 0
 
       const allPassed = Object.values(results).every(result => result === true)
       

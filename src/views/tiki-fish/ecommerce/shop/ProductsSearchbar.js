@@ -7,7 +7,7 @@ import { Row, Col, InputGroup, InputGroupAddon, Input, InputGroupText, Button } 
 
 // ** Custom Hooks and Contexts
 import { useScannerHandler, useScannerContext } from '../../../../contexts/ScannerContext'
-import scannerService from '../../../../services/scannerService'
+import unifiedScannerManager from '../../../../services/unifiedScannerManager'
 import platformDetectionService from '../../../../services/platformDetectionService'
 import scannerTestingService from '../../../../services/scannerTestingService'
 import scannerDiagnosticsService from '../../../../services/scannerDiagnosticsService'
@@ -18,36 +18,18 @@ const ProductsSearchbar = props => {
   
   // ** State
   const [barcodeInput, setBarcodeInput] = useState('')
-  const [isRumbaApp, setIsRumbaApp] = useState(false)
+  const [isMobileScanner, setIsMobileScanner] = useState(false)
   
-  // Check if running in Rumba app on component mount
+  // Check if running on mobile device on component mount
   useEffect(() => {
     const platformInfo = platformDetectionService.getPlatformInfo()
-    setIsRumbaApp(platformInfo.environment.app.isRumbaApp)
+    setIsMobileScanner(platformInfo.environment.device.isMobile)
     
-    if (platformInfo.environment.app.isRumbaApp) {
-      console.log('🔵 Running in Rumba app - cart integration enabled')
-      
-      // Prevent Rumba app from auto-populating search input
-      const preventRumbaAutoFill = (event) => {
-        const target = event.target
-        if (target && target.classList && target.classList.contains('search-product')) {
-          console.log('🔵 Preventing Rumba auto-fill in search field')
-          event.preventDefault()
-          event.stopPropagation()
-          target.blur() // Remove focus to prevent input
-          return false
-        }
-      }
-      
-      // Add event listeners to prevent auto-fill
-      document.addEventListener('input', preventRumbaAutoFill, true)
-      document.addEventListener('change', preventRumbaAutoFill, true)
-      document.addEventListener('keydown', preventRumbaAutoFill, true)
+    if (platformInfo.environment.device.isMobile) {
+      console.log('🔵 Running on mobile device - direct cart integration enabled')
       
       // Cleanup function
       return () => {
-        document.removeEventListener('input', preventRumbaAutoFill, true)
         document.removeEventListener('change', preventRumbaAutoFill, true)
         document.removeEventListener('keydown', preventRumbaAutoFill, true)
       }
@@ -58,9 +40,9 @@ const ProductsSearchbar = props => {
   const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
     console.log(`🛍️ ProductsSearchbar: Barcode received from ${serviceName} (${scannerType}):`, barcode)
     
-    // For Rumba app, always add to cart and prevent search field population
-    if (isRumbaApp || serviceName === 'rumbaSDK') {
-      console.log('🔵 ProductsSearchbar: Rumba app detected - adding to cart directly')
+    // For mobile scanning, add to cart directly
+    if (isMobileScanner && serviceName === 'browserAPI') {
+      console.log('🔵 ProductsSearchbar: Mobile scanner detected - adding to cart directly')
       
       // Find product by barcode
       const product = store.products?.find(p => p.barcode === barcode) || 
@@ -71,12 +53,12 @@ const ProductsSearchbar = props => {
         dispatch(addToCart(product.id))
         dispatch(getCartItems())
         dispatch(getProducts(store.params))
-        console.log('✅ ProductsSearchbar: Product added to cart via Rumba scanning')
+        console.log('✅ ProductsSearchbar: Product added to cart via mobile scanning')
       } else {
         console.warn(`❌ ProductsSearchbar: Product with barcode ${barcode} not found for cart addition`)
       }
       
-      // Prevent any search field population for Rumba app
+      // Prevent any search field population for mobile scanning
       return
     }
     
@@ -95,7 +77,7 @@ const ProductsSearchbar = props => {
       // REMOVED: No longer populate search field as fallback - let higher priority handlers manage this
       console.log('ℹ️ ProductsSearchbar: Deferring to higher priority scanner handlers')
     }
-  }, [dispatch, store.products, store.filtered, addToCart, getCartItems, getProducts, store.params, isRumbaApp])
+  }, [dispatch, store.products, store.filtered, addToCart, getCartItems, getProducts, store.params, isMobileScanner])
   
   // Register as lower-priority scanner handler (only active when no higher priority handlers)
   useScannerHandler('ecommerce-shop', handleBarcodeScanned, 1, true)
@@ -121,39 +103,39 @@ const ProductsSearchbar = props => {
     }
   }, [barcodeInput, handleBarcodeScanned])
   
-  // Test Socket Mobile connection (for development/testing)
-  const handleTestSocketMobile = useCallback(async () => {
+  // Test Scanner connection (for development/testing)
+  const handleTestScanner = useCallback(async () => {
     try {
-      console.log('🧪 Testing Socket Mobile connection...')
+      console.log('🧪 Testing Scanner connection...')
       
-      // Get diagnostics first
-      const diagnostics = scannerService.getDiagnostics()
+      // Get diagnostics from unified scanner manager
+      const diagnostics = unifiedScannerManager.getDiagnostics()
       console.log('📋 Scanner Diagnostics:', diagnostics)
       
-      // Run connection test
-      const result = await scannerService.testConnection()
-      console.log('🧪 Test result:', result)
+      // Get status from unified scanner manager
+      const status = unifiedScannerManager.getStatus()
+      console.log('🧪 Scanner status:', status)
       
       // Provide detailed feedback
-      const message = `Socket Mobile Test: ${result.message}\n\n` +
-                     `✅ Initialized: ${result.details.initialization}\n` +
-                     `🔌 Connected: ${result.details.isConnected}\n` +
-                     `📡 Has Callback: ${result.details.hasCallback}\n` +
-                     `🔄 Attempts: ${result.details.attempts}`
+      const message = `Scanner Test: ${status.isInitialized ? 'Initialized' : 'Not Initialized'}\n\n` +
+                     `✅ Active Service: ${status.activeScannerService || 'None'}\n` +
+                     `🔌 Available Services: ${Object.keys(status.serviceStatus || {}).filter(s => status.serviceStatus[s].initialized).join(', ') || 'None'}\n` +
+                     `📡 Platform: ${status.platformInfo?.environment || 'Unknown'}\n` +
+                     `🔄 Attempts: ${status.initializationAttempts}`
       
       alert(message)
     } catch (error) {
-      console.error('Socket Mobile test failed:', error)
+      console.error('Scanner test failed:', error)
       
       // Get diagnostics even on failure
       try {
-        const diagnostics = scannerService.getDiagnostics()
+        const diagnostics = unifiedScannerManager.getDiagnostics()
         console.log('📋 Scanner Diagnostics (on failure):', diagnostics)
       } catch (diagError) {
         console.error('Could not get diagnostics:', diagError)
       }
       
-      alert(`Socket Mobile Test Failed: ${error.message}\n\nCheck browser console for details.`)
+      alert(`Scanner Test Failed: ${error.message}\n\nCheck browser console for details.`)
     }
   }, [])
 
@@ -280,8 +262,8 @@ const ProductsSearchbar = props => {
                   <>
                     <Button
                       color='warning'
-                      onClick={handleTestSocketMobile}
-                      title='Test Socket Mobile connection'
+                      onClick={handleTestScanner}
+                      title='Test Scanner connection'
                       type='button'
                     >
                       <Activity size={14} />
@@ -322,7 +304,7 @@ const ProductsSearchbar = props => {
                 🧪 Run All Tests
               </Button>
               <small className='text-muted align-self-center'>
-                Development Testing Tools - Platform: {isRumbaApp ? 'Rumba App' : 'Regular Browser'}
+                Development Testing Tools - Platform: {isMobileScanner ? 'Mobile Device' : 'Desktop Browser'}
               </small>
             </div>
           </Col>
