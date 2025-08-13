@@ -30,6 +30,7 @@ const SupplyModal = ({ open, toggleSidebar, selectedSupply }) => {
 	const [suppliers, setSuppliers] = useState([])
 	const [products, setProducts] = useState([])
 	const [data, setData] = useState({
+		supplyNumber: '',
 		supplierId: null,
 		supplyDate: new Date(),
 		paymentDueDate: null,
@@ -95,6 +96,7 @@ const SupplyModal = ({ open, toggleSidebar, selectedSupply }) => {
 	useEffect(() => {
 		if (selectedSupply) {
 			setData({
+				supplyNumber: selectedSupply.supplyNumber || '',
 				supplierId: selectedSupply.supplierId,
 				supplyDate: new Date(selectedSupply.supplyDate),
 				paymentDueDate: selectedSupply.paymentDueDate ? new Date(selectedSupply.paymentDueDate) : null,
@@ -255,6 +257,7 @@ const SupplyModal = ({ open, toggleSidebar, selectedSupply }) => {
 		}
 
 		const submitData = {
+			supplyNumber: data.supplyNumber?.trim() || undefined, // Include if provided
 			supplierId: data.supplierId,
 			supplyDate: data.supplyDate ? new Date(data.supplyDate).toISOString() : new Date().toISOString(),
 			paymentDueDate: data.paymentDueDate ? new Date(data.paymentDueDate).toISOString() : null,
@@ -309,7 +312,24 @@ const SupplyModal = ({ open, toggleSidebar, selectedSupply }) => {
 			<Form onSubmit={onSubmit}>
 				<ModalBody>
 					<Row>
-						<Col md={6}>
+						<Col md={4}>
+							<FormGroup>
+								<Label for="supplyNumber">
+									Supply Number <small className="text-muted">(Optional)</small>
+								</Label>
+								<Input
+									id="supplyNumber"
+									name="supplyNumber"
+									placeholder="Auto-generate if empty"
+									value={data.supplyNumber}
+									onChange={(e) => setData({ ...data, supplyNumber: e.target.value })}
+									disabled={selectedSupply && selectedSupply.status !== 'pending'}
+									invalid={errors.supplyNumber}
+								/>
+								{errors.supplyNumber && <FormFeedback>{errors.supplyNumber}</FormFeedback>}
+							</FormGroup>
+						</Col>
+						<Col md={4}>
 							<FormGroup>
 								<Label for="supplierId">
 									Supplier <span className="text-danger">*</span>
@@ -328,7 +348,7 @@ const SupplyModal = ({ open, toggleSidebar, selectedSupply }) => {
 								{errors.supplierId && <FormFeedback className="d-block">{errors.supplierId}</FormFeedback>}
 							</FormGroup>
 						</Col>
-						<Col md={6}>
+						<Col md={4}>
 							<FormGroup>
 								<Label for="supplyDate">
 									Supply Date <span className="text-danger">*</span>
