@@ -14,7 +14,7 @@ const MySwal = withReactContent(Swal)
 
 // ** Third Party Components
 import { UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, Badge } from 'reactstrap'
-import { MoreVertical, FileText, Trash2, Archive, Users, Phone, Mail, DollarSign } from 'react-feather'
+import { MoreVertical, FileText, Trash2, Archive, Users, Phone, Mail, DollarSign, Edit } from 'react-feather'
 
 // ** Renders Supplier Avatar
 const renderClient = (row) => {
@@ -55,7 +55,7 @@ const handleDelete = async (id) => {
 	})
 }
 
-export const columns = [
+export const getColumns = (handleEdit) => [
 	{
 		name: 'Supplier',
 		selector: 'name',
@@ -183,8 +183,8 @@ export const columns = [
 						<FileText size={14} className="mr-50" />
 						<span className="align-middle">Details</span>
 					</DropdownItem>
-					<DropdownItem tag={Link} to={`/supplier/edit/${row.id}`} className="w-100">
-						<Archive size={14} className="mr-50" />
+					<DropdownItem className="w-100" onClick={() => handleEdit(row)}>
+						<Edit size={14} className="mr-50" />
 						<span className="align-middle">Edit</span>
 					</DropdownItem>
 					<DropdownItem className="w-100" onClick={() => handleDelete(row.id)}>
@@ -196,3 +196,6 @@ export const columns = [
 		),
 	},
 ]
+
+// Keep for backward compatibility
+export const columns = getColumns(() => {})

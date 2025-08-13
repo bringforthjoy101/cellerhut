@@ -3,11 +3,11 @@ import { useState, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 
 // ** Reactstrap Imports
-import { Row, Col, Card, CardBody, Button, Badge, Modal, Input, Label, ModalBody, ModalHeader } from 'reactstrap'
+import { Row, Col, Card, CardBody, Button, Badge, Modal, Input, Label, ModalBody, ModalHeader, Form, FormGroup } from 'reactstrap'
 
 // ** Third Party Components
 import Swal from 'sweetalert2'
-import { Check, Briefcase, X, User, Calendar, DollarSign } from 'react-feather'
+import { Check, Briefcase, X, User, Calendar, DollarSign, Edit, Trash2, Printer, FileText } from 'react-feather'
 import withReactContent from 'sweetalert2-react-content'
 
 // ** Custom Components
@@ -15,7 +15,10 @@ import Avatar from '@components/avatar'
 
 // ** Store & Actions
 import { useDispatch } from 'react-redux'
-import { approveSupply, rejectSupply } from '../store/action'
+import { approveSupply, rejectSupply, deleteSupply, paySupply, getAllData } from '../store/action'
+
+// ** Supply Modal
+import SupplyModal from '../list/SupplyModal'
 
 // ** Styles
 import '@styles/react/libs/react-select/_react-select.scss'
@@ -28,6 +31,12 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 
 	// ** State
 	const [show, setShow] = useState(false)
+	const [sidebarOpen, setSidebarOpen] = useState(false)
+	const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+	const [paymentData, setPaymentData] = useState({
+		amount: '',
+		paymentMethod: 'cash'
+	})
 
 	// ** render supplier avatar
 	const renderSupplierAvatar = () => {
@@ -92,6 +101,54 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 				dispatch(rejectSupply(selectedSupply.id))
 			}
 		})
+	}
+
+	// ** Handle Edit Click
+	const handleEditClick = () => {
+		setSidebarOpen(true)
+	}
+
+	// ** Toggle sidebar
+	const toggleSidebar = () => {
+		setSidebarOpen(!sidebarOpen)
+		dispatch(getAllData())
+	}
+
+	// ** Handle Delete Supply
+	const handleDeleteClick = () => {
+		return MySwal.fire({
+			title: 'Are you sure?',
+			text: "You won't be able to revert this!",
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonText: 'Yes, delete it!',
+			customClass: {
+				confirmButton: 'btn btn-primary',
+				cancelButton: 'btn btn-outline-danger ms-1'
+			},
+			buttonsStyling: false
+		}).then(async (result) => {
+			if (result.value) {
+				await dispatch(deleteSupply(selectedSupply.id))
+				window.location.href = '/supplies/list'
+			}
+		})
+	}
+
+	// ** Handle Payment Submit
+	const handlePaymentSubmit = async (e) => {
+		e.preventDefault()
+		if (paymentData.amount && paymentData.amount > 0) {
+			await dispatch(paySupply(selectedSupply.id, paymentData))
+			setPaymentModalOpen(false)
+			setPaymentData({ amount: '', paymentMethod: 'cash' })
+			dispatch(getAllData())
+		}
+	}
+
+	// ** Handle Print
+	const handlePrint = () => {
+		window.print()
 	}
 
 	return (
@@ -213,27 +270,96 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 							</ul>
 						) : null}
 					</div>
-					{selectedSupply?.status === 'pending' && (
-						<div className="d-flex justify-content-center pt-2">
-							<Button color="success" onClick={handleApproveClick}>
-								<Check size={14} className="me-50" />
-								Approve
+					<h4 className="fw-bolder border-bottom pb-50 mb-1">Actions</h4>
+					<div className="d-flex flex-wrap justify-content-center pt-2">
+						{selectedSupply?.status === 'pending' && (
+							<>
+								<Button color="primary" className="me-1 mb-1" onClick={handleEditClick}>
+									<Edit size={14} className="me-50" />
+									Edit
+								</Button>
+								<Button color="success" className="me-1 mb-1" onClick={handleApproveClick}>
+									<Check size={14} className="me-50" />
+									Approve
+								</Button>
+								<Button color="danger" className="me-1 mb-1" onClick={handleRejectClick}>
+									<X size={14} className="me-50" />
+									Reject
+								</Button>
+							</>
+						)}
+						{selectedSupply?.status === 'approved' && selectedSupply?.paymentStatus !== 'paid' && (
+							<Button color="warning" className="me-1 mb-1" onClick={() => setPaymentModalOpen(true)}>
+								<DollarSign size={14} className="me-50" />
+								Record Payment
 							</Button>
-							<Button className="ms-1" color="danger" onClick={handleRejectClick}>
-								<X size={14} className="me-50" />
-								Reject
+						)}
+						{selectedSupply?.status !== 'approved' && (
+							<Button color="danger" className="me-1 mb-1" outline onClick={handleDeleteClick}>
+								<Trash2 size={14} className="me-50" />
+								Delete
 							</Button>
-						</div>
-					)}
-					{selectedSupply?.status !== 'pending' && (
-						<div className="d-flex justify-content-center pt-2">
-							<Button color="primary" tag={Link} to={`/supply/edit/${selectedSupply.id}`}>
-								Edit
-							</Button>
-						</div>
-					)}
+						)}
+						<Button color="secondary" className="mb-1" outline onClick={handlePrint}>
+							<Printer size={14} className="me-50" />
+							Print
+						</Button>
+					</div>
 				</CardBody>
 			</Card>
+
+			{/* Supply Modal */}
+			<SupplyModal 
+				open={sidebarOpen} 
+				toggleSidebar={toggleSidebar} 
+				selectedSupply={selectedSupply} 
+			/>
+
+			{/* Payment Modal */}
+			<Modal isOpen={paymentModalOpen} toggle={() => setPaymentModalOpen(false)}>
+				<ModalHeader toggle={() => setPaymentModalOpen(false)}>
+					Record Payment for {selectedSupply?.supplyNumber}
+				</ModalHeader>
+				<Form onSubmit={handlePaymentSubmit}>
+					<ModalBody>
+						<FormGroup>
+							<Label for='amount'>Amount</Label>
+							<Input
+								type='number'
+								id='amount'
+								value={paymentData.amount}
+								onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+								placeholder='Enter payment amount'
+								step='0.01'
+								min='0'
+								max={(selectedSupply?.totalAmount || 0) - (selectedSupply?.amountPaid || 0)}
+								required
+							/>
+						</FormGroup>
+						<FormGroup>
+							<Label for='paymentMethod'>Payment Method</Label>
+							<Input
+								type='select'
+								id='paymentMethod'
+								value={paymentData.paymentMethod}
+								onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
+							>
+								<option value='cash'>Cash</option>
+								<option value='bank-transfer'>Bank Transfer</option>
+							</Input>
+						</FormGroup>
+						<div className='text-muted'>
+							<small>Total Amount: R{selectedSupply?.totalAmount || 0}</small><br />
+							<small>Amount Paid: R{selectedSupply?.amountPaid || 0}</small><br />
+							<small>Amount Due: R{(selectedSupply?.totalAmount || 0) - (selectedSupply?.amountPaid || 0)}</small>
+						</div>
+					</ModalBody>
+					<div className='modal-footer'>
+						<Button color='secondary' onClick={() => setPaymentModalOpen(false)}>Cancel</Button>
+						<Button color='primary' type='submit'>Record Payment</Button>
+					</div>
+				</Form>
+			</Modal>
 		</Fragment>
 	)
 }

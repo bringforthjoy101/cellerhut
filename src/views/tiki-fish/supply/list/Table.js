@@ -5,20 +5,22 @@ import { Fragment, useState, useEffect } from 'react'
 import SupplyModal from './SupplyModal'
 
 // ** Columns
-import { columns } from './columns'
+import { getColumns } from './columns'
 
 // ** Store & Actions
-import { getAllData, getFilteredData } from '../store/action'
+import { getAllData, getFilteredData, getAllSuppliers } from '../store/action'
 import { useDispatch, useSelector } from 'react-redux'
 
 // ** Third Party Components
 import Select from 'react-select'
 import ReactPaginate from 'react-paginate'
-import { ChevronDown, Share, Printer, FileText, File, Grid, Copy, Plus } from 'react-feather'
+import { ChevronDown, Share, Printer, FileText, File, Grid, Copy, Plus, X, Filter } from 'react-feather'
 import DataTable from 'react-data-table-component'
 import { selectThemeColors } from '@utils'
 import * as XLSX from 'xlsx'
 import * as FileSaver from 'file-saver'
+import Flatpickr from 'react-flatpickr'
+import moment from 'moment'
 import {
 	Row,
 	Col,
@@ -32,15 +34,17 @@ import {
 	DropdownMenu,
 	DropdownItem,
 	DropdownToggle,
-	UncontrolledDropdown
+	UncontrolledDropdown,
+	Badge
 } from 'reactstrap'
 
 // ** Styles
 import '@styles/react/libs/react-select/_react-select.scss'
 import '@styles/react/libs/tables/react-dataTable-component.scss'
+import '@styles/react/libs/flatpickr/flatpickr.scss'
 
 // ** Table Header
-const CustomHeader = ({ store, searchTerm, handlePerPage, rowsPerPage, handleFilter, toggleSidebar }) => {
+const CustomHeader = ({ store, searchTerm, handlePerPage, rowsPerPage, handleFilter, toggleSidebar, activeFiltersCount }) => {
 	// ** Converts table to CSV
 	function convertArrayOfObjectsToCSV(array) {
 		let result
@@ -140,6 +144,12 @@ const CustomHeader = ({ store, searchTerm, handlePerPage, rowsPerPage, handleFil
 							<option value='50'>50</option>
 						</Input>
 						<label htmlFor='rows-per-page'>Entries</label>
+						{activeFiltersCount > 0 && (
+							<Badge color='primary' className='ms-2'>
+								<Filter size={12} className='me-25' />
+								{activeFiltersCount} Filter{activeFiltersCount > 1 ? 's' : ''} Active
+							</Badge>
+						)}
 					</div>
 				</Col>
 				<Col
@@ -207,78 +217,146 @@ const SuppliesList = () => {
 	const [sortColumn, setSortColumn] = useState('id')
 	const [rowsPerPage, setRowsPerPage] = useState(10)
 	const [sidebarOpen, setSidebarOpen] = useState(false)
-	const [currentStatus, setCurrentStatus] = useState({ value: '', label: 'Select Status', number: 0 })
+	const [selectedSupply, setSelectedSupply] = useState(null)
+	
+	// ** Filter States
+	const [statusFilter, setStatusFilter] = useState('')
+	const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
+	const [supplierFilter, setSupplierFilter] = useState(null)
+	const [dateRange, setDateRange] = useState([])
+	const [suppliers, setSuppliers] = useState([])
 
 	// ** Function to toggle sidebar
-	const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
+	const toggleSidebar = () => {
+		if (!sidebarOpen && selectedSupply) {
+			setSelectedSupply(null)
+		}
+		setSidebarOpen(!sidebarOpen)
+	}
+	
+	// ** Function to handle edit
+	const handleEdit = (supply) => {
+		setSelectedSupply(supply)
+		setSidebarOpen(true)
+	}
 
-	// ** Get data on mount
+	// ** Get suppliers for filter dropdown on mount
+	useEffect(() => {
+		const fetchSuppliers = async () => {
+			const suppliersList = await dispatch(getAllSuppliers())
+			if (suppliersList) {
+				setSuppliers(suppliersList.map(supplier => ({
+					value: supplier.id,
+					label: supplier.name
+				})))
+			}
+		}
+		fetchSuppliers()
+	}, [])
+
+	// ** Get data on mount and when filters change
 	useEffect(() => {
 		dispatch(getAllData())
-		dispatch(
-			getFilteredData({
-				sort,
-				sortColumn,
-				q: searchTerm,
-				page: currentPage,
-				perPage: rowsPerPage,
-				status: currentStatus.value
-			})
-		)
-	}, [dispatch, store.data.length, sort, sortColumn, currentPage])
+		
+		// Build params object
+		const params = {
+			sort,
+			sortColumn,
+			q: searchTerm,
+			page: currentPage,
+			perPage: rowsPerPage
+		}
 
-	// ** User filter options
+		// Add filters to params if they have values
+		if (statusFilter) params.status = statusFilter
+		if (paymentStatusFilter) params.paymentStatus = paymentStatusFilter
+		if (supplierFilter) params.supplierId = supplierFilter.value
+		if (dateRange.length === 2) {
+			params.startDate = moment(dateRange[0]).format('YYYY-MM-DD')
+			params.endDate = moment(dateRange[1]).format('YYYY-MM-DD')
+		}
+
+		dispatch(getFilteredData(params))
+	}, [dispatch, sort, sortColumn, currentPage, rowsPerPage, statusFilter, paymentStatusFilter, supplierFilter, dateRange])
+
+	// ** Status filter options
 	const statusOptions = [
-		{ value: '', label: 'Select Status', number: 0 },
-		{ value: 'pending', label: 'Pending', number: 1 },
-		{ value: 'approved', label: 'Approved', number: 2 },
-		{ value: 'rejected', label: 'Rejected', number: 3 }
+		{ value: '', label: 'All Status' },
+		{ value: 'pending', label: 'Pending' },
+		{ value: 'approved', label: 'Approved' },
+		{ value: 'rejected', label: 'Rejected' }
+	]
+
+	// ** Payment Status filter options
+	const paymentStatusOptions = [
+		{ value: '', label: 'All Payment Status' },
+		{ value: 'unpaid', label: 'Unpaid' },
+		{ value: 'partial', label: 'Partial' },
+		{ value: 'paid', label: 'Paid' }
 	]
 
 	// ** Function in get data on page change
 	const handlePagination = page => {
-		dispatch(
-			getFilteredData({
-				sort,
-				sortColumn,
-				q: searchTerm,
-				perPage: rowsPerPage,
-				page: page.selected + 1,
-				status: currentStatus.value
-			})
-		)
 		setCurrentPage(page.selected + 1)
 	}
 
 	// ** Function in get data on rows per page
 	const handlePerPage = e => {
 		const value = parseInt(e.currentTarget.value)
-		dispatch(
-			getFilteredData({
-				sort,
-				sortColumn,
-				q: searchTerm,
-				perPage: value,
-				page: currentPage,
-				status: currentStatus.value
-			})
-		)
 		setRowsPerPage(value)
 	}
 
 	// ** Function in get data on search query change
 	const handleFilter = val => {
 		setSearchTerm(val)
-		dispatch(
-			getFilteredData({
-				sort,
-				sortColumn,
-				q: val,
-				page: currentPage,
-				perPage: rowsPerPage,
-				status: currentStatus.value
-			})
-		)
+		// Build params object
+		const params = {
+			sort,
+			sortColumn,
+			q: val,
+			page: currentPage,
+			perPage: rowsPerPage
+		}
+
+		// Add filters to params if they have values
+		if (statusFilter) params.status = statusFilter
+		if (paymentStatusFilter) params.paymentStatus = paymentStatusFilter
+		if (supplierFilter) params.supplierId = supplierFilter.value
+		if (dateRange.length === 2) {
+			params.startDate = moment(dateRange[0]).format('YYYY-MM-DD')
+			params.endDate = moment(dateRange[1]).format('YYYY-MM-DD')
+		}
+
+		dispatch(getFilteredData(params))
+	}
+
+	// ** Clear all filters
+	const clearFilters = () => {
+		setStatusFilter('')
+		setPaymentStatusFilter('')
+		setSupplierFilter(null)
+		setDateRange([])
+		setSearchTerm('')
+		
+		// Reset data with no filters
+		dispatch(getFilteredData({
+			sort,
+			sortColumn,
+			q: '',
+			page: 1,
+			perPage: rowsPerPage
+		}))
+		setCurrentPage(1)
+	}
+
+	// ** Count active filters
+	const getActiveFiltersCount = () => {
+		let count = 0
+		if (statusFilter) count++
+		if (paymentStatusFilter) count++
+		if (supplierFilter) count++
+		if (dateRange.length === 2) count++
+		return count
 	}
 
 	// ** Custom Pagination
@@ -307,12 +385,15 @@ const SuppliesList = () => {
 	// ** Table data to render
 	const dataToRender = () => {
 		const filters = {
-			status: currentStatus.value,
-			q: searchTerm
+			status: statusFilter,
+			paymentStatus: paymentStatusFilter,
+			supplierId: supplierFilter?.value,
+			q: searchTerm,
+			dateRange: dateRange.length === 2 ? dateRange : null
 		}
 
 		const isFiltered = Object.keys(filters).some(function (k) {
-			return filters[k] && filters[k].length > 0
+			return filters[k] && (Array.isArray(filters[k]) ? filters[k].length > 0 : filters[k].length > 0)
 		})
 
 		if (store.data.length > 0) {
@@ -327,20 +408,111 @@ const SuppliesList = () => {
 	const handleSort = (column, sortDirection) => {
 		setSort(sortDirection)
 		setSortColumn(column.sortField)
-		dispatch(
-			getFilteredData({
-				sort,
-				sortColumn,
-				q: searchTerm,
-				page: currentPage,
-				perPage: rowsPerPage,
-				status: currentStatus.value
-			})
-		)
+		
+		// Build params object
+		const params = {
+			sort: sortDirection,
+			sortColumn: column.sortField,
+			q: searchTerm,
+			page: currentPage,
+			perPage: rowsPerPage
+		}
+
+		// Add filters to params if they have values
+		if (statusFilter) params.status = statusFilter
+		if (paymentStatusFilter) params.paymentStatus = paymentStatusFilter
+		if (supplierFilter) params.supplierId = supplierFilter.value
+		if (dateRange.length === 2) {
+			params.startDate = moment(dateRange[0]).format('YYYY-MM-DD')
+			params.endDate = moment(dateRange[1]).format('YYYY-MM-DD')
+		}
+
+		dispatch(getFilteredData(params))
 	}
 
 	return (
 		<Fragment>
+			{/* Filter Section */}
+			<Card className='mb-1'>
+				<CardBody>
+					<Row className='align-items-end'>
+						<Col md='2' className='mb-1'>
+							<Label for='status-filter'>Status</Label>
+							<Input
+								type='select'
+								id='status-filter'
+								value={statusFilter}
+								onChange={e => setStatusFilter(e.target.value)}
+							>
+								{statusOptions.map(option => (
+									<option key={option.value} value={option.value}>
+										{option.label}
+									</option>
+								))}
+							</Input>
+						</Col>
+						<Col md='2' className='mb-1'>
+							<Label for='payment-status-filter'>Payment Status</Label>
+							<Input
+								type='select'
+								id='payment-status-filter'
+								value={paymentStatusFilter}
+								onChange={e => setPaymentStatusFilter(e.target.value)}
+							>
+								{paymentStatusOptions.map(option => (
+									<option key={option.value} value={option.value}>
+										{option.label}
+									</option>
+								))}
+							</Input>
+						</Col>
+						<Col md='3' className='mb-1'>
+							<Label for='supplier-filter'>Supplier</Label>
+							<Select
+								isClearable
+								theme={selectThemeColors}
+								className='react-select'
+								classNamePrefix='select'
+								id='supplier-filter'
+								options={suppliers}
+								value={supplierFilter}
+								onChange={setSupplierFilter}
+								placeholder='Select Supplier...'
+							/>
+						</Col>
+						<Col md='3' className='mb-1'>
+							<Label for='date-range'>Date Range</Label>
+							<Flatpickr
+								className='form-control'
+								value={dateRange}
+								onChange={date => setDateRange(date)}
+								options={{
+									mode: 'range',
+									dateFormat: 'd M Y',
+									maxDate: new Date(),
+									static: true,
+									position: 'auto center'
+								}}
+								placeholder='Select date range'
+							/>
+						</Col>
+						<Col md='2' className='mb-1'>
+							<Button
+								color='secondary'
+								outline
+								block
+								onClick={clearFilters}
+								disabled={getActiveFiltersCount() === 0}
+							>
+								<X size={14} className='me-50' />
+								Clear Filters
+							</Button>
+						</Col>
+					</Row>
+				</CardBody>
+			</Card>
+
+			{/* Data Table */}
 			<Card className='overflow-hidden'>
 				<div className='react-dataTable'>
 					<DataTable
@@ -350,7 +522,7 @@ const SuppliesList = () => {
 						pagination
 						responsive
 						paginationServer
-						columns={columns}
+						columns={getColumns(handleEdit)}
 						onSort={handleSort}
 						sortIcon={<ChevronDown />}
 						className='react-dataTable'
@@ -364,12 +536,13 @@ const SuppliesList = () => {
 								handleFilter={handleFilter}
 								handlePerPage={handlePerPage}
 								toggleSidebar={toggleSidebar}
+								activeFiltersCount={getActiveFiltersCount()}
 							/>
 						}
 					/>
 				</div>
 			</Card>
-			<SupplyModal open={sidebarOpen} toggleSidebar={toggleSidebar} />
+			<SupplyModal open={sidebarOpen} toggleSidebar={toggleSidebar} selectedSupply={selectedSupply} />
 		</Fragment>
 	)
 }

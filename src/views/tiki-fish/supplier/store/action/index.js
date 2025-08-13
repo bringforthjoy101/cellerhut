@@ -118,9 +118,33 @@ export const getSupplierPaymentHistory = (supplierId, params = {}) => {
           type: 'GET_SUPPLIER_PAYMENT_HISTORY',
           data: response.data.data
         })
+        return response.data.data
     } else {
       console.log(response)
       swal('Oops!', 'Something went wrong.', 'error')
+    }
+  }
+}
+
+// Get supplier supplies
+export const getSupplierSupplies = (supplierId, params = {}) => {
+  return async dispatch => {
+    const queryParams = new URLSearchParams(params).toString()
+    const response = await apiRequest({
+      url:`/suppliers/${supplierId}/supplies${queryParams ? `?${queryParams}` : ''}`, 
+      method:'GET'
+    }, dispatch)
+    
+    if (response && response.data.data && response.data.status) {
+        await dispatch({
+          type: 'GET_SUPPLIER_SUPPLIES',
+          data: response.data.data
+        })
+        return response.data.data
+    } else {
+      console.log(response)
+      swal('Oops!', 'Something went wrong.', 'error')
+      return null
     }
   }
 }

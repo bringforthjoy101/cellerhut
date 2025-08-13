@@ -300,3 +300,25 @@ export const getSuppliesSummary = (params) => {
 		}
 	}
 }
+
+// ** Get All Suppliers for Filter
+export const getAllSuppliers = () => {
+	return async (dispatch) => {
+		try {
+			const response = await apiRequest({
+				method: 'GET',
+				url: '/suppliers'
+			})
+			if (response?.data?.status && response?.data?.data) {
+				dispatch({
+					type: 'GET_ALL_SUPPLIERS',
+					data: response.data.data
+				})
+				return response.data.data
+			}
+		} catch (error) {
+			console.error('Error fetching suppliers:', error)
+			return []
+		}
+	}
+}

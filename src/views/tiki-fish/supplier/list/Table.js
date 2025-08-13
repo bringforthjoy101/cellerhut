@@ -5,7 +5,7 @@ import { Fragment, useState, useEffect } from 'react'
 import SupplierModal from './SupplierModal'
 
 // ** Columns
-import { columns } from './columns'
+import { getColumns } from './columns'
 
 // ** Store & Actions
 import { getAllData, getFilteredData } from '../store/action'
@@ -140,9 +140,21 @@ const SuppliersList = () => {
 	const [currentPage, setCurrentPage] = useState(1)
 	const [rowsPerPage, setRowsPerPage] = useState(10)
 	const [sidebarOpen, setSidebarOpen] = useState(false)
+	const [selectedSupplier, setSelectedSupplier] = useState(null)
 
 	// ** Function to toggle sidebar
-	const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
+	const toggleSidebar = () => {
+		if (!sidebarOpen && selectedSupplier) {
+			setSelectedSupplier(null)
+		}
+		setSidebarOpen(!sidebarOpen)
+	}
+	
+	// ** Function to handle edit
+	const handleEdit = (supplier) => {
+		setSelectedSupplier(supplier)
+		setSidebarOpen(true)
+	}
 
 	// ** Get data on mount
 	useEffect(() => {
@@ -257,7 +269,7 @@ const SuppliersList = () => {
 								pagination
 								responsive
 								paginationServer
-								columns={columns}
+								columns={getColumns(handleEdit)}
 								onSort={() => {}}
 								sortIcon={<ChevronDown />}
 								className="react-dataTable"
@@ -280,7 +292,7 @@ const SuppliersList = () => {
 				</CardBody>
 			</Card>
 
-			<SupplierModal open={sidebarOpen} toggleSidebar={toggleSidebar} />
+			<SupplierModal open={sidebarOpen} toggleSidebar={toggleSidebar} selectedSupplier={selectedSupplier} />
 		</Fragment>
 	)
 }

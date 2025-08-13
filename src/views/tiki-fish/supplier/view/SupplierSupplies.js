@@ -2,46 +2,45 @@
 import { Fragment } from 'react'
 
 // ** Reactstrap Imports
-import { Nav, NavItem, NavLink, TabContent, TabPane, Card, CardBody } from 'reactstrap'
+import { Nav, NavItem, NavLink, TabContent, TabPane } from 'reactstrap'
 
 // ** Icons Imports
-import { User, Lock, Bookmark, Bell, Link } from 'react-feather'
+import { Package, DollarSign } from 'react-feather'
+
+// ** Custom Components
+import SupplierSuppliesTable from './SupplierSuppliesTable'
+import SupplierPaymentHistoryTable from './SupplierPaymentHistoryTable'
+
+// ** Store
+import { useSelector } from 'react-redux'
 
 const SupplierSupplies = ({ active, toggleTab }) => {
+	// ** Store
+	const store = useSelector((state) => state.suppliers)
+	const supplierId = store.selectedSupplier?.id
+
 	return (
 		<Fragment>
 			<Nav pills className="mb-2">
 				<NavItem>
 					<NavLink active={active === '1'} onClick={() => toggleTab('1')}>
-						<User className="font-medium-3 me-50" />
+						<Package className="font-medium-3 me-50" />
 						<span className="fw-bold">Supplies</span>
 					</NavLink>
 				</NavItem>
 				<NavItem>
 					<NavLink active={active === '2'} onClick={() => toggleTab('2')}>
-						<Lock className="font-medium-3 me-50" />
-						<span className="fw-bold">Payments</span>
+						<DollarSign className="font-medium-3 me-50" />
+						<span className="fw-bold">Payment History</span>
 					</NavLink>
 				</NavItem>
 			</Nav>
 			<TabContent activeTab={active}>
 				<TabPane tabId="1">
-					<Card>
-						<CardBody>
-							<h5>Supplier Supplies</h5>
-							<p>List of all supplies from this supplier will be displayed here.</p>
-							<p className="text-muted">This feature will be implemented in the supplies module.</p>
-						</CardBody>
-					</Card>
+					{supplierId && <SupplierSuppliesTable supplierId={supplierId} />}
 				</TabPane>
 				<TabPane tabId="2">
-					<Card>
-						<CardBody>
-							<h5>Payment History</h5>
-							<p>Payment history for this supplier will be displayed here.</p>
-							<p className="text-muted">This feature will be implemented in the supplies module.</p>
-						</CardBody>
-					</Card>
+					{supplierId && <SupplierPaymentHistoryTable supplierId={supplierId} />}
 				</TabPane>
 			</TabContent>
 		</Fragment>

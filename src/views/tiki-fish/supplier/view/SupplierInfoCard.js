@@ -1,5 +1,5 @@
 // ** React Imports
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 // ** Reactstrap Imports
@@ -7,7 +7,7 @@ import { Row, Col, Card, Form, CardBody, Button, Badge, Modal, Input, Label, Mod
 
 // ** Third Party Components
 import Swal from 'sweetalert2'
-import { Check, Briefcase, X } from 'react-feather'
+import { Check, Briefcase, X, TrendingUp, DollarSign, AlertCircle, Edit } from 'react-feather'
 import withReactContent from 'sweetalert2-react-content'
 
 // ** Custom Components
@@ -15,7 +15,13 @@ import Avatar from '@components/avatar'
 
 // ** Store & Actions
 import { useDispatch } from 'react-redux'
-import { deleteSupplier } from '../store/action'
+import { deleteSupplier, getSupplierSupplies, getAllData } from '../store/action'
+
+// ** Supplier Modal
+import SupplierModal from '../list/SupplierModal'
+
+// ** Utils
+import { formatRandWithSeparator } from '../../shared/currencyUtils'
 
 // ** Styles
 import '@styles/react/libs/react-select/_react-select.scss'
@@ -28,6 +34,35 @@ const SupplierInfoCard = ({ selectedSupplier }) => {
 
 	// ** State
 	const [show, setShow] = useState(false)
+	const [sidebarOpen, setSidebarOpen] = useState(false)
+	const [financialSummary, setFinancialSummary] = useState({
+		totalAmount: 0,
+		totalPaid: 0,
+		totalOutstanding: 0,
+		totalSupplies: 0
+	})
+
+	// ** Fetch financial summary
+	useEffect(() => {
+		const fetchFinancialData = async () => {
+			if (selectedSupplier?.id) {
+				try {
+					const result = await dispatch(getSupplierSupplies(selectedSupplier.id))
+					if (result) {
+						setFinancialSummary({
+							totalAmount: result.totalAmount || 0,
+							totalPaid: result.totalPaid || 0,
+							totalOutstanding: result.totalOutstanding || 0,
+							totalSupplies: result.totalSupplies || 0
+						})
+					}
+				} catch (error) {
+					console.error('Error fetching financial data:', error)
+				}
+			}
+		}
+		fetchFinancialData()
+	}, [selectedSupplier?.id, dispatch])
 
 	// ** render supplier img
 	const renderSupplierImg = () => {
@@ -67,11 +102,23 @@ const SupplierInfoCard = ({ selectedSupplier }) => {
 				cancelButton: 'btn btn-outline-danger ml-1'
 			},
 			buttonsStyling: false
-		}).then(function (result) {
+		}).then(async function (result) {
 			if (result.value) {
-				dispatch(deleteSupplier(selectedSupplier.id))
+				await dispatch(deleteSupplier(selectedSupplier.id))
+				window.location.href = '/suppliers/list'
 			}
 		})
+	}
+
+	// ** Handle Edit Click
+	const handleEditClick = () => {
+		setSidebarOpen(true)
+	}
+
+	// ** Toggle sidebar
+	const toggleSidebar = () => {
+		setSidebarOpen(!sidebarOpen)
+		dispatch(getAllData())
 	}
 
 	return (
@@ -96,20 +143,41 @@ const SupplierInfoCard = ({ selectedSupplier }) => {
 					<div className="d-flex justify-content-around my-2 pt-75">
 						<div className="d-flex align-items-start me-2">
 							<Badge color="light-primary" className="rounded p-75">
-								<Check className="font-medium-2" />
-							</Badge>
-							<div className="ms-75">
-								<h4 className="mb-0">{selectedSupplier.statistics?.approvedSupplies || 0}</h4>
-								<small>Approved Supplies</small>
-							</div>
-						</div>
-						<div className="d-flex align-items-start">
-							<Badge color="light-primary" className="rounded p-75">
 								<Briefcase className="font-medium-2" />
 							</Badge>
 							<div className="ms-75">
-								<h4 className="mb-0">{selectedSupplier.statistics?.totalSupplies || 0}</h4>
+								<h4 className="mb-0">{financialSummary.totalSupplies}</h4>
 								<small>Total Supplies</small>
+							</div>
+						</div>
+						<div className="d-flex align-items-start">
+							<Badge color="light-info" className="rounded p-75">
+								<TrendingUp className="font-medium-2" />
+							</Badge>
+							<div className="ms-75">
+								<h4 className="mb-0">{formatRandWithSeparator(financialSummary.totalAmount)}</h4>
+								<small>Total Business</small>
+							</div>
+						</div>
+					</div>
+					{/* Financial Summary Row */}
+					<div className="d-flex justify-content-around mb-2">
+						<div className="d-flex align-items-start me-2">
+							<Badge color="light-success" className="rounded p-75">
+								<DollarSign className="font-medium-2" />
+							</Badge>
+							<div className="ms-75">
+								<h4 className="mb-0 text-success">{formatRandWithSeparator(financialSummary.totalPaid)}</h4>
+								<small>Total Paid</small>
+							</div>
+						</div>
+						<div className="d-flex align-items-start">
+							<Badge color="light-danger" className="rounded p-75">
+								<AlertCircle className="font-medium-2" />
+							</Badge>
+							<div className="ms-75">
+								<h4 className="mb-0 text-danger">{formatRandWithSeparator(financialSummary.totalOutstanding)}</h4>
+								<small>Outstanding</small>
 							</div>
 						</div>
 					</div>
@@ -159,7 +227,8 @@ const SupplierInfoCard = ({ selectedSupplier }) => {
 						) : null}
 					</div>
 					<div className="d-flex justify-content-center pt-2">
-						<Button color="primary" tag={Link} to={`/supplier/edit/${selectedSupplier.id}`}>
+						<Button color="primary" onClick={handleEditClick}>
+							<Edit size={14} className="me-50" />
 							Edit
 						</Button>
 						<Button className="ms-1" color="danger" outline onClick={handleSuspendedClick}>
@@ -168,6 +237,13 @@ const SupplierInfoCard = ({ selectedSupplier }) => {
 					</div>
 				</CardBody>
 			</Card>
+
+			{/* Supplier Modal */}
+			<SupplierModal 
+				open={sidebarOpen} 
+				toggleSidebar={toggleSidebar} 
+				selectedSupplier={selectedSupplier} 
+			/>
 		</Fragment>
 	)
 }

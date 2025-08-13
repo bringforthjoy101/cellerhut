@@ -198,7 +198,7 @@ const renderTotalAmount = row => {
 }
 
 // ** Renders Action Buttons
-const ActionsColumn = ({ row }) => {
+const ActionsColumn = ({ row, handleEdit }) => {
 	const [paymentModalOpen, setPaymentModalOpen] = useState(false)
 	
 	const handleApprove = () => {
@@ -312,9 +312,7 @@ const ActionsColumn = ({ row }) => {
 						{row.status === 'pending' && (
 							<DropdownItem
 								className='w-100'
-								onClick={() => {
-									// Edit functionality - open sidebar with data
-								}}
+								onClick={() => handleEdit(row)}
 							>
 								<Edit size={14} className='me-50' />
 								<span className='align-middle'>Edit</span>
@@ -337,7 +335,7 @@ const ActionsColumn = ({ row }) => {
 	)
 }
 
-export const columns = [
+export const getColumns = (handleEdit) => [
 	{
 		name: 'Supply Number',
 		sortable: true,
@@ -401,6 +399,9 @@ export const columns = [
 	{
 		name: 'Actions',
 		minWidth: '150px',
-		cell: row => <ActionsColumn row={row} />
+		cell: row => <ActionsColumn row={row} handleEdit={handleEdit} />
 	}
 ]
+
+// Keep for backward compatibility
+export const columns = getColumns(() => {})

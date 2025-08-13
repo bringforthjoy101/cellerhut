@@ -19,7 +19,7 @@ const ReportPreview = ({ reportData }) => {
 		return null
 	}
 
-	const { reportInfo, revenue, taxation, products, payments, customers, profitability, settlements, compliance } = reportData
+	const { reportInfo, revenue, taxation, products, payments, customers, profitability, settlements, compliance, supplies, suppliers, supplyPayments, inventory, cashFlow } = reportData
 
 	return (
 		<Fragment>
@@ -47,7 +47,7 @@ const ReportPreview = ({ reportData }) => {
 									<div className="d-flex flex-column">
 										<strong>Generated:</strong>
 										<span>{reportInfo.generatedAt}</span>
-										<small className="text-muted">Total Orders: {reportInfo.totalOrders}</small>
+										<small className="text-muted">Total Orders: {reportInfo.totalOrders} | Total Supplies: {reportInfo.totalSupplies || 0}</small>
 									</div>
 								</Col>
 							</Row>
@@ -449,6 +449,279 @@ const ReportPreview = ({ reportData }) => {
 					</Card>
 				</Col>
 			</Row>
+
+			{/* Supply Metrics Section */}
+			{supplies && (
+				<Row className="mt-2">
+					<Col lg="12">
+						<Card>
+							<CardHeader>
+								<CardTitle tag="h5">
+									<Package className="mr-1" size={20} />
+									Supply Analysis
+								</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<Row>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h4>{supplies.totalSupplies || 0}</h4>
+											<small>Total Supplies</small>
+										</div>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-primary">{formatCurrency(supplies.totalAmount || 0)}</h4>
+											<small>Total Amount</small>
+										</div>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-warning">{formatCurrency(supplies.totalVATPaid || 0)}</h4>
+											<small>VAT Paid</small>
+										</div>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-success">{supplies.approvedSupplies || 0}</h4>
+											<small>Approved</small>
+										</div>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-warning">{supplies.pendingSupplies || 0}</h4>
+											<small>Pending</small>
+										</div>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-danger">{supplies.rejectedSupplies || 0}</h4>
+											<small>Rejected</small>
+										</div>
+									</Col>
+								</Row>
+							</CardBody>
+						</Card>
+					</Col>
+				</Row>
+			)}
+
+			{/* Supplier Performance */}
+			{suppliers && suppliers.topSuppliers && suppliers.topSuppliers.length > 0 && (
+				<Row className="mt-2">
+					<Col lg="12">
+						<Card>
+							<CardHeader>
+								<CardTitle tag="h5">
+									<Users className="mr-1" size={20} />
+									Top Suppliers
+								</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<Table responsive hover>
+									<thead>
+										<tr>
+											<th>Supplier</th>
+											<th>Supplies</th>
+											<th>Total Amount</th>
+											<th>Paid</th>
+											<th>Outstanding</th>
+										</tr>
+									</thead>
+									<tbody>
+										{suppliers.topSuppliers.slice(0, 5).map((supplier, index) => (
+											<tr key={index}>
+												<td>{supplier.name}</td>
+												<td>{supplier.totalSupplies}</td>
+												<td>{formatCurrency(supplier.totalAmount)}</td>
+												<td className="text-success">{formatCurrency(supplier.totalPaid)}</td>
+												<td className="text-danger">{formatCurrency(supplier.totalOutstanding)}</td>
+											</tr>
+										))}
+									</tbody>
+								</Table>
+							</CardBody>
+						</Card>
+					</Col>
+				</Row>
+			)}
+
+			{/* Supply Payments */}
+			{supplyPayments && (
+				<Row className="mt-2">
+					<Col lg="12">
+						<Card>
+							<CardHeader>
+								<CardTitle tag="h5">
+									<CreditCard className="mr-1" size={20} />
+									Supply Payment Status
+								</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<Row>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-success">{formatCurrency(supplyPayments.totalPaid || 0)}</h4>
+											<small>Total Paid</small>
+										</div>
+									</Col>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-danger">{formatCurrency(supplyPayments.totalOutstanding || 0)}</h4>
+											<small>Outstanding</small>
+										</div>
+									</Col>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-warning">{supplyPayments.overduePayments || 0}</h4>
+											<small>Overdue Payments</small>
+										</div>
+									</Col>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-info">{formatPercentage(supplyPayments.paymentCompletionRate || 0)}</h4>
+											<small>Completion Rate</small>
+										</div>
+									</Col>
+								</Row>
+								{supplyPayments.paymentMethods && (
+									<Row className="mt-3">
+										<Col md="12">
+											<h6>Payment Methods</h6>
+											<div className="d-flex justify-content-around">
+												<Badge color="light-primary" className="p-2">
+													Cash: {formatCurrency(supplyPayments.paymentMethods.cash || 0)}
+												</Badge>
+												<Badge color="light-info" className="p-2">
+													Bank Transfer: {formatCurrency(supplyPayments.paymentMethods.bankTransfer || 0)}
+												</Badge>
+											</div>
+										</Col>
+									</Row>
+								)}
+							</CardBody>
+						</Card>
+					</Col>
+				</Row>
+			)}
+
+			{/* Cash Flow Analysis */}
+			{cashFlow && (
+				<Row className="mt-2">
+					<Col lg="12">
+						<Card className={cashFlow.netCashFlow >= 0 ? 'border-success' : 'border-danger'}>
+							<CardHeader>
+								<CardTitle tag="h5">
+									<TrendingUp className="mr-1" size={20} />
+									Cash Flow Analysis
+								</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<Row>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-success">{formatCurrency(cashFlow.salesRevenue || 0)}</h4>
+											<small>Sales Revenue</small>
+										</div>
+									</Col>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className="text-danger">{formatCurrency(cashFlow.supplyCosts || 0)}</h4>
+											<small>Supply Costs</small>
+										</div>
+									</Col>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className={cashFlow.netCashFlow >= 0 ? 'text-success' : 'text-danger'}>
+												{formatCurrency(cashFlow.netCashFlow || 0)}
+											</h4>
+											<small>Net Cash Flow</small>
+										</div>
+									</Col>
+									<Col md="3">
+										<div className="text-center p-3 border rounded">
+											<h4 className={cashFlow.vatBalance?.netVATPayable >= 0 ? 'text-warning' : 'text-info'}>
+												{formatCurrency(cashFlow.vatBalance?.netVATPayable || 0)}
+											</h4>
+											<small>Net VAT {cashFlow.vatBalance?.netVATPayable >= 0 ? 'Payable' : 'Refundable'}</small>
+										</div>
+									</Col>
+								</Row>
+								{cashFlow.vatBalance && (
+									<Alert color="info" className="mt-3">
+										<strong>VAT Reconciliation:</strong><br/>
+										VAT Collected from Sales: {formatCurrency(cashFlow.vatBalance.collected || 0)}<br/>
+										VAT Paid on Supplies: {formatCurrency(cashFlow.vatBalance.paid || 0)}<br/>
+										Net VAT Position: {formatCurrency(cashFlow.vatBalance.netVATPayable || 0)}
+									</Alert>
+								)}
+							</CardBody>
+						</Card>
+					</Col>
+				</Row>
+			)}
+
+			{/* Inventory Flow */}
+			{inventory && (
+				<Row className="mt-2">
+					<Col lg="12">
+						<Card>
+							<CardHeader>
+								<CardTitle tag="h5">
+									<Package className="mr-1" size={20} />
+									Inventory Movement
+								</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<Row>
+									<Col md="2">
+										<div className="text-center p-3 border rounded">
+											<h5>{formatCurrency(inventory.openingStock || 0)}</h5>
+											<small>Opening Stock</small>
+										</div>
+									</Col>
+									<Col md="1" className="d-flex align-items-center justify-content-center">
+										<span className="text-muted">+</span>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded bg-light-success">
+											<h5 className="text-success">{formatCurrency(inventory.stockReceived || 0)}</h5>
+											<small>Stock Received</small>
+										</div>
+									</Col>
+									<Col md="1" className="d-flex align-items-center justify-content-center">
+										<span className="text-muted">-</span>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded bg-light-danger">
+											<h5 className="text-danger">{formatCurrency(inventory.stockSold || 0)}</h5>
+											<small>Stock Sold</small>
+										</div>
+									</Col>
+									<Col md="1" className="d-flex align-items-center justify-content-center">
+										<span className="text-muted">=</span>
+									</Col>
+									<Col md="2">
+										<div className="text-center p-3 border rounded bg-light-primary">
+											<h5 className="text-primary">{formatCurrency(inventory.closingStock || 0)}</h5>
+											<small>Closing Stock</small>
+										</div>
+									</Col>
+								</Row>
+								<Row className="mt-3">
+									<Col md="12">
+										<div className="text-center">
+											<Badge color="light-info" className="p-2">
+												Stock Turnover Ratio: {inventory.stockTurnoverRatio || 0}
+											</Badge>
+										</div>
+									</Col>
+								</Row>
+							</CardBody>
+						</Card>
+					</Col>
+				</Row>
+			)}
 		</Fragment>
 	)
 }
