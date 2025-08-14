@@ -235,6 +235,29 @@ const ManagerRoutes = [
 			navLink: '/supply/view',
 		},
 	},
+	// Inventory Counting Routes
+	{
+		path: '/inventory/counts',
+		exact: true,
+		component: lazy(() => import('../../views/tiki-fish/inventory-count/list')),
+	},
+	{
+		path: '/inventory/counts/:id',
+		exact: true,
+		component: lazy(() => import('../../views/tiki-fish/inventory-count/detail')),
+	},
+	{
+		path: '/inventory/counts/:id/count-sheet',
+		component: lazy(() => import('../../views/tiki-fish/inventory-count/count-sheet')),
+	},
+	{
+		path: '/inventory/counts/:id/variance',
+		component: lazy(() => import('../../views/tiki-fish/inventory-count/variance-review')),
+	},
+	{
+		path: '/inventory/reports',
+		component: lazy(() => import('../../views/tiki-fish/inventory-count/reports')),
+	},
 ]
 
 const BursaryRoutes = [
