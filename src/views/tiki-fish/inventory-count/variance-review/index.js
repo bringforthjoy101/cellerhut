@@ -40,6 +40,7 @@ import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
 import moment from 'moment'
 import { getVarianceReport, approveCount, updateCountStatus } from '../store/action'
+import { exportToExcel, exportToCSV, exportToPDF, formatVarianceDataForExport } from '../../../../utility/exportUtils'
 
 const MySwal = withReactContent(Swal)
 
@@ -79,11 +80,13 @@ const VarianceReview = () => {
 		filtered.sort((a, b) => {
 			switch (sortBy) {
 				case 'variance_value':
-					return Math.abs(b.varianceValue) - Math.abs(a.varianceValue)
+					return Math.abs(b.varianceValue || 0) - Math.abs(a.varianceValue || 0)
 				case 'variance_percent':
-					return Math.abs(b.variancePercent) - Math.abs(a.variancePercent)
+					return Math.abs(b.variancePercent || 0) - Math.abs(a.variancePercent || 0)
 				case 'product_name':
-					return a.product.name.localeCompare(b.product.name)
+					const nameA = a.product?.name || 'Unknown'
+					const nameB = b.product?.name || 'Unknown'
+					return nameA.localeCompare(nameB)
 				default:
 					return 0
 			}
@@ -211,13 +214,143 @@ const VarianceReview = () => {
 	}
 
 	// ** Export variance report
-	const handleExportReport = () => {
-		// In production, implement CSV/PDF export
-		MySwal.fire({
-			icon: 'info',
-			title: 'Export Feature',
-			text: 'Report export functionality coming soon!'
+	const handleExportReport = (format = 'excel') => {
+		const { count, summary } = store.varianceReport || {}
+		const filteredVariances = getFilteredVariances()
+		
+		if (!store.varianceReport || !filteredVariances.length) {
+			MySwal.fire({
+				icon: 'warning',
+				title: 'No Data',
+				text: 'No variance data available to export'
+			})
+			return
+		}
+
+		const exportData = formatVarianceDataForExport({
+			count,
+			summary,
+			variances: filteredVariances
 		})
+
+		if (format === 'excel') {
+			// Export to Excel with multiple sheets
+			const sheets = [
+				{
+					name: 'Summary',
+					data: [
+						{ Metric: 'Count Number', Value: count.countNumber },
+						{ Metric: 'Count Date', Value: moment(count.countDate).format('YYYY-MM-DD') },
+						{ Metric: 'Total Items', Value: summary.totalItems },
+						{ Metric: 'Items with Variance', Value: summary.itemsWithVariance },
+						{ Metric: 'Total Variance Value', Value: `R ${Math.abs(summary.totalVarianceValue || 0).toFixed(2)}` },
+						{ Metric: 'Accuracy', Value: `${summary.accuracyPercent || 0}%` },
+						{ Metric: 'Minor Variances', Value: summary.variancesByCategory?.minor || 0 },
+						{ Metric: 'Moderate Variances', Value: summary.variancesByCategory?.moderate || 0 },
+						{ Metric: 'Major Variances', Value: summary.variancesByCategory?.major || 0 }
+					]
+				},
+				{
+					name: 'Variance Details',
+					data: exportData
+				}
+			]
+			
+			const result = exportToExcel(null, `VarianceReport_${count.countNumber}_${moment().format('YYYYMMDD')}`, sheets)
+			if (result.success) {
+				MySwal.fire({
+					icon: 'success',
+					title: 'Export Successful',
+					text: `Report exported as ${result.filename}`,
+					showConfirmButton: false,
+					timer: 2000
+				})
+			}
+		} else if (format === 'csv') {
+			const result = exportToCSV(exportData, `VarianceReport_${count.countNumber}_${moment().format('YYYYMMDD')}`)
+			if (result.success) {
+				MySwal.fire({
+					icon: 'success',
+					title: 'Export Successful',
+					text: `Report exported as ${result.filename}`,
+					showConfirmButton: false,
+					timer: 2000
+				})
+			}
+		} else if (format === 'pdf') {
+			// Generate PDF content
+			const pdfContent = `
+				<div class="header">
+					<h1>Variance Report - ${count.countNumber}</h1>
+					<p>Count Date: ${moment(count.countDate).format('MMMM DD, YYYY')}</p>
+				</div>
+				
+				<div class="summary-card">
+					<h2>Summary</h2>
+					<table>
+						<tr><td><strong>Total Items:</strong></td><td>${summary.totalItems}</td></tr>
+						<tr><td><strong>Items with Variance:</strong></td><td>${summary.itemsWithVariance}</td></tr>
+						<tr><td><strong>Total Variance Value:</strong></td><td class="${(summary.totalVarianceValue || 0) >= 0 ? 'text-success' : 'text-danger'}">R ${Math.abs(summary.totalVarianceValue || 0).toFixed(2)}</td></tr>
+						<tr><td><strong>Accuracy:</strong></td><td>${summary.accuracyPercent || 0}%</td></tr>
+					</table>
+				</div>
+				
+				<h2>Variance Categories</h2>
+				<table>
+					<tr>
+						<td><span class="badge badge-success">Minor</span></td>
+						<td>${summary.variancesByCategory?.minor || 0}</td>
+					</tr>
+					<tr>
+						<td><span class="badge badge-warning">Moderate</span></td>
+						<td>${summary.variancesByCategory?.moderate || 0}</td>
+					</tr>
+					<tr>
+						<td><span class="badge badge-danger">Major</span></td>
+						<td>${summary.variancesByCategory?.major || 0}</td>
+					</tr>
+				</table>
+				
+				<h2>Variance Details</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Product</th>
+							<th>SKU</th>
+							<th>System Qty</th>
+							<th>Counted Qty</th>
+							<th>Variance</th>
+							<th>Value</th>
+							<th>Category</th>
+						</tr>
+					</thead>
+					<tbody>
+						${exportData.map(item => `
+							<tr>
+								<td>${item['Product Name']}</td>
+								<td>${item['SKU']}</td>
+								<td>${item['System Quantity']}</td>
+								<td>${item['Counted Quantity']}</td>
+								<td>${item['Variance Quantity']}</td>
+								<td>${item['Variance Value']}</td>
+								<td><span class="badge badge-${item['Category'] === 'minor' ? 'success' : item['Category'] === 'moderate' ? 'warning' : 'danger'}">${item['Category']}</span></td>
+							</tr>
+						`).join('')}
+					</tbody>
+				</table>
+			`
+			
+			const result = exportToPDF(`Variance Report - ${count.countNumber}`, pdfContent, { orientation: 'landscape' })
+			if (result.success) {
+				MySwal.fire({
+					icon: 'success',
+					title: 'PDF Export',
+					text: 'Print dialog will open for PDF export',
+					showConfirmButton: false,
+					timer: 2000
+				})
+			}
+		}
 	}
 
 	// ** Toggle variance selection
@@ -325,14 +458,32 @@ const VarianceReview = () => {
 									<X size={14} className='mr-50' />
 									Reject
 								</Button>
-								<Button
-									color='secondary'
+								<Button.Ripple
+									color='success'
 									outline
-									onClick={handleExportReport}
+									className='mr-1'
+									onClick={() => handleExportReport('excel')}
 								>
 									<Download size={14} className='mr-50' />
-									Export
-								</Button>
+									Excel
+								</Button.Ripple>
+								<Button.Ripple
+									color='info'
+									outline
+									className='mr-1'
+									onClick={() => handleExportReport('csv')}
+								>
+									<Download size={14} className='mr-50' />
+									CSV
+								</Button.Ripple>
+								<Button.Ripple
+									color='danger'
+									outline
+									onClick={() => handleExportReport('pdf')}
+								>
+									<FileText size={14} className='mr-50' />
+									PDF
+								</Button.Ripple>
 							</div>
 						</CardHeader>
 					</Card>
@@ -380,8 +531,8 @@ const VarianceReview = () => {
 								</div>
 								<div>
 									<h6 className='mb-0'>Total Variance</h6>
-									<h4 className={`mb-0 ${summary.totalVarianceValue >= 0 ? 'text-success' : 'text-danger'}`}>
-										R {Math.abs(summary.totalVarianceValue).toFixed(2)}
+									<h4 className={`mb-0 ${(summary.totalVarianceValue || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+										R {Math.abs(summary.totalVarianceValue || 0).toFixed(2)}
 									</h4>
 								</div>
 							</div>
@@ -397,12 +548,12 @@ const VarianceReview = () => {
 								</div>
 								<div>
 									<h6 className='mb-0'>Accuracy</h6>
-									<h4 className='mb-0'>{summary.accuracyPercent}%</h4>
+									<h4 className='mb-0'>{summary.accuracyPercent || 0}%</h4>
 								</div>
 							</div>
 							<Progress 
-								value={summary.accuracyPercent} 
-								color={summary.accuracyPercent >= 95 ? 'success' : summary.accuracyPercent >= 90 ? 'warning' : 'danger'}
+								value={summary.accuracyPercent || 0} 
+								color={(summary.accuracyPercent || 0) >= 95 ? 'success' : (summary.accuracyPercent || 0) >= 90 ? 'warning' : 'danger'}
 								className='mt-1'
 								style={{ height: '6px' }}
 							/>
@@ -536,9 +687,9 @@ const VarianceReview = () => {
 											</td>
 											<td>
 												<div>
-													<span className='font-weight-bold'>{variance.product.name}</span>
+													<span className='font-weight-bold'>{variance.product?.name || 'Unknown Product'}</span>
 													<div>
-														<small className='text-muted'>SKU: {variance.product.sku}</small>
+														<small className='text-muted'>SKU: {variance.product?.sku || 'N/A'}</small>
 													</div>
 												</div>
 											</td>
@@ -550,14 +701,14 @@ const VarianceReview = () => {
 											</td>
 											<td>{getVarianceDisplay(variance)}</td>
 											<td>
-												<span className={Math.abs(variance.variancePercent) > 10 ? 'text-danger font-weight-bold' : ''}>
-													{variance.variancePercent.toFixed(1)}%
+												<span className={Math.abs(variance.variancePercent || 0) > 10 ? 'text-danger font-weight-bold' : ''}>
+													{(variance.variancePercent || 0).toFixed(1)}%
 												</span>
 											</td>
 											<td>{getCategoryBadge(variance.varianceCategory)}</td>
 											<td>
-												<span className={variance.varianceValue >= 0 ? 'text-success' : 'text-danger'}>
-													R {Math.abs(variance.varianceValue).toFixed(2)}
+												<span className={(variance.varianceValue || 0) >= 0 ? 'text-success' : 'text-danger'}>
+													R {Math.abs(variance.varianceValue || 0).toFixed(2)}
 												</span>
 											</td>
 											<td>

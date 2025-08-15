@@ -37,6 +37,7 @@ import { Bar, Line, Pie } from 'react-chartjs-2'
 import moment from 'moment'
 import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
+import { exportToExcel, exportToCSV, exportToPDF, formatReportDataForExport } from '../../../../utility/exportUtils'
 
 // ** Styles
 import 'flatpickr/dist/themes/material_blue.css'
@@ -147,12 +148,224 @@ const CountReports = () => {
 			return
 		}
 
-		// In production, implement actual export functionality
-		MySwal.fire({
-			icon: 'info',
-			title: `Export as ${format.toUpperCase()}`,
-			text: 'Export functionality will be implemented with backend integration'
-		})
+		const timestamp = moment().format('YYYYMMDD_HHmmss')
+		const filename = `InventoryReport_${reportType}_${timestamp}`
+
+		if (format === 'excel') {
+			// Format data for Excel export with multiple sheets
+			const sheets = formatReportDataForExport(reportData)
+			
+			if (sheets && sheets.length > 0) {
+				const result = exportToExcel(null, filename, sheets)
+				if (result.success) {
+					MySwal.fire({
+						icon: 'success',
+						title: 'Export Successful',
+						text: `Report exported as ${result.filename}`,
+						showConfirmButton: false,
+						timer: 2000
+					})
+				} else {
+					MySwal.fire({
+						icon: 'error',
+						title: 'Export Failed',
+						text: result.error || 'Failed to export report'
+					})
+				}
+			} else {
+				// Fallback for simple data export
+				const exportData = []
+				
+				if (reportData.summary) {
+					exportData.push({
+						'Report Type': reportType,
+						'Generated Date': moment().format('YYYY-MM-DD HH:mm'),
+						'Total Counts': reportData.summary.totalCounts || 0,
+						'Total Items': reportData.summary.totalItems || 0,
+						'Items Counted': reportData.summary.totalCounted || 0,
+						'Total Variances': reportData.summary.totalVariances || 0,
+						'Total Impact': `R ${Math.abs(reportData.summary.totalImpact || 0).toFixed(2)}`,
+						'Average Accuracy': `${reportData.summary.avgAccuracy || 0}%`
+					})
+				}
+				
+				const result = exportToExcel(exportData, filename)
+				if (result.success) {
+					MySwal.fire({
+						icon: 'success',
+						title: 'Export Successful',
+						text: `Report exported as ${result.filename}`,
+						showConfirmButton: false,
+						timer: 2000
+					})
+				}
+			}
+		} else if (format === 'csv') {
+			// Prepare CSV data based on active tab
+			let csvData = []
+			
+			if (activeTab === 'summary' && reportData.topVariances) {
+				csvData = reportData.topVariances.map(item => ({
+					Product: item.productName,
+					SKU: item.sku,
+					'Avg System Qty': item.avgSystemQty,
+					'Avg Counted Qty': item.avgCountedQty,
+					'Avg Variance': item.avgVariance,
+					'Variance %': `${item.variancePercent || 0}%`,
+					'Total Value': `R ${Math.abs(item.totalValue || 0).toFixed(2)}`
+				}))
+			} else if (activeTab === 'details' && reportData.detailedData) {
+				csvData = reportData.detailedData.map(item => ({
+					'Count Number': item.countNumber,
+					'Count Date': moment(item.countDate).format('YYYY-MM-DD'),
+					Product: item.productName,
+					Category: item.categoryName,
+					'System Qty': item.systemQty,
+					'Counted Qty': item.countedQty,
+					Variance: item.variance,
+					Value: `R ${Math.abs(item.varianceValue || 0).toFixed(2)}`,
+					Status: item.approved ? 'Approved' : 'Pending'
+				}))
+			} else {
+				// Default to summary data
+				csvData = [{
+					'Report Type': reportType,
+					'Generated Date': moment().format('YYYY-MM-DD HH:mm'),
+					'Total Counts': reportData.summary?.totalCounts || 0,
+					'Total Items': reportData.summary?.totalItems || 0,
+					'Total Variances': reportData.summary?.totalVariances || 0,
+					'Average Accuracy': `${reportData.summary?.avgAccuracy || 0}%`
+				}]
+			}
+			
+			const result = exportToCSV(csvData, filename)
+			if (result.success) {
+				MySwal.fire({
+					icon: 'success',
+					title: 'Export Successful',
+					text: `Report exported as ${result.filename}`,
+					showConfirmButton: false,
+					timer: 2000
+				})
+			} else {
+				MySwal.fire({
+					icon: 'error',
+					title: 'Export Failed',
+					text: result.error || 'Failed to export report'
+				})
+			}
+		} else if (format === 'pdf') {
+			// Generate PDF content based on report data
+			let pdfContent = `
+				<div class="header">
+					<h1>Inventory Count Report</h1>
+					<h3>${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report</h3>
+					<p>Generated on ${moment().format('MMMM DD, YYYY [at] HH:mm')}</p>
+				</div>
+			`
+			
+			if (reportData.summary) {
+				pdfContent += `
+					<div class="summary-card">
+						<h2>Summary Statistics</h2>
+						<table>
+							<tr>
+								<td><strong>Total Counts:</strong></td>
+								<td>${reportData.summary.totalCounts || 0}</td>
+							</tr>
+							<tr>
+								<td><strong>Total Items:</strong></td>
+								<td>${reportData.summary.totalItems || 0}</td>
+							</tr>
+							<tr>
+								<td><strong>Items Counted:</strong></td>
+								<td>${reportData.summary.totalCounted || 0}</td>
+							</tr>
+							<tr>
+								<td><strong>Completion Rate:</strong></td>
+								<td>${reportData.summary.completionRate || 0}%</td>
+							</tr>
+							<tr>
+								<td><strong>Total Variances:</strong></td>
+								<td>${reportData.summary.totalVariances || 0}</td>
+							</tr>
+							<tr>
+								<td><strong>Average Accuracy:</strong></td>
+								<td>${reportData.summary.avgAccuracy || 0}%</td>
+							</tr>
+							<tr>
+								<td><strong>Total Impact:</strong></td>
+								<td class="${(reportData.summary.totalImpact || 0) >= 0 ? 'text-success' : 'text-danger'}">
+									R ${Math.abs(reportData.summary.totalImpact || 0).toFixed(2)}
+								</td>
+							</tr>
+						</table>
+					</div>
+				`
+			}
+			
+			if (reportData.insights && reportData.insights.length > 0) {
+				pdfContent += `
+					<div class="summary-card">
+						<h2>Key Insights</h2>
+						<ul>
+							${reportData.insights.map(insight => `<li>${insight}</li>`).join('')}
+						</ul>
+					</div>
+				`
+			}
+			
+			if (reportData.topVariances && reportData.topVariances.length > 0) {
+				pdfContent += `
+					<h2>Top Variance Products</h2>
+					<table>
+						<thead>
+							<tr>
+								<th>Product</th>
+								<th>SKU</th>
+								<th>Avg System Qty</th>
+								<th>Avg Counted Qty</th>
+								<th>Avg Variance</th>
+								<th>Variance %</th>
+								<th>Total Value</th>
+							</tr>
+						</thead>
+						<tbody>
+							${reportData.topVariances.slice(0, 10).map(item => `
+								<tr>
+									<td>${item.productName}</td>
+									<td>${item.sku}</td>
+									<td>${item.avgSystemQty}</td>
+									<td>${item.avgCountedQty}</td>
+									<td class="${item.avgVariance > 0 ? 'text-success' : 'text-danger'}">
+										${item.avgVariance > 0 ? '+' : ''}${item.avgVariance}
+									</td>
+									<td>
+										<span class="badge ${Math.abs(item.variancePercent) > 10 ? 'badge-danger' : 'badge-warning'}">
+											${item.variancePercent || 0}%
+										</span>
+									</td>
+									<td class="${item.totalValue >= 0 ? 'text-success' : 'text-danger'}">
+										R ${Math.abs(item.totalValue || 0).toFixed(2)}
+									</td>
+								</tr>
+							`).join('')}
+						</tbody>
+					</table>
+				`
+			}
+			
+			const result = exportToPDF('Inventory Count Report', pdfContent, { orientation: 'landscape' })
+			if (result.success) {
+				MySwal.fire({
+					icon: 'success',
+					title: 'PDF Export',
+					text: 'Print dialog will open for PDF export',
+					showConfirmButton: false,
+					timer: 2000
+				})
+			}
+		}
 	}
 
 	// ** Chart options (Chart.js v2 format)
@@ -401,24 +614,33 @@ const CountReports = () => {
 						<CardHeader>
 							<CardTitle tag='h4'>Inventory Count Reports</CardTitle>
 							<div className='d-flex'>
-								<Button
+								<Button.Ripple
 									color='success'
 									className='mr-1'
 									onClick={() => exportReport('excel')}
 									disabled={!reportData}
 								>
 									<Download size={14} className='mr-50' />
-									Export Excel
-								</Button>
-								<Button
+									Excel
+								</Button.Ripple>
+								<Button.Ripple
+									color='info'
+									className='mr-1'
+									onClick={() => exportReport('csv')}
+									disabled={!reportData}
+								>
+									<Download size={14} className='mr-50' />
+									CSV
+								</Button.Ripple>
+								<Button.Ripple
 									color='danger'
 									outline
 									onClick={() => exportReport('pdf')}
 									disabled={!reportData}
 								>
 									<FileText size={14} className='mr-50' />
-									Export PDF
-								</Button>
+									PDF
+								</Button.Ripple>
 							</div>
 						</CardHeader>
 					</Card>
