@@ -7,7 +7,7 @@ import Sidebar from './Sidebar'
 import CSVUploadModal from './CSVUploadModal'
 
 // ** Store & Actions
-import { getAllData, getFilteredData } from '../store/action'
+import { getAllData, getFilteredData, getProductStats } from '../store/action'
 import { useDispatch, useSelector } from 'react-redux'
 
 // ** Third Party Components
@@ -24,6 +24,7 @@ import '@styles/react/libs/tables/react-dataTable-component.scss'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import FormGroup from 'reactstrap/lib/FormGroup'
+import InventoryStatsCards from '@src/components/cards/stats/InventoryStatsCards'
 
 
 const ProductTable = () => {
@@ -47,6 +48,7 @@ const ProductTable = () => {
 
   useEffect(() => {
     dispatch(getAllData())
+    dispatch(getProductStats())
     dispatch(
       getFilteredData(store.allData, {
         page: currentPage,
@@ -233,6 +235,13 @@ const ProductTable = () => {
 
   return (
     <Fragment>
+      {/* Inventory Stats Cards */}
+      {store.stats && (
+        <div className='mb-2'>
+          <InventoryStatsCards stats={store.stats} cols={{ xl: '2', lg: '4', md: '4', sm: '6' }} />
+        </div>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle tag='h4'>Search Filter</CardTitle>

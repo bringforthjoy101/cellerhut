@@ -352,11 +352,431 @@ export const formatReportDataForExport = (reportData) => {
 	return sheets
 }
 
+/**
+ * Format count sheet data for printing
+ * @param {Object} countData - Count detail data
+ */
+export const formatCountSheetData = (countData) => {
+	if (!countData || !countData.count) return null
+	
+	const { count } = countData
+	const isBlindCount = count.blindCount || false
+	
+	// Group items by category if applicable
+	const itemsByCategory = {}
+	count.countItems?.forEach(item => {
+		const categoryName = item.product?.category?.name || 'Uncategorized'
+		if (!itemsByCategory[categoryName]) {
+			itemsByCategory[categoryName] = []
+		}
+		itemsByCategory[categoryName].push({
+			productName: item.product?.name || 'Unknown',
+			sku: item.product?.sku || 'N/A',
+			barcode: item.product?.barcode || 'N/A',
+			unit: item.product?.unit || 'units',
+			systemQty: isBlindCount ? 'Hidden' : (item.systemQty || 0),
+			countedQty: item.countedQty || '',
+			notes: item.notes || ''
+		})
+	})
+	
+	return {
+		countInfo: {
+			countNumber: count.countNumber,
+			countType: count.countType,
+			countDate: moment(count.countDate).format('MMMM DD, YYYY'),
+			deadlineDate: count.deadlineDate ? moment(count.deadlineDate).format('MMMM DD, YYYY') : 'N/A',
+			assignedTo: count.assignee ? `${count.assignee.firstName} ${count.assignee.lastName}` : 'N/A',
+			createdBy: count.creator ? `${count.creator.firstName} ${count.creator.lastName}` : 'N/A',
+			totalItems: count.totalItems || 0,
+			isBlindCount,
+			notes: count.notes || ''
+		},
+		itemsByCategory
+	}
+}
+
+/**
+ * Export count sheet as printable document
+ * @param {Object} countData - Count detail data
+ * @param {Object} options - Export options
+ */
+export const exportCountSheet = (countData, options = {}) => {
+	try {
+		const formattedData = formatCountSheetData(countData)
+		if (!formattedData) {
+			return { success: false, error: 'Invalid count data' }
+		}
+		
+		const { countInfo, itemsByCategory } = formattedData
+		
+		// Generate HTML content for count sheet
+		let itemsHtml = ''
+		let itemNumber = 1
+		
+		Object.entries(itemsByCategory).forEach(([category, items]) => {
+			itemsHtml += `
+				<tr class="category-header">
+					<td colspan="8"><strong>Category: ${category}</strong></td>
+				</tr>
+			`
+			
+			items.forEach(item => {
+				itemsHtml += `
+					<tr>
+						<td class="text-center">${itemNumber++}</td>
+						<td>${item.productName}</td>
+						<td class="text-center">${item.sku}</td>
+						<td class="text-center">${item.barcode}</td>
+						<td class="text-center">${item.unit}</td>
+						<td class="text-center ${countInfo.isBlindCount ? 'blind-count' : ''}">${item.systemQty}</td>
+						<td class="counted-qty"></td>
+						<td class="notes-field"></td>
+					</tr>
+				`
+			})
+			
+			// Add blank rows for unexpected items in this category
+			for (let i = 0; i < 3; i++) {
+				itemsHtml += `
+					<tr class="blank-row">
+						<td class="text-center">${itemNumber++}</td>
+						<td class="write-field"></td>
+						<td class="text-center write-field"></td>
+						<td class="text-center write-field"></td>
+						<td class="text-center write-field"></td>
+						<td class="text-center ${countInfo.isBlindCount ? 'blind-count' : 'write-field'}">-</td>
+						<td class="counted-qty"></td>
+						<td class="notes-field"></td>
+					</tr>
+				`
+			}
+		})
+		
+		const content = `
+			<div class="count-sheet-header">
+				<h1>Inventory Count Sheet</h1>
+				<div class="header-info">
+					<div class="info-row">
+						<div class="info-item">
+							<strong>Count #:</strong> ${countInfo.countNumber}
+						</div>
+						<div class="info-item">
+							<strong>Type:</strong> ${countInfo.countType.toUpperCase()}
+						</div>
+						<div class="info-item">
+							<strong>Date:</strong> ${countInfo.countDate}
+						</div>
+					</div>
+					<div class="info-row">
+						<div class="info-item">
+							<strong>Assigned To:</strong> ${countInfo.assignedTo}
+						</div>
+						<div class="info-item">
+							<strong>Deadline:</strong> ${countInfo.deadlineDate}
+						</div>
+						<div class="info-item">
+							<strong>Total Items:</strong> ${countInfo.totalItems}
+						</div>
+					</div>
+					${countInfo.notes ? `
+						<div class="info-row">
+							<div class="info-item full-width">
+								<strong>Notes:</strong> ${countInfo.notes}
+							</div>
+						</div>
+					` : ''}
+				</div>
+				
+				${countInfo.isBlindCount ? `
+					<div class="alert alert-info">
+						<strong>⚠️ BLIND COUNT:</strong> System quantities are hidden. Count all items without referring to expected quantities.
+					</div>
+				` : ''}
+				
+				<div class="instructions">
+					<h3>Counting Instructions:</h3>
+					<ol>
+						<li>Count each item carefully and record the actual quantity found</li>
+						<li>Note any damaged, expired, or unusual conditions in the Notes column</li>
+						<li>For items not found, write "0" in the Counted Qty column</li>
+						<li>For unexpected items, use the blank rows provided</li>
+						<li>Sign and date the sheet when counting is complete</li>
+					</ol>
+				</div>
+			</div>
+			
+			<table class="count-sheet-table">
+				<thead>
+					<tr>
+						<th width="5%">#</th>
+						<th width="25%">Product Name</th>
+						<th width="10%">SKU</th>
+						<th width="12%">Barcode</th>
+						<th width="8%">Unit</th>
+						<th width="10%">${countInfo.isBlindCount ? 'System Qty' : 'System Qty'}</th>
+						<th width="10%">Counted Qty</th>
+						<th width="20%">Notes</th>
+					</tr>
+				</thead>
+				<tbody>
+					${itemsHtml}
+				</tbody>
+			</table>
+			
+			<div class="signature-section">
+				<div class="signature-row">
+					<div class="signature-block">
+						<div class="signature-line"></div>
+						<p>Counter's Signature</p>
+					</div>
+					<div class="signature-block">
+						<div class="signature-line"></div>
+						<p>Date & Time</p>
+					</div>
+				</div>
+				<div class="signature-row">
+					<div class="signature-block">
+						<div class="signature-line"></div>
+						<p>Reviewer's Signature</p>
+					</div>
+					<div class="signature-block">
+						<div class="signature-line"></div>
+						<p>Date & Time</p>
+					</div>
+				</div>
+			</div>
+		`
+		
+		// Custom styles for count sheet
+		const customStyles = `
+			.count-sheet-header {
+				margin-bottom: 20px;
+			}
+			.count-sheet-header h1 {
+				text-align: center;
+				color: #333;
+				margin-bottom: 20px;
+				font-size: 24px;
+			}
+			.header-info {
+				border: 1px solid #ddd;
+				padding: 15px;
+				background: #f9f9f9;
+				margin-bottom: 15px;
+			}
+			.info-row {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 10px;
+			}
+			.info-row:last-child {
+				margin-bottom: 0;
+			}
+			.info-item {
+				flex: 1;
+			}
+			.info-item.full-width {
+				flex: 1 1 100%;
+			}
+			.alert-info {
+				background: #d1ecf1;
+				border: 1px solid #bee5eb;
+				color: #0c5460;
+				padding: 12px;
+				margin: 15px 0;
+				border-radius: 4px;
+			}
+			.instructions {
+				margin: 20px 0;
+				padding: 15px;
+				background: #fff;
+				border: 1px solid #ddd;
+			}
+			.instructions h3 {
+				margin-top: 0;
+				font-size: 16px;
+				color: #333;
+			}
+			.instructions ol {
+				margin-bottom: 0;
+				padding-left: 20px;
+			}
+			.instructions li {
+				margin-bottom: 5px;
+			}
+			.count-sheet-table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 20px 0;
+			}
+			.count-sheet-table th,
+			.count-sheet-table td {
+				border: 1px solid #333;
+				padding: 8px;
+				font-size: 11px;
+			}
+			.count-sheet-table th {
+				background: #f0f0f0;
+				font-weight: bold;
+				text-align: center;
+			}
+			.count-sheet-table td {
+				height: 30px;
+			}
+			.category-header td {
+				background: #e8e8e8;
+				font-weight: bold;
+				padding: 10px 8px;
+			}
+			.text-center {
+				text-align: center;
+			}
+			.counted-qty {
+				background: #fff;
+				border: 2px solid #333;
+			}
+			.notes-field {
+				background: #fff;
+			}
+			.write-field {
+				background: #fafafa;
+			}
+			.blank-row {
+				background: #fcfcfc;
+			}
+			.blank-row td {
+				color: #999;
+			}
+			.blind-count {
+				background: #333;
+				color: #333;
+			}
+			.signature-section {
+				margin-top: 40px;
+				page-break-inside: avoid;
+			}
+			.signature-row {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 30px;
+			}
+			.signature-block {
+				width: 45%;
+			}
+			.signature-line {
+				border-bottom: 1px solid #333;
+				height: 40px;
+				margin-bottom: 5px;
+			}
+			.signature-block p {
+				margin: 0;
+				font-size: 12px;
+				color: #666;
+			}
+			@media print {
+				.count-sheet-header {
+					page-break-after: avoid;
+				}
+				.count-sheet-table {
+					page-break-inside: auto;
+				}
+				.count-sheet-table tr {
+					page-break-inside: avoid;
+					page-break-after: auto;
+				}
+				.category-header {
+					page-break-after: avoid;
+				}
+				.signature-section {
+					page-break-before: auto;
+					margin-top: 30px;
+				}
+			}
+		`
+		
+		// Use the existing exportToPDF function with custom styles
+		const result = exportToPDF(
+			`Count Sheet - ${countInfo.countNumber}`, 
+			content,
+			{ 
+				orientation: options.orientation || 'portrait',
+				customStyles 
+			}
+		)
+		
+		// Modify the PDF export to include custom styles
+		const printFrame = document.createElement('iframe')
+		printFrame.style.position = 'absolute'
+		printFrame.style.width = '0'
+		printFrame.style.height = '0'
+		printFrame.style.border = 'none'
+		document.body.appendChild(printFrame)
+		
+		const printDocument = printFrame.contentWindow.document
+		const html = `
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>Count Sheet - ${countInfo.countNumber}</title>
+				<style>
+					* {
+						margin: 0;
+						padding: 0;
+						box-sizing: border-box;
+					}
+					body {
+						font-family: Arial, sans-serif;
+						font-size: 12px;
+						line-height: 1.4;
+						color: #333;
+						padding: 20px;
+					}
+					${customStyles}
+					@page {
+						margin: 0.5in;
+						size: ${options.orientation || 'portrait'};
+					}
+				</style>
+			</head>
+			<body>
+				${content}
+				<div class="footer" style="text-align: center; margin-top: 20px; font-size: 10px; color: #666;">
+					Generated on ${moment().format('MMMM DD, YYYY [at] HH:mm:ss')} | Page <span class="page"></span>
+				</div>
+			</body>
+			</html>
+		`
+		
+		printDocument.open()
+		printDocument.write(html)
+		printDocument.close()
+		
+		// Wait for content to load then print
+		setTimeout(() => {
+			printFrame.contentWindow.focus()
+			printFrame.contentWindow.print()
+			
+			// Remove iframe after printing
+			setTimeout(() => {
+				document.body.removeChild(printFrame)
+			}, 1000)
+		}, 500)
+		
+		return { success: true, filename: `CountSheet_${countInfo.countNumber}.pdf` }
+	} catch (error) {
+		console.error('Count sheet export error:', error)
+		return { success: false, error: error.message }
+	}
+}
+
 export default {
 	generateFilename,
 	exportToExcel,
 	exportToCSV,
 	exportToPDF,
 	formatVarianceDataForExport,
-	formatReportDataForExport
+	formatReportDataForExport,
+	formatCountSheetData,
+	exportCountSheet
 }

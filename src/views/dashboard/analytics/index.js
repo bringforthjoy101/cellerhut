@@ -1,4 +1,5 @@
 import { useContext, useState, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { apiRequest, swal, kFormatter, isUserLoggedIn } from '@utils'
 import { ThemeColors } from '@src/utility/context/ThemeColors'
 import { Row, Col, Spinner } from 'reactstrap'
@@ -7,11 +8,15 @@ import CardCongratulations from '@src/views/ui-elements/cards/advance/CardCongra
 import StatsCard from '@src/views/ui-elements/cards/statistics/StatsCard'
 import StatsVertical from '@components/widgets/stats/StatsVertical'
 import { DollarSign, Eye, TrendingUp } from 'react-feather'
+import InventoryStatsCards from '@src/components/cards/stats/InventoryStatsCards'
+import { getProductStats } from '@src/views/tiki-fish/product/store/action'
 
 import '@styles/react/libs/charts/apex-charts.scss'
 
 const AnalyticsDashboard = () => {
 	const { colors } = useContext(ThemeColors)
+	const dispatch = useDispatch()
+	const productStats = useSelector(state => state.products?.stats)
 
 	const [userData, setUserData] = useState(null)
 	const [dashData, setDashData] = useState({})
@@ -36,10 +41,11 @@ const AnalyticsDashboard = () => {
 		}
 	}
 
-	// ** Get admin activities
+	// ** Get admin activities and product stats
 	useEffect(() => {
 		dashboardData()
-	}, [])
+		dispatch(getProductStats())
+	}, [dispatch])
 
 	const numFormatter = (num) => {
 		if (num > 999 && num < 1000000) {
@@ -62,6 +68,14 @@ const AnalyticsDashboard = () => {
 					{dashData.sales ? <StatsCard cols={{ xl: '4', sm: '6' }} statsData={dashData?.sales.topSelling} /> : <Spinner className="mr-25" size="l" />}
 				</Col>
 			</Row>
+			
+			{/* Inventory Statistics Section */}
+			{productStats && (
+				<div className='mb-2'>
+					<h4 className='mb-2'>Inventory Overview</h4>
+					<InventoryStatsCards stats={productStats} cols={{ xl: '2', lg: '4', md: '4', sm: '6' }} />
+				</div>
+			)}
 			{userData?.role === 'admin' && (
 				<>
 					{/* <Row className="match-height">

@@ -1,5 +1,6 @@
 import { useContext, useState, useEffect } from 'react'
 import { Row, Col } from 'reactstrap'
+import { useDispatch, useSelector } from 'react-redux'
 import CompanyTable from './CompanyTable'
 import { ThemeColors } from '@src/utility/context/ThemeColors'
 import Earnings from '@src/views/ui-elements/cards/analytics/Earnings'
@@ -12,6 +13,8 @@ import OrdersBarChart from '@src/views/ui-elements/cards/statistics/OrdersBarCha
 import ProfitLineChart from '@src/views/ui-elements/cards/statistics/ProfitLineChart'
 import CardTransactions from '@src/views/ui-elements/cards/advance/CardTransactions'
 import CardBrowserStates from '@src/views/ui-elements/cards/advance/CardBrowserState'
+import InventoryStatsCards from '@src/components/cards/stats/InventoryStatsCards'
+import { getProductStats } from '@src/views/tiki-fish/product/store/action'
 
 import '@styles/react/libs/charts/apex-charts.scss'
 import '@styles/base/pages/dashboard-ecommerce.scss'
@@ -21,6 +24,9 @@ import { isUserLoggedIn } from '@utils'
 const EcommerceDashboard = () => {
   const { colors } = useContext(ThemeColors),
     trackBgColor = '#e9ecef'
+  
+  const dispatch = useDispatch()
+  const productStats = useSelector(state => state.products?.stats)
 
   // ** State
   const [userData, setUserData] = useState(null)
@@ -45,7 +51,9 @@ const EcommerceDashboard = () => {
       setUserData(JSON.parse(localStorage.getItem('userData')))
     }
     getGreetings()
-  }, [])
+    // Fetch inventory stats
+    dispatch(getProductStats())
+  }, [dispatch])
 
   return (
     <div id='dashboard-ecommerce'>
@@ -57,6 +65,14 @@ const EcommerceDashboard = () => {
           <StatsCard cols={{ xl: '3', sm: '6' }} />
         </Col>
       </Row>
+      
+      {/* Inventory Statistics Section */}
+      {productStats && (
+        <div className='mb-2'>
+          <h4 className='mb-2'>Inventory Overview</h4>
+          <InventoryStatsCards stats={productStats} cols={{ xl: '2', lg: '4', md: '4', sm: '6' }} />
+        </div>
+      )}
       <Row className='match-height'>
         <Col lg='4' md='12'>
           <Row className='match-height'>

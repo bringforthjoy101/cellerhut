@@ -37,11 +37,13 @@ import {
 	Eye,
 	EyeOff,
 	Clipboard,
-	Camera
+	Camera,
+	Download
 } from 'react-feather'
 import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
 import { getCountDetail, recordCount, bulkRecordCounts, updateCountStatus } from '../store/action'
+import { exportCountSheet } from '../../../../utility/exportUtils'
 
 const MySwal = withReactContent(Swal)
 
@@ -188,6 +190,26 @@ const CountSheet = () => {
 				}
 			}
 		})
+	}
+
+	// ** Download count sheet
+	const handleDownloadCountSheet = () => {
+		const result = exportCountSheet(store.countDetail)
+		if (result.success) {
+			MySwal.fire({
+				icon: 'success',
+				title: 'Count Sheet Ready',
+				text: 'The print dialog will open for your count sheet',
+				showConfirmButton: false,
+				timer: 2000
+			})
+		} else {
+			MySwal.fire({
+				icon: 'error',
+				title: 'Export Failed',
+				text: result.error || 'Failed to generate count sheet'
+			})
+		}
 	}
 
 	// ** Submit for review
@@ -362,6 +384,15 @@ const CountSheet = () => {
 									</InputGroup>
 								</Col>
 								<Col md='6' className='text-right'>
+									<Button
+										color='info'
+										outline
+										className='mr-1'
+										onClick={handleDownloadCountSheet}
+									>
+										<Download size={14} className='mr-50' />
+										Download Count Sheet
+									</Button>
 									<Button
 										color='secondary'
 										outline

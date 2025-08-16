@@ -7,7 +7,10 @@ const initialState = {
   selectedProduct: null,
   categories: [],
   categoriesLoading: false,
-  categoriesError: null
+  categoriesError: null,
+  stats: null,
+  statsLoading: false,
+  statsError: null
 }
 
 const products = (state = initialState, action) => {
@@ -35,6 +38,19 @@ const products = (state = initialState, action) => {
         ...state, 
         categoriesLoading: false,
         categoriesError: action.error
+      }
+    case 'GET_PRODUCT_STATS':
+      return {
+        ...state,
+        stats: action.data,
+        statsLoading: false,
+        statsError: null
+      }
+    case 'GET_PRODUCT_STATS_ERROR':
+      return {
+        ...state,
+        statsLoading: false,
+        statsError: action.error
       }
     default:
       return { ...state }

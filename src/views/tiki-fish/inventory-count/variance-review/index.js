@@ -55,6 +55,7 @@ const VarianceReview = () => {
 	const [selectedVariances, setSelectedVariances] = useState([])
 	const [approvalNotes, setApprovalNotes] = useState('')
 	const [isApproving, setIsApproving] = useState(false)
+	const [isRejecting, setIsRejecting] = useState(false)
 	const [filterCategory, setFilterCategory] = useState('all')
 	const [sortBy, setSortBy] = useState('variance_value')
 	const [viewMode, setViewMode] = useState('table')
@@ -198,16 +199,27 @@ const VarianceReview = () => {
 			confirmButtonColor: '#dc3545'
 		}).then(async (result) => {
 			if (result.isConfirmed) {
-				const updateResult = await dispatch(updateCountStatus(id, 'in_progress'))
-				if (updateResult) {
+				setIsRejecting(true)
+				try {
+					const updateResult = await dispatch(updateCountStatus(id, 'in_progress'))
+					if (updateResult) {
+						MySwal.fire({
+							icon: 'info',
+							title: 'Count Rejected',
+							text: 'Count sent back for recounting',
+							showConfirmButton: false,
+							timer: 1500
+						})
+						history.push(`/inventory/counts/${id}/count-sheet`)
+					}
+				} catch (error) {
 					MySwal.fire({
-						icon: 'info',
-						title: 'Count Rejected',
-						text: 'Count sent back for recounting',
-						showConfirmButton: false,
-						timer: 1500
+						icon: 'error',
+						title: 'Error',
+						text: 'Failed to reject count'
 					})
-					history.push(`/inventory/counts/${id}/count-sheet`)
+				} finally {
+					setIsRejecting(false)
 				}
 			}
 		})
@@ -381,6 +393,11 @@ const VarianceReview = () => {
 
 	const { count, summary, variances } = store.varianceReport
 	const filteredVariances = getFilteredVariances()
+	
+	// Check if count has already been processed
+	const isCountProcessed = count?.status === 'approved' || 
+	                        count?.status === 'completed' || 
+	                        count?.status === 'cancelled'
 
 	// ** Variance category badges
 	const getCategoryBadge = (category) => {
@@ -437,7 +454,7 @@ const VarianceReview = () => {
 									color='success'
 									className='mr-1'
 									onClick={() => setApprovalModal(true)}
-									disabled={selectedVariances.length === 0}
+									disabled={selectedVariances.length === 0 || isCountProcessed}
 								>
 									<ThumbsUp size={14} className='mr-50' />
 									Approve Selected ({selectedVariances.length})
@@ -446,17 +463,35 @@ const VarianceReview = () => {
 									color='primary'
 									className='mr-1'
 									onClick={handleApproveAll}
+									disabled={isApproving || isRejecting || isCountProcessed}
 								>
-									Approve All
+									{isApproving ? (
+										<>
+											<Spinner size='sm' className='mr-50' />
+											Approving...
+										</>
+									) : (
+										'Approve All'
+									)}
 								</Button>
 								<Button
 									color='danger'
 									outline
 									className='mr-1'
 									onClick={handleRejectCount}
+									disabled={isApproving || isRejecting || isCountProcessed}
 								>
-									<X size={14} className='mr-50' />
-									Reject
+									{isRejecting ? (
+										<>
+											<Spinner size='sm' className='mr-50' />
+											Rejecting...
+										</>
+									) : (
+										<>
+											<X size={14} className='mr-50' />
+											Reject
+										</>
+									)}
 								</Button>
 								<Button.Ripple
 									color='success'
@@ -489,6 +524,18 @@ const VarianceReview = () => {
 					</Card>
 				</Col>
 			</Row>
+
+			{/* Status Alert */}
+			{isCountProcessed && (
+				<Row>
+					<Col sm='12'>
+						<Alert color='info'>
+							<CheckCircle size={14} className='mr-1' />
+							This count has already been {count.status}. No further actions can be taken.
+						</Alert>
+					</Col>
+				</Row>
+			)}
 
 			{/* Summary Cards */}
 			<Row>
@@ -755,7 +802,7 @@ const VarianceReview = () => {
 									<td className='font-weight-bold'>
 										R {filteredVariances
 											.filter(v => selectedVariances.includes(v.id))
-											.reduce((sum, v) => sum + v.varianceValue, 0)
+											.reduce((sum, v) => sum + (Number(v.varianceValue) || 0), 0)
 											.toFixed(2)}
 									</td>
 								</tr>
@@ -790,8 +837,8 @@ const VarianceReview = () => {
 					>
 						{isApproving ? (
 							<>
-								<Spinner size='sm' className='mr-1' />
-								Approving...
+								<Spinner size='sm' />
+								<span className='ml-50'>Approving...</span>
 							</>
 						) : (
 							'Approve & Update Stock'

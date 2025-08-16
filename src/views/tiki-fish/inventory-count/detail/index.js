@@ -34,12 +34,14 @@ import {
 	Eye,
 	ThumbsUp,
 	XCircle,
-	BarChart
+	BarChart,
+	Printer
 } from 'react-feather'
 import moment from 'moment'
 import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
 import { getCountDetail, updateCountStatus, cancelCount } from '../store/action'
+import { exportCountSheet } from '../../../../utility/exportUtils'
 
 const MySwal = withReactContent(Swal)
 
@@ -119,6 +121,25 @@ const CountDetail = () => {
 		history.push(`/inventory/counts/${id}/variance`)
 	}
 
+	const handlePrintCountSheet = () => {
+		const result = exportCountSheet(store.countDetail)
+		if (result.success) {
+			MySwal.fire({
+				icon: 'success',
+				title: 'Count Sheet Ready',
+				text: 'The print dialog will open for your count sheet',
+				showConfirmButton: false,
+				timer: 2000
+			})
+		} else {
+			MySwal.fire({
+				icon: 'error',
+				title: 'Export Failed',
+				text: result.error || 'Failed to generate count sheet'
+			})
+		}
+	}
+
 	if (!store.countDetail) {
 		return (
 			<div className='text-center p-5'>
@@ -166,6 +187,10 @@ const CountDetail = () => {
 							<Play size={14} className='mr-50' />
 							Start Counting
 						</Button>
+						<Button color='info' outline className='ml-1' onClick={handlePrintCountSheet}>
+							<Printer size={14} className='mr-50' />
+							Print Count Sheet
+						</Button>
 						<Button color='danger' outline className='ml-1' onClick={handleCancelCount}>
 							Cancel Count
 						</Button>
@@ -177,6 +202,10 @@ const CountDetail = () => {
 						<Button color='primary' onClick={handleResumeCount}>
 							<Edit3 size={14} className='mr-50' />
 							Continue Counting
+						</Button>
+						<Button color='info' outline className='ml-1' onClick={handlePrintCountSheet}>
+							<Printer size={14} className='mr-50' />
+							Print Count Sheet
 						</Button>
 						{progress === 100 && (
 							<Button color='success' className='ml-1' onClick={handleViewVariances}>

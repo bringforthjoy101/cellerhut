@@ -19,6 +19,29 @@ export const getAllData = () => {
   }
 }
 
+// ** Get Product Statistics
+export const getProductStats = () => {
+  return async dispatch => {
+    const response = await apiRequest({url:'/products/stats', method:'GET'}, dispatch)
+    console.log('Product Stats Response:', response) // Debug log
+    if (response && response.data.data && response.data.status) {
+        console.log('Product Stats Data:', response.data.data) // Debug log
+        await dispatch({
+          type: 'GET_PRODUCT_STATS',
+          data: response.data.data
+        })
+        return response.data.data
+    } else {
+      console.log('Product Stats Error:', response)
+      await dispatch({
+        type: 'GET_PRODUCT_STATS_ERROR',
+        error: response?.data?.message || 'Failed to load statistics'
+      })
+      return null
+    }
+  }
+}
+
 // ** Get all Categories Data
 export const getCategories = () => {
   return async dispatch => {
