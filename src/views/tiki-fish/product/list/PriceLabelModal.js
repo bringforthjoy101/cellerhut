@@ -31,16 +31,27 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 	const [selectedProducts, setSelectedProducts] = useState([])
 	const [quantities, setQuantities] = useState({})
 	const [searchTerm, setSearchTerm] = useState('')
-	const [selectedFormat, setSelectedFormat] = useState(LABEL_FORMATS.STANDARD_30)
+	const [selectedFormat, setSelectedFormat] = useState(LABEL_FORMATS.THERMAL_78x25)
 	const [previewProduct, setPreviewProduct] = useState(null)
 	
-	// Label options
+	// Label options - Basic
 	const [labelOptions, setLabelOptions] = useState({
 		showBarcode: true,
 		showCostPrice: false,
 		showDescription: false,
 		showCategory: false,
-		showUnit: true
+		showUnit: true,
+		// New options
+		showStoreName: true,
+		storeName: 'CELLERHUT',
+		showExpiryDate: false,
+		expiryDate: '',
+		showBatchNumber: false,
+		batchNumber: '',
+		showPromotion: false,
+		promotionText: 'SALE',
+		wasPrice: null,
+		currencySymbol: 'R'
 	})
 	
 	// Format options for select dropdown
@@ -242,7 +253,7 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 						{/* Label Options */}
 						<Row className="mt-2">
 							<Col md="12">
-								<Label>Label Options</Label>
+								<Label>Basic Options</Label>
 								<div className="d-flex flex-wrap">
 									<CustomInput
 										type="checkbox"
@@ -250,7 +261,7 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 										label="Show Barcode"
 										checked={labelOptions.showBarcode}
 										onChange={(e) => setLabelOptions(prev => ({ ...prev, showBarcode: e.target.checked }))}
-										className="mr-2"
+										className="mr-2 mb-1"
 									/>
 									<CustomInput
 										type="checkbox"
@@ -258,7 +269,7 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 										label="Show Unit"
 										checked={labelOptions.showUnit}
 										onChange={(e) => setLabelOptions(prev => ({ ...prev, showUnit: e.target.checked }))}
-										className="mr-2"
+										className="mr-2 mb-1"
 									/>
 									<CustomInput
 										type="checkbox"
@@ -266,7 +277,7 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 										label="Show Category"
 										checked={labelOptions.showCategory}
 										onChange={(e) => setLabelOptions(prev => ({ ...prev, showCategory: e.target.checked }))}
-										className="mr-2"
+										className="mr-2 mb-1"
 									/>
 									<CustomInput
 										type="checkbox"
@@ -274,9 +285,104 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 										label="Use Cost Price"
 										checked={labelOptions.showCostPrice}
 										onChange={(e) => setLabelOptions(prev => ({ ...prev, showCostPrice: e.target.checked }))}
-										className="mr-2"
+										className="mr-2 mb-1"
 									/>
 								</div>
+							</Col>
+						</Row>
+						
+						{/* Advanced Options */}
+						<Row className="mt-2">
+							<Col md="6">
+								<FormGroup>
+									<div className="d-flex align-items-center">
+										<CustomInput
+											type="checkbox"
+											id="showStoreName"
+											label="Store Name"
+											checked={labelOptions.showStoreName}
+											onChange={(e) => setLabelOptions(prev => ({ ...prev, showStoreName: e.target.checked }))}
+											className="mr-2"
+										/>
+										{labelOptions.showStoreName && (
+											<Input
+												type="text"
+												placeholder="Store name"
+												value={labelOptions.storeName}
+												onChange={(e) => setLabelOptions(prev => ({ ...prev, storeName: e.target.value }))}
+												style={{ width: '150px' }}
+											/>
+										)}
+									</div>
+								</FormGroup>
+							</Col>
+							<Col md="6">
+								<FormGroup>
+									<div className="d-flex align-items-center">
+										<CustomInput
+											type="checkbox"
+											id="showPromotion"
+											label="Promotion"
+											checked={labelOptions.showPromotion}
+											onChange={(e) => setLabelOptions(prev => ({ ...prev, showPromotion: e.target.checked }))}
+											className="mr-2"
+										/>
+										{labelOptions.showPromotion && (
+											<Input
+												type="text"
+												placeholder="Promo text"
+												value={labelOptions.promotionText}
+												onChange={(e) => setLabelOptions(prev => ({ ...prev, promotionText: e.target.value }))}
+												style={{ width: '150px' }}
+											/>
+										)}
+									</div>
+								</FormGroup>
+							</Col>
+							<Col md="6">
+								<FormGroup>
+									<div className="d-flex align-items-center">
+										<CustomInput
+											type="checkbox"
+											id="showExpiryDate"
+											label="Expiry Date"
+											checked={labelOptions.showExpiryDate}
+											onChange={(e) => setLabelOptions(prev => ({ ...prev, showExpiryDate: e.target.checked }))}
+											className="mr-2"
+										/>
+										{labelOptions.showExpiryDate && (
+											<Input
+												type="date"
+												value={labelOptions.expiryDate}
+												onChange={(e) => setLabelOptions(prev => ({ ...prev, expiryDate: e.target.value }))}
+												style={{ width: '150px' }}
+											/>
+										)}
+									</div>
+								</FormGroup>
+							</Col>
+							<Col md="6">
+								<FormGroup>
+									<div className="d-flex align-items-center">
+										<CustomInput
+											type="checkbox"
+											id="showBatchNumber"
+											label="Batch/Lot"
+											checked={labelOptions.showBatchNumber}
+											onChange={(e) => setLabelOptions(prev => ({ ...prev, showBatchNumber: e.target.checked }))}
+											className="mr-2"
+										/>
+										{labelOptions.showBatchNumber && (
+											<Input
+												type="text"
+												placeholder="Batch number"
+												value={labelOptions.batchNumber}
+												onChange={(e) => setLabelOptions(prev => ({ ...prev, batchNumber: e.target.value }))}
+												style={{ width: '150px' }}
+											/>
+										)}
+									</div>
+								</FormGroup>
 							</Col>
 						</Row>
 					</CardBody>
