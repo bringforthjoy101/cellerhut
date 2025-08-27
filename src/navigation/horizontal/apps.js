@@ -67,12 +67,6 @@ export default [
         icon: <ShoppingCart />,
         children: [
           {
-            id: 'shop',
-            title: 'Shop',
-            icon: <Circle />,
-            navLink: '/apps/ecommerce/shop'
-          },
-          {
             id: 'detail',
             title: 'Details',
             icon: <Circle />,

@@ -109,23 +109,27 @@
 
 // Product Grid Styles
 .product-grid {
-  padding: 1rem;
+  padding: 0.75rem;
   flex: 1;
   overflow-y: auto;
   min-height: 0; // Allow flex item to shrink
 
   .products-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+
+    @media (min-width: 1400px) {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
 
     @media (max-width: 1200px) {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
 
     @media (max-width: 768px) {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.5rem;
     }
   }
 
@@ -149,42 +153,47 @@
 
     .product-image {
       width: 100%;
-      height: 150px;
+      height: 100px;
       object-fit: cover;
       background-color: #f8f9fa;
 
       @media (max-width: 768px) {
-        height: 120px;
+        height: 80px;
       }
     }
 
     .product-info {
-      padding: 1rem;
+      padding: 0.5rem;
 
       @media (max-width: 768px) {
-        padding: 0.75rem;
+        padding: 0.4rem;
       }
 
       .product-name {
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 600;
         color: #495057;
-        margin-bottom: 0.5rem;
-        line-height: 1.3;
+        margin-bottom: 0.3rem;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
 
         @media (max-width: 768px) {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
         }
       }
 
       .product-price {
-        font-size: 1.125rem;
+        font-size: 0.95rem;
         font-weight: 700;
         color: #7367f0;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
 
         @media (max-width: 768px) {
-          font-size: 1rem;
+          font-size: 0.85rem;
         }
       }
 
@@ -192,13 +201,13 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.5rem;
+        gap: 0.25rem;
 
         .quantity-btn {
-          width: 32px;
-          height: 32px;
+          width: 24px;
+          height: 24px;
           border: none;
-          border-radius: 6px;
+          border-radius: 4px;
           background-color: #7367f0;
           color: #fff;
           display: flex;
@@ -206,6 +215,7 @@
           justify-content: center;
           cursor: pointer;
           transition: all 0.15s ease;
+          font-size: 0.75rem;
 
           &:hover {
             background-color: #6254d8;
@@ -224,9 +234,10 @@
           font-weight: 600;
           color: #495057;
           background-color: #f8f9fa;
-          padding: 0.5rem;
-          border-radius: 6px;
-          font-size: 0.875rem;
+          padding: 0.25rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          min-width: 30px;
         }
       }
     }
@@ -921,46 +932,7 @@
       }
     }
     
-    .product-grid {
-      padding: 0.5rem;
-      
-      .products-container {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 0.5rem;
-      }
-      
-      .product-card {
-        .product-image {
-          height: 100px;
-        }
-        
-        .product-info {
-          padding: 0.5rem;
-          
-          .product-name {
-            font-size: 0.8rem;
-            margin-bottom: 0.3rem;
-          }
-          
-          .product-price {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-          }
-          
-          .quantity-controls {
-            .quantity-btn {
-              width: 24px;
-              height: 24px;
-            }
-            
-            .quantity-display {
-              padding: 0.3rem;
-              font-size: 0.8rem;
-            }
-          }
-        }
-      }
-    }
+    // Product grid inherits from base styles with responsive overrides already applied
   }
 }
 
@@ -998,35 +970,42 @@
     
     .product-grid {
       .products-container {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.4rem;
       }
       
       .product-card {
         .product-image {
-          height: 80px;
+          height: 70px;
         }
         
         .product-info {
-          padding: 0.4rem;
+          padding: 0.35rem;
           
           .product-name {
-            font-size: 0.7rem;
-            line-height: 1.2;
+            font-size: 0.65rem;
+            line-height: 1.1;
+            margin-bottom: 0.2rem;
           }
           
           .product-price {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
           }
           
           .quantity-controls {
+            gap: 0.15rem;
+            
             .quantity-btn {
-              width: 20px;
-              height: 20px;
+              width: 18px;
+              height: 18px;
+              font-size: 0.6rem;
             }
             
             .quantity-display {
-              padding: 0.2rem;
-              font-size: 0.7rem;
+              padding: 0.15rem;
+              font-size: 0.6rem;
+              min-width: 20px;
             }
           }
         }
