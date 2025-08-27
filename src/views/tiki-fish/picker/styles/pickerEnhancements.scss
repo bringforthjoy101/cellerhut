@@ -691,6 +691,10 @@
 
 // Collapsed Sidebar Styles
 .order-sidebar.collapsed {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
   .sidebar-header-collapsed {
     padding: 1rem 0.5rem;
     border-bottom: 1px solid #e9ecef;
@@ -698,6 +702,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
+    flex-shrink: 0;
 
     .collapse-toggle {
       padding: 0.25rem;
@@ -746,6 +751,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-top: auto; // Push actions to bottom
+    flex-shrink: 0;
 
     .collapsed-btn {
       width: 100%;
@@ -855,5 +862,137 @@
   .product-card-list,
   .category-chip {
     transition: none;
+  }
+}
+
+// Stock Status Indicators
+.stock-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  // Override Bootstrap badge colors for better contrast
+  &.badge-success {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+
+    svg {
+      color: #ffffff;
+    }
+  }
+
+  &.badge-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+
+    svg {
+      color: #212529;
+    }
+  }
+
+  &.badge-danger {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+
+    svg {
+      color: #ffffff;
+    }
+  }
+}
+
+.product-card,
+.product-card-list {
+  &.stock-out {
+    .product-image,
+    .product-image-list {
+      filter: grayscale(100%) opacity(0.7);
+    }
+  }
+
+  &.out-of-stock-card {
+    cursor: not-allowed;
+    opacity: 0.8;
+
+    .product-name {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+
+    .add-to-cart-btn.disabled {
+      background: #e9ecef;
+      color: #6c757d;
+      cursor: not-allowed;
+      
+      &:hover {
+        background: #e9ecef;
+        transform: none;
+      }
+    }
+  }
+
+  &.stock-low {
+    .stock-badge {
+      animation: pulse-warning 2s infinite;
+    }
+  }
+
+  &.stock-available {
+    .stock-badge {
+      color: #28a745;
+    }
+  }
+}
+
+@keyframes pulse-warning {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+}
+
+// Out of Stock Visual Overlay
+.product-image-container {
+  position: relative;
+  
+  .out-of-stock {
+    position: relative;
+    
+    &::after {
+      content: 'OUT OF STOCK';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      padding: 0.5rem 2rem;
+      font-weight: bold;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      z-index: 1;
+    }
   }
 }

@@ -410,6 +410,9 @@ export const exportCountSheet = (countData, options = {}) => {
 		
 		const { countInfo, itemsByCategory } = formattedData
 		
+		// Check if system quantities should be hidden (UI toggle or backend setting)
+		const shouldHideSystemQty = options.hideSystemQty || countInfo.isBlindCount
+		
 		// Generate HTML content for count sheet
 		let itemsHtml = ''
 		let itemNumber = 1
@@ -429,7 +432,7 @@ export const exportCountSheet = (countData, options = {}) => {
 						<td class="text-center">${item.sku}</td>
 						<td class="text-center">${item.barcode}</td>
 						<td class="text-center">${item.unit}</td>
-						<td class="text-center ${countInfo.isBlindCount ? 'blind-count' : ''}">${item.systemQty}</td>
+						<td class="text-center ${shouldHideSystemQty ? 'blind-count' : ''}">${shouldHideSystemQty ? '' : item.systemQty}</td>
 						<td class="counted-qty"></td>
 						<td class="notes-field"></td>
 					</tr>
@@ -445,7 +448,7 @@ export const exportCountSheet = (countData, options = {}) => {
 						<td class="text-center write-field"></td>
 						<td class="text-center write-field"></td>
 						<td class="text-center write-field"></td>
-						<td class="text-center ${countInfo.isBlindCount ? 'blind-count' : 'write-field'}">-</td>
+						<td class="text-center ${shouldHideSystemQty ? 'blind-count' : 'write-field'}">${shouldHideSystemQty ? '' : '-'}</td>
 						<td class="counted-qty"></td>
 						<td class="notes-field"></td>
 					</tr>
@@ -488,7 +491,7 @@ export const exportCountSheet = (countData, options = {}) => {
 					` : ''}
 				</div>
 				
-				${countInfo.isBlindCount ? `
+				${shouldHideSystemQty ? `
 					<div class="alert alert-info">
 						<strong>⚠️ BLIND COUNT:</strong> System quantities are hidden. Count all items without referring to expected quantities.
 					</div>
@@ -514,7 +517,7 @@ export const exportCountSheet = (countData, options = {}) => {
 						<th width="10%">SKU</th>
 						<th width="12%">Barcode</th>
 						<th width="8%">Unit</th>
-						<th width="10%">${countInfo.isBlindCount ? 'System Qty' : 'System Qty'}</th>
+						<th width="10%">${shouldHideSystemQty ? 'System Qty (Hidden)' : 'System Qty'}</th>
 						<th width="10%">Counted Qty</th>
 						<th width="20%">Notes</th>
 					</tr>
@@ -649,8 +652,10 @@ export const exportCountSheet = (countData, options = {}) => {
 				color: #999;
 			}
 			.blind-count {
-				background: #333;
-				color: #333;
+				background: #333 !important;
+				color: #333 !important;
+				-webkit-print-color-adjust: exact;
+				print-color-adjust: exact;
 			}
 			.signature-section {
 				margin-top: 40px;

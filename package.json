@@ -35,6 +35,7 @@
     "history": "4.10.1",
     "intl-messageformat": "7.8.4",
     "jquery": "3.5.1",
+    "jsbarcode": "^3.12.1",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "8.5.1",
     "jspdf": "^2.5.2",

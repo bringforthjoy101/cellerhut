@@ -18,7 +18,9 @@ import {
 	TabContent,
 	TabPane,
 	Alert,
-	Spinner
+	Spinner,
+	FormGroup,
+	CustomInput
 } from 'reactstrap'
 import {
 	Package,
@@ -53,6 +55,7 @@ const CountDetail = () => {
 	
 	// ** States
 	const [activeTab, setActiveTab] = useState('overview')
+	const [hideSystemQtyOnPrint, setHideSystemQtyOnPrint] = useState(false) // Toggle for print
 
 	// ** Load count details
 	useEffect(() => {
@@ -122,7 +125,7 @@ const CountDetail = () => {
 	}
 
 	const handlePrintCountSheet = () => {
-		const result = exportCountSheet(store.countDetail)
+		const result = exportCountSheet(store.countDetail, { hideSystemQty: hideSystemQtyOnPrint })
 		if (result.success) {
 			MySwal.fire({
 				icon: 'success',
@@ -187,7 +190,18 @@ const CountDetail = () => {
 							<Play size={14} className='mr-50' />
 							Start Counting
 						</Button>
-						<Button color='info' outline className='ml-1' onClick={handlePrintCountSheet}>
+						<FormGroup className='d-inline-block mb-0 ml-1 mr-1'>
+							<CustomInput
+								type='switch'
+								id='hideSystemQtyPrint'
+								name='hideSystemQtyPrint'
+								inline
+								checked={hideSystemQtyOnPrint}
+								onChange={(e) => setHideSystemQtyOnPrint(e.target.checked)}
+								label='Hide Qty'
+							/>
+						</FormGroup>
+						<Button color='info' outline onClick={handlePrintCountSheet}>
 							<Printer size={14} className='mr-50' />
 							Print Count Sheet
 						</Button>
@@ -203,7 +217,18 @@ const CountDetail = () => {
 							<Edit3 size={14} className='mr-50' />
 							Continue Counting
 						</Button>
-						<Button color='info' outline className='ml-1' onClick={handlePrintCountSheet}>
+						<FormGroup className='d-inline-block mb-0 ml-1 mr-1'>
+							<CustomInput
+								type='switch'
+								id='hideSystemQtyPrint'
+								name='hideSystemQtyPrint'
+								inline
+								checked={hideSystemQtyOnPrint}
+								onChange={(e) => setHideSystemQtyOnPrint(e.target.checked)}
+								label='Hide Qty'
+							/>
+						</FormGroup>
+						<Button color='info' outline onClick={handlePrintCountSheet}>
 							<Printer size={14} className='mr-50' />
 							Print Count Sheet
 						</Button>

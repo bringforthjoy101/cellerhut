@@ -1,6 +1,6 @@
 import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Plus, Minus, ShoppingCart, Package } from 'react-feather'
+import { Plus, Minus, ShoppingCart, Package, AlertCircle, CheckCircle, AlertTriangle } from 'react-feather'
 import { Badge } from 'reactstrap'
 import { addToOrder, updateQuantity } from '../store/actions'
 
@@ -10,13 +10,18 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
 
   const orderItem = currentOrder.items.find(item => item.id === product.id)
   const quantity = orderItem ? orderItem.quantity : 0
+  const availableQty = product.qty || 0
 
   const handleAddToOrder = () => {
-    dispatch(addToOrder(product))
+    if (availableQty > 0) {
+      dispatch(addToOrder(product))
+    }
   }
 
   const handleQuantityChange = (newQuantity) => {
-    dispatch(updateQuantity(product.id, newQuantity))
+    if (newQuantity <= availableQty) {
+      dispatch(updateQuantity(product.id, newQuantity))
+    }
   }
 
   const formatPrice = (price) => {
@@ -30,16 +35,43 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
     return 'Uncategorized'
   }
 
+  const getStockStatus = () => {
+    if (availableQty === 0) {
+      return {
+        color: 'danger',
+        text: 'Out of Stock',
+        icon: <AlertCircle size={12} />,
+        className: 'stock-out'
+      }
+    } else if (availableQty <= 10) {
+      return {
+        color: 'warning',
+        text: `Low Stock (${availableQty})`,
+        icon: <AlertTriangle size={12} />,
+        className: 'stock-low'
+      }
+    } else {
+      return {
+        color: 'success',
+        text: `In Stock (${availableQty})`,
+        icon: <CheckCircle size={12} />,
+        className: 'stock-available'
+      }
+    }
+  }
+
+  const stockStatus = getStockStatus()
   const isInOrder = quantity > 0
+  const isOutOfStock = availableQty === 0
 
   if (viewMode === 'list') {
     return (
-      <div className={`product-card-list ${isInOrder ? 'in-order' : ''}`}>
+      <div className={`product-card-list ${isInOrder ? 'in-order' : ''} ${stockStatus.className}`}>
         <div className="product-image-container">
           <img
             src={product.image || '/images/placeholder.jpg'}
             alt={product.name}
-            className="product-image-list"
+            className={`product-image-list ${isOutOfStock ? 'out-of-stock' : ''}`}
             onError={(e) => {
               e.target.src = '/images/placeholder.jpg'
             }}
@@ -49,6 +81,9 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
               {quantity}
             </Badge>
           )}
+          <Badge color={stockStatus.color} className="stock-badge" pill>
+            {stockStatus.icon} {stockStatus.text}
+          </Badge>
         </div>
         
         <div className="product-details">
@@ -90,6 +125,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
               <button
                 className="quantity-btn"
                 onClick={() => handleQuantityChange(quantity + 1)}
+                disabled={quantity >= availableQty}
                 aria-label="Increase quantity"
               >
                 <Plus size={14} />
@@ -97,12 +133,13 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
             </div>
           ) : (
             <button
-              className="add-to-cart-btn"
+              className={`add-to-cart-btn ${isOutOfStock ? 'disabled' : ''}`}
               onClick={handleAddToOrder}
+              disabled={isOutOfStock}
               aria-label={`Add ${product.name} to order`}
             >
               <ShoppingCart size={16} />
-              Add to Order
+              {isOutOfStock ? 'Out of Stock' : 'Add to Order'}
             </button>
           )}
         </div>
@@ -112,13 +149,13 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
 
   return (
     <div 
-      className={`product-card ${isInOrder ? 'in-order' : ''}`} 
-      onClick={handleAddToOrder}
+      className={`product-card ${isInOrder ? 'in-order' : ''} ${stockStatus.className} ${isOutOfStock ? 'out-of-stock-card' : ''}`} 
+      onClick={!isOutOfStock ? handleAddToOrder : undefined}
       role="button"
       tabIndex={0}
-      aria-label={`${product.name} - ${formatPrice(product.price)}${isInOrder ? ` - ${quantity} in order` : ''}`}
+      aria-label={`${product.name} - ${formatPrice(product.price)}${isInOrder ? ` - ${quantity} in order` : ''} - ${stockStatus.text}`}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if ((e.key === 'Enter' || e.key === ' ') && !isOutOfStock) {
           e.preventDefault()
           handleAddToOrder()
         }
@@ -128,7 +165,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
         <img
           src={product.image || '/images/placeholder.jpg'}
           alt={product.name}
-          className="product-image"
+          className={`product-image ${isOutOfStock ? 'out-of-stock' : ''}`}
           onError={(e) => {
             e.target.src = '/images/placeholder.jpg'
           }}
@@ -138,6 +175,9 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
             {quantity}
           </Badge>
         )}
+        <Badge color={stockStatus.color} className="stock-badge" pill>
+          {stockStatus.icon} {availableQty}
+        </Badge>
       </div>
       
       <div className="product-info">
@@ -165,6 +205,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
             <button
               className="quantity-btn"
               onClick={() => handleQuantityChange(quantity + 1)}
+              disabled={quantity >= availableQty}
               aria-label="Increase quantity"
             >
               <Plus size={14} />
@@ -176,7 +217,7 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
               <Minus size={14} />
             </button>
             <div className="quantity-display">0</div>
-            <button className="quantity-btn">
+            <button className="quantity-btn" disabled={isOutOfStock}>
               <Plus size={14} />
             </button>
           </div>

@@ -12,7 +12,9 @@ const STORAGE_KEYS = {
 const CONFIG = {
   MAX_HELD_ORDERS: 50,
   RETENTION_DAYS: 7,
-  AUTO_CLEANUP_INTERVAL: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+  AUTO_CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  EXPIRATION_WARNING_HOURS: 48,
+  COMPRESSION_THRESHOLD: 1024 * 50 // 50KB
 }
 
 /**
@@ -244,6 +246,131 @@ export const clearPickerStorage = () => {
     console.error('Error clearing picker storage:', error)
     return false
   }
+}
+
+/**
+ * Get storage size in KB
+ */
+export const getStorageSize = () => {
+  try {
+    let totalSize = 0
+    Object.values(STORAGE_KEYS).forEach(key => {
+      const item = localStorage.getItem(key)
+      if (item) {
+        totalSize += item.length
+      }
+    })
+    return Math.round(totalSize / 1024) // Convert to KB
+  } catch (error) {
+    console.error('Error calculating storage size:', error)
+    return 0
+  }
+}
+
+/**
+ * Check if order is expired
+ */
+export const isOrderExpired = (order) => {
+  const createdAt = moment(order.createdAt || order.heldAt)
+  const hoursSinceCreation = moment().diff(createdAt, 'hours')
+  return hoursSinceCreation > CONFIG.EXPIRATION_WARNING_HOURS
+}
+
+/**
+ * Get expired orders
+ */
+export const getExpiredOrders = () => {
+  const orders = loadHeldOrdersFromStorage()
+  return orders.filter(isOrderExpired)
+}
+
+/**
+ * Export held orders as JSON
+ */
+export const exportOrdersAsJSON = (orders) => {
+  const dataStr = JSON.stringify(orders, null, 2)
+  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
+  
+  const exportFileDefaultName = `held_orders_${moment().format('YYYY-MM-DD_HH-mm-ss')}.json`
+  
+  const linkElement = document.createElement('a')
+  linkElement.setAttribute('href', dataUri)
+  linkElement.setAttribute('download', exportFileDefaultName)
+  linkElement.click()
+  
+  return true
+}
+
+/**
+ * Import orders from JSON
+ */
+export const importOrdersFromJSON = (jsonString) => {
+  try {
+    const orders = JSON.parse(jsonString)
+    
+    if (!Array.isArray(orders)) {
+      throw new Error('Invalid JSON format: expected array of orders')
+    }
+    
+    // Validate and merge with existing orders
+    const existingOrders = loadHeldOrdersFromStorage()
+    const mergedOrders = [...existingOrders, ...orders]
+    
+    // Remove duplicates by ID
+    const uniqueOrders = Array.from(
+      new Map(mergedOrders.map(order => [order.id, order])).values()
+    )
+    
+    saveHeldOrdersToStorage(uniqueOrders)
+    
+    return { success: true, imported: orders.length, total: uniqueOrders.length }
+  } catch (error) {
+    console.error('Error importing orders:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Add customer metadata to order
+ */
+export const addCustomerMetadata = (orderId, metadata) => {
+  const orders = loadHeldOrdersFromStorage()
+  const updatedOrders = orders.map(order => {
+    if (order.id === orderId) {
+      return {
+        ...order,
+        customerName: metadata.name,
+        customerPhone: metadata.phone,
+        customerEmail: metadata.email,
+        customerNotes: metadata.notes,
+        priority: metadata.priority || 'normal',
+        updatedAt: moment().toISOString()
+      }
+    }
+    return order
+  })
+  
+  saveHeldOrdersToStorage(updatedOrders)
+  return true
+}
+
+/**
+ * Get storage quota info
+ */
+export const getStorageQuota = async () => {
+  if ('storage' in navigator && 'estimate' in navigator.storage) {
+    try {
+      const { usage, quota } = await navigator.storage.estimate()
+      return {
+        used: Math.round((usage || 0) / (1024 * 1024)), // MB
+        total: Math.round((quota || 0) / (1024 * 1024)), // MB
+        percentage: Math.round(((usage || 0) / (quota || 1)) * 100)
+      }
+    } catch (error) {
+      console.error('Error getting storage quota:', error)
+    }
+  }
+  return null
 }
 
 /**

@@ -5,6 +5,7 @@ import { Fragment, useState, useEffect } from 'react'
 import { columns } from './columns'
 import Sidebar from './Sidebar'
 import CSVUploadModal from './CSVUploadModal'
+import PriceLabelModal from './PriceLabelModal'
 
 // ** Store & Actions
 import { getAllData, getFilteredData, getProductStats } from '../store/action'
@@ -13,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux'
 // ** Third Party Components
 import Select from 'react-select'
 import ReactPaginate from 'react-paginate'
-import { ChevronDown, Share, Printer, FileText, Upload } from 'react-feather'
+import { ChevronDown, Share, Printer, FileText, Upload, Tag } from 'react-feather'
 import DataTable from 'react-data-table-component'
 import { selectThemeColors, isUserLoggedIn } from '@utils'
 import { Card, CardHeader, CardTitle, CardBody, UncontrolledButtonDropdown, DropdownMenu, DropdownItem, DropdownToggle, Input, Row, Col, Label, CustomInput, Button } from 'reactstrap'
@@ -39,12 +40,16 @@ const ProductTable = () => {
   const [currentCategory, setCurrentCategory] = useState({ value: '', label: 'Select Status', number: 0 })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [csvModalOpen, setCsvModalOpen] = useState(false)
+  const [labelModalOpen, setLabelModalOpen] = useState(false)
 
   // ** Function to toggle sidebar
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
   // ** Function to toggle CSV modal
   const toggleCSVModal = () => setCsvModalOpen(!csvModalOpen)
+  
+  // ** Function to toggle Label modal
+  const toggleLabelModal = () => setLabelModalOpen(!labelModalOpen)
 
   useEffect(() => {
     dispatch(getAllData())
@@ -336,6 +341,11 @@ const ProductTable = () => {
                   <Printer size={15} />
                   <span className='align-middle ml-50'>Print</span>
                 </DropdownItem>
+                <DropdownItem divider />
+                <DropdownItem className='w-100' onClick={toggleLabelModal}>
+                  <Tag size={15} />
+                  <span className='align-middle ml-50'>Generate Price Tags</span>
+                </DropdownItem>
               </DropdownMenu>
             </UncontrolledButtonDropdown>
         </Col>
@@ -373,6 +383,7 @@ const ProductTable = () => {
       </Card>
       <Sidebar open={sidebarOpen} toggleSidebar={toggleSidebar} />
       <CSVUploadModal isOpen={csvModalOpen} toggle={toggleCSVModal} />
+      <PriceLabelModal isOpen={labelModalOpen} toggle={toggleLabelModal} />
     </Fragment>
   )
 }

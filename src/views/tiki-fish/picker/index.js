@@ -8,9 +8,7 @@ import { Row, Col, Card } from 'reactstrap'
 // ** Custom Components
 import ProductGrid from './components/ProductGrid'
 import OrderSidebar from './components/OrderSidebar'
-import OrderTabs from './components/OrderTabs'
 import FloatingActionButtons from './components/FloatingActionButtons'
-import ScannerDebugInfo from './components/ScannerDebugInfo'
 
 // ** Custom Hooks and Contexts
 import { useScannerHandler, useScannerContext } from '../../../contexts/ScannerContext'
@@ -21,9 +19,9 @@ import { initializeOrderStorage } from './utils/orderStorage'
 
 // ** Styles
 import './styles/picker.scss'
-import './styles/orderTabs.scss'
 import './styles/orderSidebarEnhancements.scss'
 import './styles/pickerEnhancements.scss'
+import './styles/holdOrders.scss'
 
 const PickerPage = () => {
   const dispatch = useDispatch()
@@ -101,8 +99,6 @@ const PickerPage = () => {
           className={`picker-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}
         >
           <Card className="h-100">
-            {!sidebarCollapsed && <OrderTabs />}
-            
             <OrderSidebar 
               scannerStatus={scannerStatus}
               collapsed={sidebarCollapsed}
@@ -121,9 +117,6 @@ const PickerPage = () => {
               filterVisible={filterVisible}
             />
           </Card>
-          
-          {/* Scanner Debug Info - Always available for iPad debugging */}
-          <ScannerDebugInfo showInProduction={true} />
         </Col>
       </Row>
 

@@ -116,6 +116,57 @@ export const renameOrder = (orderId, newName) => ({
 	newName,
 })
 
+export const deleteHeldOrder = (orderId) => ({
+	type: 'PICKER_DELETE_HELD_ORDER',
+	orderId,
+})
+
+export const mergeOrders = (orderIds) => ({
+	type: 'PICKER_MERGE_ORDERS',
+	orderIds,
+})
+
+export const exportHeldOrders = (orders, format) => {
+	// Handle export logic here - CSV or PDF
+	const exportData = orders.map(order => ({
+		id: order.id,
+		name: order.customName || `Order ${order.id.slice(-4)}`,
+		items: order.items?.length || 0,
+		total: order.total,
+		created: order.createdAt || order.heldAt,
+		customer: order.customerName || 'N/A'
+	}))
+	
+	if (format === 'csv') {
+		// Convert to CSV
+		const csv = [
+			['Order ID', 'Name', 'Items', 'Total', 'Created', 'Customer'],
+			...exportData.map(row => [
+				row.id,
+				row.name,
+				row.items,
+				row.total,
+				row.created,
+				row.customer
+			])
+		].map(row => row.join(',')).join('\n')
+		
+		// Download CSV
+		const blob = new Blob([csv], { type: 'text/csv' })
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.href = url
+		a.download = `held_orders_${Date.now()}.csv`
+		a.click()
+		URL.revokeObjectURL(url)
+	} else if (format === 'pdf') {
+		// For PDF, we would use a library like jsPDF
+		console.log('PDF export not yet implemented')
+	}
+	
+	return { type: 'EXPORT_HELD_ORDERS_SUCCESS' }
+}
+
 export const markOrderChanged = () => ({
 	type: 'PICKER_MARK_ORDER_CHANGED',
 })

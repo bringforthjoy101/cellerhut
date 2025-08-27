@@ -62,6 +62,7 @@ const CountSheet = () => {
 	const [savingItem, setSavingItem] = useState(null)
 	const [scannerModal, setScannerModal] = useState(false)
 	const [currentScanItem, setCurrentScanItem] = useState(null)
+	const [hideSystemQtyOnPrint, setHideSystemQtyOnPrint] = useState(false) // Toggle for print
 
 	// ** Load count details
 	useEffect(() => {
@@ -194,7 +195,7 @@ const CountSheet = () => {
 
 	// ** Download count sheet
 	const handleDownloadCountSheet = () => {
-		const result = exportCountSheet(store.countDetail)
+		const result = exportCountSheet(store.countDetail, { hideSystemQty: hideSystemQtyOnPrint })
 		if (result.success) {
 			MySwal.fire({
 				icon: 'success',
@@ -383,7 +384,18 @@ const CountSheet = () => {
 										/>
 									</InputGroup>
 								</Col>
-								<Col md='6' className='text-right'>
+								<Col md='6' className='text-right d-flex align-items-center justify-content-end'>
+									<FormGroup className='mb-0 mr-2'>
+										<CustomInput
+											type='switch'
+											id='hideSystemQty'
+											name='hideSystemQty'
+											inline
+											checked={hideSystemQtyOnPrint}
+											onChange={(e) => setHideSystemQtyOnPrint(e.target.checked)}
+											label='Hide System Qty on Print'
+										/>
+									</FormGroup>
 									<Button
 										color='info'
 										outline

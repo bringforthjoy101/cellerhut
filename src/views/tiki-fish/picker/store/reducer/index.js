@@ -519,6 +519,68 @@ const pickerReducer = (state = initialState, action) => {
 			}
 			return state
 
+		case 'PICKER_DELETE_HELD_ORDER':
+			const filteredHeldOrders = state.heldOrders.filter(order => order.id !== action.orderId)
+			saveHeldOrdersToStorage(filteredHeldOrders)
+			
+			return {
+				...state,
+				heldOrders: filteredHeldOrders
+			}
+
+		case 'PICKER_MERGE_ORDERS':
+			if (!action.orderIds || action.orderIds.length < 2) return state
+			
+			// Find all orders to merge
+			const ordersToMerge = state.heldOrders.filter(order => action.orderIds.includes(order.id))
+			if (ordersToMerge.length < 2) return state
+			
+			// Create merged order
+			const mergedOrder = {
+				...createEmptyOrder(),
+				items: [],
+				subtotal: 0,
+				tax: 0,
+				total: 0,
+				customName: 'Merged Order',
+				createdAt: new Date().toISOString(),
+				heldAt: new Date().toLocaleTimeString()
+			}
+			
+			// Merge all items
+			const itemMap = new Map()
+			ordersToMerge.forEach(order => {
+				order.items?.forEach(item => {
+					const key = item.id
+					if (itemMap.has(key)) {
+						const existing = itemMap.get(key)
+						itemMap.set(key, {
+							...existing,
+							quantity: existing.quantity + item.quantity
+						})
+					} else {
+						itemMap.set(key, { ...item })
+					}
+				})
+			})
+			
+			mergedOrder.items = Array.from(itemMap.values())
+			
+			// Recalculate totals
+			mergedOrder.subtotal = mergedOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+			mergedOrder.tax = mergedOrder.subtotal * 0.15 // Assuming 15% tax
+			mergedOrder.total = mergedOrder.subtotal + mergedOrder.tax
+			
+			// Remove merged orders and add new merged order
+			const remainingOrders = state.heldOrders.filter(order => !action.orderIds.includes(order.id))
+			const updatedHeldOrdersAfterMerge = [...remainingOrders, mergedOrder]
+			saveHeldOrdersToStorage(updatedHeldOrdersAfterMerge)
+			
+			return {
+				...state,
+				heldOrders: updatedHeldOrdersAfterMerge
+			}
+
 		default:
 			return state
 	}

@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { ShoppingCart, Plus, Minus, CreditCard, DollarSign, Smartphone, Wifi, WifiOff, Loader, ChevronLeft, ChevronRight, Menu } from 'react-feather'
-import { Button, Collapse } from 'reactstrap'
+import { ShoppingCart, Plus, Minus, CreditCard, DollarSign, Smartphone, Wifi, WifiOff, Loader, ChevronLeft, ChevronRight, Menu, Archive } from 'react-feather'
+import { Button, Collapse, Badge } from 'reactstrap'
 import { updateQuantity, removeFromOrder, setPaymentMethod, holdOrder, placeOrder, clearOrder, showConfirmationModal, hideConfirmationModal } from '../store/actions'
 import OrderConfirmationModal from './OrderConfirmationModal'
 import PrintReceipt from './PrintReceipt'
+import HoldOrderManager from './HoldOrderManager'
 import { printReceipt } from '../utils/printUtils'
 
 const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) => {
@@ -13,6 +14,7 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [lastOrderData, setLastOrderData] = useState(null)
   const [lastOrderResult, setLastOrderResult] = useState(null)
+  const [showHoldOrderManager, setShowHoldOrderManager] = useState(false)
 
   // Get the currently active order (could be current or a held order)
   const activeOrder = activeOrderId === 'current' ? currentOrder : 
@@ -123,6 +125,20 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
         
         {/* Quick Action Buttons */}
         <div className="collapsed-actions">
+          <Button
+            color="outline-info"
+            size="sm"
+            onClick={() => setShowHoldOrderManager(true)}
+            title="Manage Held Orders"
+            className="collapsed-btn position-relative"
+          >
+            <Archive size={14} />
+            {heldOrders.length > 0 && (
+              <Badge color="danger" className="position-absolute" style={{ top: '-5px', right: '-5px' }} pill>
+                {heldOrders.length}
+              </Badge>
+            )}
+          </Button>
           <Button
             color="outline-secondary"
             size="sm"
@@ -273,19 +289,35 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
 
         <div className="order-actions">
           <button
-            className="action-btn secondary"
-            onClick={handleHoldOrder}
-            disabled={activeOrder.items.length === 0}
+            className="action-btn info"
+            onClick={() => setShowHoldOrderManager(true)}
           >
-            Hold Order
+            <Archive size={16} />
+            Manage Held Orders
+            {heldOrders.length > 0 && (
+              <Badge color="danger" className="ml-2" pill>
+                {heldOrders.length}
+              </Badge>
+            )}
           </button>
-          <button
-            className="action-btn primary"
-            onClick={handlePlaceOrder}
-            disabled={activeOrder.items.length === 0}
-          >
-            Place Order
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <button
+              className="action-btn secondary"
+              onClick={handleHoldOrder}
+              disabled={activeOrder.items.length === 0}
+              style={{ flex: 1 }}
+            >
+              Hold Order
+            </button>
+            <button
+              className="action-btn primary"
+              onClick={handlePlaceOrder}
+              disabled={activeOrder.items.length === 0}
+              style={{ flex: 1 }}
+            >
+              Place Order
+            </button>
+          </div>
         </div>
         
         {activeOrder.items.length > 0 && (
@@ -324,6 +356,12 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
           autoPrint={false} // We handle auto-print separately
         />
       )}
+      
+      {/* Hold Order Manager Modal */}
+      <HoldOrderManager
+        isOpen={showHoldOrderManager}
+        toggle={() => setShowHoldOrderManager(false)}
+      />
     </div>
   )
 }

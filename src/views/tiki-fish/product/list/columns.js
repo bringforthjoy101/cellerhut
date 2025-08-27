@@ -14,7 +14,9 @@ const MySwal = withReactContent(Swal)
 
 // ** Third Party Components
 import { UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, Badge } from 'reactstrap'
-import { MoreVertical, FileText, Trash2, Archive, Package, Link as LinkIcon } from 'react-feather'
+import { MoreVertical, FileText, Trash2, Archive, Package, Link as LinkIcon, Tag } from 'react-feather'
+import { exportSingleLabel } from '@src/utility/labelUtils'
+import { toast } from 'react-toastify'
 
 // ** Third Party Components
 
@@ -68,6 +70,15 @@ const handleDelete = async (id) => {
 			}
 		}
 	})
+}
+
+const handlePrintLabel = (product) => {
+	const result = exportSingleLabel(product)
+	if (result.success) {
+		toast.success('Label generated successfully')
+	} else {
+		toast.error(result.error || 'Failed to generate label')
+	}
 }
 
 export const columns = [
@@ -249,6 +260,11 @@ export const columns = [
 					>
 						<Archive size={14} className="mr-50" />
 						<span className="align-middle">Edit</span>
+					</DropdownItem>
+					<DropdownItem divider />
+					<DropdownItem className="w-100" onClick={() => handlePrintLabel(row)}>
+						<Tag size={14} className="mr-50" />
+						<span className="align-middle">Print Label</span>
 					</DropdownItem>
 					<DropdownItem className="w-100" onClick={() => handleDelete(row.id)}>
 						<Trash2 size={14} className="mr-50" />

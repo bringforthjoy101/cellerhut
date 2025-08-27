@@ -16,7 +16,7 @@ const ProductGrid = ({ searchVisible = true, filterVisible = true }) => {
 
   if (loading) {
     return (
-      <div className="picker-content">
+      <div className="picker-product-wrapper">
         {searchVisible && <ProductSearch onViewChange={handleViewChange} currentView={viewMode} />}
         {filterVisible && <CategoryFilter />}
         <div className="product-grid">
@@ -30,7 +30,7 @@ const ProductGrid = ({ searchVisible = true, filterVisible = true }) => {
   }
 
   return (
-    <div className="picker-content">
+    <div className="picker-product-wrapper">
       {searchVisible && <ProductSearch onViewChange={handleViewChange} currentView={viewMode} />}
       {filterVisible && <CategoryFilter />}
       <div className={`product-grid ${viewMode === 'list' ? 'list-view' : 'grid-view'}`}>
