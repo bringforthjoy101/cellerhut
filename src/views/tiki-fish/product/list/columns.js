@@ -210,9 +210,60 @@ export const columns = [
 	{
 		name: 'Qty',
 		selector: 'qty',
-		minWidth: '50px',
+		minWidth: '120px',
 		sortable: true,
-		cell: (row) => <span className="text-capitalize">{Number(row.qty).toLocaleString()}</span>,
+		cell: (row) => {
+			const storedQty = Number(row.qty)
+			
+			if (row.product_type === 'composite' && row.BaseProduct) {
+				const baseQty = Number(row.BaseProduct.qty) || 0
+				const compositeQuantity = Number(row.composite_quantity) || 1
+				const baseAvailable = Math.floor(baseQty / compositeQuantity)
+				const actualAvailable = Math.min(baseAvailable, storedQty)
+				
+				return (
+					<div className="d-flex flex-column">
+						<span className={`font-weight-bold ${actualAvailable < storedQty ? 'text-warning' : 'text-success'}`}>
+							{actualAvailable.toLocaleString()}
+						</span>
+						{actualAvailable !== storedQty && (
+							<small className="text-muted">
+								(stored: {storedQty.toLocaleString()})
+							</small>
+						)}
+						{baseAvailable < storedQty && (
+							<small className="text-warning">
+								Limited by base
+							</small>
+						)}
+					</div>
+				)
+			}
+			
+			// For simple products or base products with composite variants
+			if (row.product_type === 'simple' && row.CompositeProducts && row.CompositeProducts.length > 0) {
+				// Calculate how much is reserved for composite products
+				let reservedQty = 0
+				row.CompositeProducts.forEach(comp => {
+					reservedQty += Number(comp.qty) * Number(comp.composite_quantity)
+				})
+				
+				const availableForSingle = storedQty - reservedQty
+				
+				if (reservedQty > 0) {
+					return (
+						<div className="d-flex flex-column">
+							<span className="font-weight-bold">{storedQty.toLocaleString()}</span>
+							<small className="text-info">
+								Free: {Math.max(0, availableForSingle).toLocaleString()}
+							</small>
+						</div>
+					)
+				}
+			}
+			
+			return <span className="text-capitalize">{storedQty.toLocaleString()}</span>
+		},
 	},
 	{
 		name: 'Unit',

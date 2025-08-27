@@ -58,6 +58,14 @@ const createEmptyOrder = (id = null) => ({
 	subtotal: 0,
 	tax: 0,
 	total: 0,
+	orderDiscount: {
+		type: 'fixed',
+		value: 0,
+		amount: 0,
+	},
+	totalItemDiscount: 0,
+	totalDiscount: 0,
+	discountPercentage: 0,
 	paymentMethod: 'cash',
 	cashCollected: 0,
 	changeAmount: 0,
@@ -171,21 +179,49 @@ const pickerReducer = (state = initialState, action) => {
 			if (existingItemIndex >= 0) {
 				updatedItems = state.currentOrder.items.map((item, index) => (index === existingItemIndex ? { ...item, quantity: item.quantity + 1 } : item))
 			} else {
-				updatedItems = [...state.currentOrder.items, { ...action.product, quantity: 1 }]
+				updatedItems = [...state.currentOrder.items, { 
+					...action.product, 
+					quantity: 1,
+					discountType: 'percentage',
+					discountValue: 0,
+					discountAmount: 0
+				}]
 			}
 
-			const total = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-			const tax = (total * 0.15) / (1 + 0.15)
-			const subtotal = total - tax
+			// Calculate totals with discounts
+			const itemTotals = updatedItems.reduce((acc, item) => {
+				const itemSubtotal = item.price * item.quantity
+				const itemDiscountAmount = item.discountAmount || 0
+				const itemTotal = itemSubtotal - itemDiscountAmount
+				return {
+					subtotal: acc.subtotal + itemTotal,
+					totalItemDiscount: acc.totalItemDiscount + itemDiscountAmount
+				}
+			}, { subtotal: 0, totalItemDiscount: 0 })
+
+			// Apply order-level discount
+			const currentOrderDiscount = state.currentOrder.orderDiscount || { type: 'fixed', value: 0, amount: 0 }
+			const orderDiscountAmount = currentOrderDiscount.type === 'percentage'
+				? itemTotals.subtotal * (currentOrderDiscount.value / 100)
+				: currentOrderDiscount.amount
+
+			const finalSubtotal = itemTotals.subtotal - orderDiscountAmount
+			const tax = (finalSubtotal * 0.15) / (1 + 0.15)
+			const total = finalSubtotal + tax
+			const totalDiscount = itemTotals.totalItemDiscount + orderDiscountAmount
+			const discountPercentage = total > 0 ? (totalDiscount / (total + totalDiscount)) * 100 : 0
 
 			return {
 				...state,
 				currentOrder: {
 					...state.currentOrder,
 					items: updatedItems,
-					subtotal,
+					subtotal: finalSubtotal,
 					tax,
 					total,
+					totalItemDiscount: itemTotals.totalItemDiscount,
+					totalDiscount,
+					discountPercentage,
 					hasUnsavedChanges: true,
 					updatedAt: new Date().toISOString()
 				},
@@ -579,6 +615,107 @@ const pickerReducer = (state = initialState, action) => {
 			return {
 				...state,
 				heldOrders: updatedHeldOrdersAfterMerge
+			}
+
+		case 'PICKER_SET_ITEM_DISCOUNT':
+			const itemsWithDiscount = state.currentOrder.items.map((item) => {
+				if (item.id === action.productId) {
+					const itemSubtotal = item.price * item.quantity
+					const discountAmount = action.discountType === 'percentage'
+						? itemSubtotal * (action.discountValue / 100)
+						: Math.min(action.discountValue, itemSubtotal) // Don't allow discount greater than subtotal
+					
+					return {
+						...item,
+						discountType: action.discountType,
+						discountValue: action.discountValue,
+						discountAmount
+					}
+				}
+				return item
+			})
+
+			// Recalculate totals
+			const discountItemTotals = itemsWithDiscount.reduce((acc, item) => {
+				const itemSubtotal = item.price * item.quantity
+				const itemDiscountAmount = item.discountAmount || 0
+				const itemTotal = itemSubtotal - itemDiscountAmount
+				return {
+					subtotal: acc.subtotal + itemTotal,
+					totalItemDiscount: acc.totalItemDiscount + itemDiscountAmount
+				}
+			}, { subtotal: 0, totalItemDiscount: 0 })
+
+			const orderDiscount = state.currentOrder.orderDiscount || { type: 'fixed', value: 0, amount: 0 }
+			const discountOrderAmount = orderDiscount.type === 'percentage'
+				? discountItemTotals.subtotal * (orderDiscount.value / 100)
+				: orderDiscount.value
+
+			const discountFinalSubtotal = discountItemTotals.subtotal - discountOrderAmount
+			const discountTax = (discountFinalSubtotal * 0.15) / (1 + 0.15)
+			const discountTotal = discountFinalSubtotal + discountTax
+			const discountTotalDiscount = discountItemTotals.totalItemDiscount + discountOrderAmount
+			const itemDiscountPercentage = discountTotal > 0 ? (discountTotalDiscount / (discountTotal + discountTotalDiscount)) * 100 : 0
+
+			return {
+				...state,
+				currentOrder: {
+					...state.currentOrder,
+					items: itemsWithDiscount,
+					subtotal: discountFinalSubtotal,
+					tax: discountTax,
+					total: discountTotal,
+					totalItemDiscount: discountItemTotals.totalItemDiscount,
+					totalDiscount: discountTotalDiscount,
+					discountPercentage: itemDiscountPercentage,
+					orderDiscount: {
+						...state.currentOrder.orderDiscount,
+						amount: discountOrderAmount
+					},
+					hasUnsavedChanges: true,
+					updatedAt: new Date().toISOString()
+				}
+			}
+
+		case 'PICKER_SET_ORDER_DISCOUNT':
+			// Recalculate item totals first
+			const orderDiscItemTotals = state.currentOrder.items.reduce((acc, item) => {
+				const itemSubtotal = item.price * item.quantity
+				const itemDiscountAmount = item.discountAmount || 0
+				const itemTotal = itemSubtotal - itemDiscountAmount
+				return {
+					subtotal: acc.subtotal + itemTotal,
+					totalItemDiscount: acc.totalItemDiscount + itemDiscountAmount
+				}
+			}, { subtotal: 0, totalItemDiscount: 0 })
+
+			const newOrderDiscountAmount = action.discountType === 'percentage'
+				? orderDiscItemTotals.subtotal * (action.discountValue / 100)
+				: Math.min(action.discountValue, orderDiscItemTotals.subtotal)
+
+			const newFinalSubtotal = orderDiscItemTotals.subtotal - newOrderDiscountAmount
+			const orderDiscountTax = (newFinalSubtotal * 0.15) / (1 + 0.15)
+			const newOrderTotal = newFinalSubtotal + orderDiscountTax
+			const newTotalDiscount = orderDiscItemTotals.totalItemDiscount + newOrderDiscountAmount
+			const newDiscountPercentage = newOrderTotal > 0 ? (newTotalDiscount / (newOrderTotal + newTotalDiscount)) * 100 : 0
+
+			return {
+				...state,
+				currentOrder: {
+					...state.currentOrder,
+					subtotal: newFinalSubtotal,
+					tax: orderDiscountTax,
+					total: newOrderTotal,
+					totalDiscount: newTotalDiscount,
+					discountPercentage: newDiscountPercentage,
+					orderDiscount: {
+						type: action.discountType,
+						value: action.discountValue,
+						amount: newOrderDiscountAmount
+					},
+					hasUnsavedChanges: true,
+					updatedAt: new Date().toISOString()
+				}
 			}
 
 		default:

@@ -77,6 +77,19 @@ export const setCashCollected = (amount) => ({
 	amount,
 })
 
+export const setItemDiscount = (productId, discountType, discountValue) => ({
+	type: 'PICKER_SET_ITEM_DISCOUNT',
+	productId,
+	discountType,
+	discountValue,
+})
+
+export const setOrderDiscount = (discountType, discountValue) => ({
+	type: 'PICKER_SET_ORDER_DISCOUNT',
+	discountType,
+	discountValue,
+})
+
 export const showConfirmationModal = () => ({
 	type: 'PICKER_SHOW_CONFIRMATION_MODAL',
 })
@@ -205,7 +218,9 @@ export const placeOrder = (orderData) => async (dispatch) => {
 		// Format order data to match checkout format
 		const body = JSON.stringify({
 			subTotal: orderData.subtotal,
-			discount: orderData.discount || 0,
+			discount: orderData.orderDiscount?.amount || orderData.discount || 0,
+			discountType: orderData.orderDiscount?.type || 'fixed',
+			totalDiscount: orderData.totalDiscount || 0,
 			amount: orderData.total,
 			location: 'Shop',
 			logistics: 0,
@@ -216,6 +231,9 @@ export const placeOrder = (orderData) => async (dispatch) => {
 				price: item.price,
 				qty: item.quantity,
 				amount: item.price * item.quantity,
+				discountType: item.discountType || null,
+				discountValue: item.discountValue || 0,
+				discountAmount: item.discountAmount || 0,
 			})),
 			// Add fields for held orders
 			heldOrderId: orderData.heldOrderId || null,

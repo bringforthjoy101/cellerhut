@@ -22,6 +22,7 @@ import './styles/picker.scss'
 import './styles/orderSidebarEnhancements.scss'
 import './styles/pickerEnhancements.scss'
 import './styles/holdOrders.scss'
+import './styles/discountStyles.scss'
 
 const PickerPage = () => {
   const dispatch = useDispatch()

@@ -430,18 +430,6 @@ const SalesRepRoutes = [
 		component: lazy(() => import('../../views/tiki-fish/order/print')),
 	},
 	{
-		path: '/reports/list',
-		component: lazy(() => import('../../views/tiki-fish/reports/list')),
-	},
-	{
-		path: '/reports/audit',
-		component: lazy(() => import('../../views/tiki-fish/reports/audit/AuditReportGenerator')),
-	},
-	{
-		path: '/withdrawals/list',
-		component: lazy(() => import('../../views/tiki-fish/withdrawals/list')),
-	},
-	{
 		path: '/transactions/list',
 		component: lazy(() => import('../../views/tiki-fish/transactions/list')),
 	},

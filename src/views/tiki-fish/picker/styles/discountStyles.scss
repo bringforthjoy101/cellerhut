@@ -1,0 +1,334 @@
+// Discount Feature Styles
+.order-sidebar {
+  // Collapsible sections styling
+  .discount-header,
+  .payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+    
+    &:hover {
+      background: #e9ecef;
+    }
+    
+    .discount-label,
+    .payment-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      
+      svg {
+        color: #7367f0;
+      }
+      
+      span {
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+      
+      .discount-preview {
+        color: #28a745;
+        font-weight: 600;
+        margin-left: auto;
+        margin-right: 8px;
+      }
+    }
+    
+    > svg {
+      color: #6c757d;
+      transition: transform 0.2s ease;
+    }
+  }
+  
+  // Item discount toggle styles
+  .item-discount-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    
+    &:hover {
+      background: #7367f0;
+      color: white;
+      border-color: #7367f0;
+      
+      svg {
+        color: white;
+      }
+    }
+    
+    svg {
+      color: #7367f0;
+    }
+  }
+  
+  .item-discount-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #28a74510;
+    color: #28a745;
+    border: 1px solid #28a74530;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #28a74520;
+      border-color: #28a745;
+    }
+    
+    svg {
+      color: #28a745;
+    }
+  }
+  
+  .item-discount {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    animation: slideDown 0.2s ease;
+    
+    .discount-input {
+      width: 50px;
+      padding: 2px 4px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    
+    .discount-type-toggle {
+      padding: 2px 6px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      min-width: 20px;
+      text-align: center;
+      
+      &:hover {
+        background: #e0e0e0;
+      }
+    }
+    
+    .discount-close {
+      padding: 2px 6px;
+      background: #dc3545;
+      color: white;
+      border: 1px solid #dc3545;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      line-height: 1;
+      
+      &:hover {
+        background: #c82333;
+        border-color: #bd2130;
+      }
+    }
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .price-original {
+    text-decoration: line-through;
+    opacity: 0.6;
+    margin-right: 4px;
+    font-size: 0.75rem;
+  }
+  
+  .price-discounted {
+    color: #28a745;
+    font-weight: 500;
+  }
+  
+  .total-original {
+    text-decoration: line-through;
+    opacity: 0.6;
+    font-size: 0.75rem;
+  }
+  
+  .total-discounted {
+    color: #28a745;
+    font-weight: 600;
+  }
+
+  .order-discount-section {
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
+    margin: 10px 0;
+    padding: 0;
+    
+    .discount-controls {
+      padding: 10px;
+      animation: slideDown 0.3s ease;
+    }
+    
+    .quick-discount-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      
+      .quick-discount-btn {
+        flex: 1;
+        padding: 6px 8px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        
+        &:hover {
+          background: #7367f0;
+          color: white;
+          border-color: #7367f0;
+        }
+        
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+    }
+    
+    .custom-discount {
+      display: flex;
+      gap: 8px;
+      
+      .discount-input {
+        flex: 1;
+        padding: 6px 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 0.875rem;
+      }
+      
+      .discount-type-toggle {
+        padding: 6px 12px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+        
+        &:hover {
+          background: #e9ecef;
+        }
+      }
+      
+      .discount-clear {
+        padding: 6px 12px;
+        background: #dc3545;
+        color: white;
+        border: 1px solid #dc3545;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+        
+        &:hover {
+          background: #c82333;
+          border-color: #bd2130;
+        }
+      }
+    }
+    
+    .discount-amount {
+      margin-top: 8px;
+      text-align: right;
+      color: #28a745;
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+  }
+  
+  .discount-row, .total-discount-row {
+    .discount {
+      color: #28a745;
+      font-weight: 500;
+    }
+  }
+  
+  .summary-row {
+    &.total-discount-row {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 8px 0;
+      
+      .label {
+        font-weight: 600;
+      }
+    }
+  }
+  
+  .payment-methods {
+    margin: 10px 0;
+    
+    .payment-method {
+      display: flex;
+      gap: 8px;
+      animation: slideDown 0.3s ease;
+      
+      .method-option {
+        flex: 1;
+        padding: 8px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        
+        &:hover {
+          background: #e9ecef;
+          border-color: #7367f0;
+        }
+        
+        &.active {
+          background: #7367f0;
+          color: white;
+          border-color: #7367f0;
+          
+          .method-icon {
+            color: white;
+          }
+        }
+        
+        .method-icon {
+          margin-bottom: 4px;
+        }
+      }
+    }
+  }
+}

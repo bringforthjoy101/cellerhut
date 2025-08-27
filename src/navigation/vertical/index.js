@@ -18,4 +18,24 @@ import wallets from './wallets.js'
 const userData = JSON.parse(localStorage.getItem('userData'))
 
 // ** Merge & Export
-export default userData?.role === 'admin' ? [...dashboards, ...picker, ...products, ...suppliers, ...supplies, ...inventory, ...orders, ...customers, ...admins, ...withdrawals, ...transactions, ...wallets, ...reports] : userData?.role === 'store' ? [...dashboards, ...picker, ...customers, ...withdrawals, ...transactions, ...wallets] : userData?.role === 'sales-rep' ? [...dashboards, ...picker, ...customers, ...orders, ...withdrawals, ...transactions, ...wallets, ...reports] : [...dashboards, ...picker, ...withdrawals]
+export default userData?.role === 'admin'
+	? [
+			...dashboards,
+			...picker,
+			...products,
+			...suppliers,
+			...supplies,
+			...inventory,
+			...orders,
+			...customers,
+			...admins,
+			...withdrawals,
+			...transactions,
+			...wallets,
+			...reports,
+	  ]
+	: userData?.role === 'store'
+	? [...dashboards, ...picker, ...customers, ...products, ...suppliers, ...supplies, ...inventory, ...transactions]
+	: userData?.role === 'sales-rep'
+	? [...dashboards, ...picker, ...customers, ...orders, ...transactions]
+	: [...dashboards, ...picker, ...withdrawals]

@@ -114,10 +114,37 @@ const OrderConfirmationModal = ({ isOpen, toggle, orderData, onConfirmOrder, isL
 								<div className="item-details">
 									<div className="item-name font-weight-bold">{item.name}</div>
 									<div className="item-unit text-muted small">
-										{item.quantity} × {formatPrice(item.price)}
+										{item.quantity} × {item.discountAmount > 0 ? (
+											<>
+												<span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{formatPrice(item.price)}</span>
+												{' '}
+												<span style={{ color: '#28a745' }}>{formatPrice(item.price - (item.discountAmount / item.quantity))}</span>
+											</>
+										) : (
+											formatPrice(item.price)
+										)}
 									</div>
+									{item.discountAmount > 0 && (
+										<div className="text-success small">
+											Discount: {formatPrice(item.discountAmount)} 
+											{item.discountType === 'percentage' && ` (${item.discountValue}%)`}
+										</div>
+									)}
 								</div>
-								<div className="item-total font-weight-bold">{formatPrice(item.price * item.quantity)}</div>
+								<div className="item-total font-weight-bold">
+									{item.discountAmount > 0 ? (
+										<div>
+											<div style={{ textDecoration: 'line-through', opacity: 0.6, fontSize: '0.875rem' }}>
+												{formatPrice(item.price * item.quantity)}
+											</div>
+											<div style={{ color: '#28a745' }}>
+												{formatPrice((item.price * item.quantity) - item.discountAmount)}
+											</div>
+										</div>
+									) : (
+										formatPrice(item.price * item.quantity)
+									)}
+								</div>
 							</div>
 						))}
 					</div>
@@ -126,12 +153,35 @@ const OrderConfirmationModal = ({ isOpen, toggle, orderData, onConfirmOrder, isL
 					<div className="order-totals">
 						<div className="d-flex justify-content-between py-1">
 							<span>Subtotal:</span>
-							<span>{formatPrice(orderData.subtotal)}</span>
+							<span>{formatPrice(orderData.subtotal + (orderData.totalDiscount || 0))}</span>
 						</div>
+						
+						{orderData.totalItemDiscount > 0 && (
+							<div className="d-flex justify-content-between py-1 text-success">
+								<span>Item Discounts:</span>
+								<span>-{formatPrice(orderData.totalItemDiscount)}</span>
+							</div>
+						)}
+						
+						{orderData.orderDiscount?.amount > 0 && (
+							<div className="d-flex justify-content-between py-1 text-success">
+								<span>Order Discount ({orderData.orderDiscount.type === 'percentage' ? `${orderData.orderDiscount.value}%` : 'Fixed'}):</span>
+								<span>-{formatPrice(orderData.orderDiscount.amount)}</span>
+							</div>
+						)}
+						
+						{orderData.totalDiscount > 0 && (
+							<div className="d-flex justify-content-between py-1 font-weight-bold text-success border-top">
+								<span>Total Discount:</span>
+								<span>-{formatPrice(orderData.totalDiscount)} ({orderData.discountPercentage?.toFixed(1)}%)</span>
+							</div>
+						)}
+						
 						<div className="d-flex justify-content-between py-1">
 							<span>Tax (15% included):</span>
 							<span>{formatPrice(orderData.tax)}</span>
 						</div>
+						
 						<div className="d-flex justify-content-between py-2 border-top font-weight-bold h5">
 							<span>Total:</span>
 							<span>{formatPrice(orderData.total)}</span>

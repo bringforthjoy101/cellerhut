@@ -1,6 +1,6 @@
 import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Plus, Minus, ShoppingCart, Package, AlertCircle, CheckCircle, AlertTriangle } from 'react-feather'
+import { Plus, Minus, ShoppingCart, Package, AlertCircle, CheckCircle, AlertTriangle, Layers } from 'react-feather'
 import { Badge } from 'reactstrap'
 import { addToOrder, updateQuantity } from '../store/actions'
 
@@ -10,7 +10,23 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
 
   const orderItem = currentOrder.items.find(item => item.id === product.id)
   const quantity = orderItem ? orderItem.quantity : 0
-  const availableQty = product.qty || 0
+  
+  // Calculate actual available quantity for composite products
+  const getActualAvailableQty = () => {
+    const storedQty = product.qty || 0
+    
+    if (product.product_type === 'composite' && product.BaseProduct) {
+      const baseQty = Number(product.BaseProduct.qty) || 0
+      const compositeQuantity = Number(product.composite_quantity) || 1
+      const baseAvailable = Math.floor(baseQty / compositeQuantity)
+      return Math.min(baseAvailable, storedQty)
+    }
+    
+    return storedQty
+  }
+  
+  const availableQty = getActualAvailableQty()
+  const isComposite = product.product_type === 'composite'
 
   const handleAddToOrder = () => {
     if (availableQty > 0) {
@@ -88,7 +104,15 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
         
         <div className="product-details">
           <div className="product-main-info">
-            <h4 className="product-name">{product.name}</h4>
+            <h4 className="product-name">
+              {product.name}
+              {isComposite && (
+                <Badge color="light-info" className="ml-2">
+                  <Layers size={10} className="mr-1" />
+                  {product.composite_quantity}x pack
+                </Badge>
+              )}
+            </h4>
             <div className="product-meta">
               <span className="product-category">
                 <Package size={12} />
@@ -96,6 +120,11 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
               </span>
               {product.barcode && (
                 <span className="product-barcode">#{product.barcode}</span>
+              )}
+              {isComposite && product.discount_percentage > 0 && (
+                <Badge color="success" className="ml-2">
+                  {product.discount_percentage}% off
+                </Badge>
               )}
             </div>
           </div>
@@ -181,8 +210,25 @@ const ProductCard = ({ product, viewMode = 'grid' }) => {
       </div>
       
       <div className="product-info">
-        <h4 className="product-name">{product.name}</h4>
-        <div className="product-price">{formatPrice(product.price)}</div>
+        <h4 className="product-name">
+          {product.name}
+          {isComposite && (
+            <Badge color="light-info" className="composite-badge" pill>
+              <Layers size={8} />
+              {product.composite_quantity}x
+            </Badge>
+          )}
+        </h4>
+        <div className="product-price">
+          {formatPrice(product.price)}
+          {isComposite && product.discount_percentage > 0 && (
+            <small className="discount-info">
+              <Badge color="success" pill>
+                -{product.discount_percentage}%
+              </Badge>
+            </small>
+          )}
+        </div>
         
         <div className="product-meta">
           <span className="product-category">

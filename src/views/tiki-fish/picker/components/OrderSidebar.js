@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { ShoppingCart, Plus, Minus, CreditCard, DollarSign, Smartphone, Wifi, WifiOff, Loader, ChevronLeft, ChevronRight, Menu, Archive } from 'react-feather'
+import { ShoppingCart, Plus, Minus, CreditCard, DollarSign, Smartphone, Wifi, WifiOff, Loader, ChevronLeft, ChevronRight, Menu, Archive, ChevronDown, ChevronUp, Percent } from 'react-feather'
 import { Button, Collapse, Badge } from 'reactstrap'
-import { updateQuantity, removeFromOrder, setPaymentMethod, holdOrder, placeOrder, clearOrder, showConfirmationModal, hideConfirmationModal } from '../store/actions'
+import { updateQuantity, removeFromOrder, setPaymentMethod, holdOrder, placeOrder, clearOrder, showConfirmationModal, hideConfirmationModal, setItemDiscount, setOrderDiscount } from '../store/actions'
 import OrderConfirmationModal from './OrderConfirmationModal'
 import PrintReceipt from './PrintReceipt'
 import HoldOrderManager from './HoldOrderManager'
@@ -15,10 +15,18 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
   const [lastOrderData, setLastOrderData] = useState(null)
   const [lastOrderResult, setLastOrderResult] = useState(null)
   const [showHoldOrderManager, setShowHoldOrderManager] = useState(false)
+  
+  // Collapsible section states
+  const [discountSectionCollapsed, setDiscountSectionCollapsed] = useState(true)
+  const [paymentMethodCollapsed, setPaymentMethodCollapsed] = useState(false)
+  const [itemDiscountsVisible, setItemDiscountsVisible] = useState({})
 
   // Get the currently active order (could be current or a held order)
   const activeOrder = activeOrderId === 'current' ? currentOrder : 
     heldOrders.find(order => order.id === activeOrderId) || currentOrder
+  
+  // Show discount section if there's an active discount
+  const hasActiveDiscount = activeOrder?.orderDiscount?.amount > 0 || activeOrder?.totalItemDiscount > 0
 
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity <= 0) {
@@ -79,6 +87,13 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
         dispatch(clearOrder())
       }
     }
+  }
+
+  const toggleItemDiscount = (itemId) => {
+    setItemDiscountsVisible(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }))
   }
 
   const formatPrice = (price) => {
@@ -225,7 +240,77 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
               />
               <div className="item-details">
                 <div className="item-name" title={item.name}>{item.name}</div>
-                <div className="item-price">{formatPrice(item.price)} each</div>
+                <div className="item-price">
+                  {item.discountAmount > 0 ? (
+                    <>
+                      <span className="price-original">{formatPrice(item.price)}</span>
+                      <span className="price-discounted">{formatPrice(item.price - (item.discountAmount / item.quantity))}</span>
+                    </>
+                  ) : (
+                    <span>{formatPrice(item.price)} each</span>
+                  )}
+                </div>
+                
+                {/* Discount toggle button */}
+                {!itemDiscountsVisible[item.id] && !item.discountAmount && (
+                  <button
+                    className="item-discount-toggle"
+                    onClick={() => toggleItemDiscount(item.id)}
+                    title="Add discount"
+                  >
+                    <Percent size={12} /> Discount
+                  </button>
+                )}
+                
+                {/* Show discount badge if discount exists */}
+                {item.discountAmount > 0 && !itemDiscountsVisible[item.id] && (
+                  <div 
+                    className="item-discount-badge"
+                    onClick={() => toggleItemDiscount(item.id)}
+                  >
+                    <Percent size={12} />
+                    {item.discountType === 'percentage' ? `${item.discountValue}%` : formatPrice(item.discountAmount)}
+                  </div>
+                )}
+                
+                {/* Collapsible discount input */}
+                {(itemDiscountsVisible[item.id] || item.discountAmount > 0) && (
+                  <div className="item-discount">
+                    <input
+                      type="number"
+                      className="discount-input"
+                      placeholder="0"
+                      value={item.discountValue || ''}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value) || 0
+                        dispatch(setItemDiscount(item.id, item.discountType || 'percentage', value))
+                      }}
+                      min="0"
+                      max={item.discountType === 'percentage' ? 100 : item.price * item.quantity}
+                    />
+                    <button
+                      className="discount-type-toggle"
+                      onClick={() => {
+                        const newType = item.discountType === 'percentage' ? 'fixed' : 'percentage'
+                        dispatch(setItemDiscount(item.id, newType, item.discountValue || 0))
+                      }}
+                    >
+                      {item.discountType === 'percentage' ? '%' : 'R'}
+                    </button>
+                    <button
+                      className="discount-close"
+                      onClick={() => {
+                        if (item.discountAmount > 0) {
+                          dispatch(setItemDiscount(item.id, 'percentage', 0))
+                        }
+                        toggleItemDiscount(item.id)
+                      }}
+                      title="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="item-quantity">
                 <button
@@ -243,7 +328,14 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
                 </button>
               </div>
               <div className="item-total">
-                {formatPrice(item.price * item.quantity)}
+                {item.discountAmount > 0 ? (
+                  <div>
+                    <div className="total-original">{formatPrice(item.price * item.quantity)}</div>
+                    <div className="total-discounted">{formatPrice((item.price * item.quantity) - item.discountAmount)}</div>
+                  </div>
+                ) : (
+                  formatPrice(item.price * item.quantity)
+                )}
               </div>
             </div>
           ))
@@ -258,8 +350,96 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
       <div className="order-summary">
         <div className="summary-row">
           <span className="label">Subtotal:</span>
-          <span className="value">{formatPrice(activeOrder.subtotal)}</span>
+          <span className="value">{formatPrice(activeOrder.subtotal + (activeOrder.totalDiscount || 0))}</span>
         </div>
+        
+        {activeOrder.totalItemDiscount > 0 && (
+          <div className="summary-row discount-row">
+            <span className="label">Item Discounts:</span>
+            <span className="value discount">-{formatPrice(activeOrder.totalItemDiscount)}</span>
+          </div>
+        )}
+        
+        <div className="order-discount-section">
+          <div 
+            className="discount-header"
+            onClick={() => setDiscountSectionCollapsed(!discountSectionCollapsed)}
+          >
+            <div className="discount-label">
+              <Percent size={16} />
+              <span>Order Discount</span>
+              {activeOrder.orderDiscount?.amount > 0 && (
+                <span className="discount-preview">
+                  -{formatPrice(activeOrder.orderDiscount.amount)}
+                  {activeOrder.orderDiscount?.type === 'percentage' && ` (${activeOrder.orderDiscount.value}%)`}
+                </span>
+              )}
+            </div>
+            {discountSectionCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </div>
+          
+          {!discountSectionCollapsed && (
+            <div className="discount-controls">
+              <div className="quick-discount-buttons">
+                {[5, 10, 15, 20].map(percent => (
+                  <button
+                    key={percent}
+                    className="quick-discount-btn"
+                    onClick={() => dispatch(setOrderDiscount('percentage', percent))}
+                  >
+                    {percent}%
+                  </button>
+                ))}
+              </div>
+              <div className="custom-discount">
+                <input
+                  type="number"
+                  className="discount-input"
+                  placeholder="0"
+                  value={activeOrder.orderDiscount?.value || ''}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0
+                    dispatch(setOrderDiscount(activeOrder.orderDiscount?.type || 'fixed', value))
+                  }}
+                  min="0"
+                  max={activeOrder.orderDiscount?.type === 'percentage' ? 100 : activeOrder.subtotal}
+                />
+                <button
+                  className="discount-type-toggle"
+                  onClick={() => {
+                    const newType = activeOrder.orderDiscount?.type === 'percentage' ? 'fixed' : 'percentage'
+                    dispatch(setOrderDiscount(newType, activeOrder.orderDiscount?.value || 0))
+                  }}
+                >
+                  {activeOrder.orderDiscount?.type === 'percentage' ? '%' : 'R'}
+                </button>
+                {activeOrder.orderDiscount?.amount > 0 && (
+                  <button
+                    className="discount-clear"
+                    onClick={() => dispatch(setOrderDiscount('percentage', 0))}
+                    title="Clear discount"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {activeOrder.orderDiscount?.amount > 0 && (
+                <div className="discount-amount">Discount Applied: -{formatPrice(activeOrder.orderDiscount.amount)}</div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {activeOrder.totalDiscount > 0 && (
+          <div className="summary-row total-discount-row">
+            <span className="label">Total Discount:</span>
+            <span className="value discount">
+              -{formatPrice(activeOrder.totalDiscount)} 
+              ({activeOrder.discountPercentage?.toFixed(1)}%)
+            </span>
+          </div>
+        )}
+        
         <div className="summary-row">
           <span className="label">Tax (15% included):</span>
           <span className="value">{formatPrice(activeOrder.tax)}</span>
@@ -270,21 +450,42 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
         </div>
 
         <div className="payment-methods">
-          <div className="payment-method">
-            {paymentMethods.map(method => {
-              const IconComponent = method.icon
-              return (
-                <div
-                  key={method.id}
-                  className={`method-option ${activeOrder.paymentMethod === method.id ? 'active' : ''}`}
-                  onClick={() => handlePaymentMethodChange(method.id)}
-                >
-                  <IconComponent className="method-icon" size={18} />
-                  <div>{method.name}</div>
-                </div>
-              )
-            })}
+          <div 
+            className="payment-header"
+            onClick={() => setPaymentMethodCollapsed(!paymentMethodCollapsed)}
+          >
+            <div className="payment-label">
+              {(() => {
+                const selectedMethod = paymentMethods.find(m => m.id === activeOrder.paymentMethod)
+                const SelectedIcon = selectedMethod?.icon || DollarSign
+                return (
+                  <>
+                    <SelectedIcon size={16} />
+                    <span>Payment: {selectedMethod?.name || 'Cash'}</span>
+                  </>
+                )
+              })()}
+            </div>
+            {paymentMethodCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </div>
+          
+          {!paymentMethodCollapsed && (
+            <div className="payment-method">
+              {paymentMethods.map(method => {
+                const IconComponent = method.icon
+                return (
+                  <div
+                    key={method.id}
+                    className={`method-option ${activeOrder.paymentMethod === method.id ? 'active' : ''}`}
+                    onClick={() => handlePaymentMethodChange(method.id)}
+                  >
+                    <IconComponent className="method-icon" size={18} />
+                    <div>{method.name}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="order-actions">
@@ -340,7 +541,11 @@ const OrderSidebar = ({ scannerStatus, collapsed = false, onToggleCollapse }) =>
           subtotal: activeOrder.subtotal,
           tax: activeOrder.tax,
           total: activeOrder.total,
-          paymentMethod: activeOrder.paymentMethod
+          paymentMethod: activeOrder.paymentMethod,
+          orderDiscount: activeOrder.orderDiscount,
+          totalItemDiscount: activeOrder.totalItemDiscount,
+          totalDiscount: activeOrder.totalDiscount,
+          discountPercentage: activeOrder.discountPercentage
         }}
         onConfirmOrder={handleConfirmOrder}
         isLoading={isPlacingOrder}
