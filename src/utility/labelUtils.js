@@ -90,11 +90,11 @@ export const generateBarcode = (value, options = {}) => {
 		
 		const defaultOptions = {
 			format: 'CODE128',
-			width: 2,
-			height: 40,
+			width: 2.5,  // Increased from 2 to 2.5 for better 203 DPI printing
+			height: 35,  // Slightly reduced from 40 for label space
 			displayValue: false,  // Don't show value in barcode itself, we display it separately
-			fontSize: 12,
-			margin: 5,
+			fontSize: 10,
+			margin: 3,   // Reduced margin for more barcode width
 			...options
 		}
 		
@@ -374,7 +374,7 @@ export const exportPriceLabels = (products, options = {}) => {
 					.thermal-label {
 						width: 78mm;
 						height: 25mm;
-						padding: 2mm 10mm; /* Add horizontal padding for arrow tabs */
+						padding: 2mm 7mm 2mm 13mm; /* Asymmetric padding for Honeywell PC42D */
 						background: white;
 						box-sizing: border-box;
 						position: relative;
@@ -383,7 +383,7 @@ export const exportPriceLabels = (products, options = {}) => {
 					.thermal-content {
 						width: 58mm; /* Actual printable width */
 						height: 21mm; /* Height minus vertical padding */
-						margin: 0 auto;
+						margin: 0 0 0 3mm; /* Shift content right for printer alignment */
 						display: flex;
 						flex-direction: column;
 						justify-content: space-between;
@@ -426,7 +426,7 @@ export const exportPriceLabels = (products, options = {}) => {
 					}
 					
 					.thermal-label .product-name {
-						font-size: 9px;
+						font-size: 10px; /* Increased for 203 DPI clarity */
 						font-weight: bold;
 						line-height: 1.1;
 						margin-bottom: 0.5mm;
@@ -454,7 +454,7 @@ export const exportPriceLabels = (products, options = {}) => {
 					}
 					
 					.current-price {
-						font-size: 12px; /* Reduced to fit better */
+						font-size: 14px; /* Increased for prominence on thermal printer */
 						font-weight: bold;
 						color: #000;
 					}
@@ -473,7 +473,7 @@ export const exportPriceLabels = (products, options = {}) => {
 					}
 					
 					.barcode-text {
-						font-size: 8px; /* Smaller for space efficiency */
+						font-size: 9px; /* Optimized for 203 DPI readability */
 						margin-top: 1px;
 						font-family: monospace;
 						letter-spacing: 0.3px;
@@ -482,7 +482,7 @@ export const exportPriceLabels = (products, options = {}) => {
 					.bottom-info {
 						display: flex;
 						justify-content: space-between;
-						font-size: 7px;
+						font-size: 8px; /* Increased for thermal printer clarity */
 						color: #333;
 						padding: 0 1mm;
 						border-top: 0.5px solid #ddd;
@@ -559,6 +559,7 @@ export const exportPriceLabels = (products, options = {}) => {
 							padding: 0;
 							-webkit-print-color-adjust: exact;
 							print-color-adjust: exact;
+							color-adjust: exact; /* For Firefox */
 						}
 						
 						.label {
@@ -572,19 +573,27 @@ export const exportPriceLabels = (products, options = {}) => {
 						
 						.thermal-label {
 							margin: 0;
-							padding: 2mm 10mm; /* Maintain arrow tab spacing in print */
+							padding: 2mm 7mm 2mm 13mm !important; /* Asymmetric padding for Honeywell PC42D */
 							width: 78mm !important;
 							height: 25mm !important;
+						}
+						
+						/* High contrast for thermal printing */
+						.thermal-label .barcode-image {
+							filter: contrast(1.2);
+							-webkit-filter: contrast(1.2);
 						}
 						
 						.promotion-badge {
 							background: #000 !important;
 							-webkit-print-color-adjust: exact;
 							print-color-adjust: exact;
+							color-adjust: exact;
 						}
 						
 						@page {
 							margin: 0;
+							size: 78mm 25mm; /* Explicit page size for thermal printer */
 						}
 					}
 				</style>
@@ -642,7 +651,7 @@ export const generateLabelPreview = (product, options = {}) => {
 	const previewStyles = format.isThermal ? `
 		<style>
 			.preview-container .thermal-label {
-				padding: 2mm 10mm;
+				padding: 2mm 7mm 2mm 13mm; /* Asymmetric padding for Honeywell PC42D */
 				width: 78mm;
 				height: 25mm;
 				position: relative;
@@ -651,7 +660,7 @@ export const generateLabelPreview = (product, options = {}) => {
 			.preview-container .thermal-content {
 				width: 58mm;
 				height: 21mm;
-				margin: 0 auto;
+				margin: 0 0 0 3mm; /* Shift content right for printer alignment */
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;
@@ -677,7 +686,7 @@ export const generateLabelPreview = (product, options = {}) => {
 				text-align: left;
 			}
 			.preview-container .product-name {
-				font-size: 9px;
+				font-size: 10px; /* Increased for 203 DPI clarity */
 				font-weight: bold;
 				line-height: 1.1;
 				margin-bottom: 0.5mm;
@@ -696,7 +705,7 @@ export const generateLabelPreview = (product, options = {}) => {
 				padding-left: 2mm;
 			}
 			.preview-container .current-price {
-				font-size: 12px;
+				font-size: 14px; /* Increased for prominence on thermal printer */
 				font-weight: bold;
 				color: #000;
 			}
@@ -720,7 +729,7 @@ export const generateLabelPreview = (product, options = {}) => {
 			.preview-container .bottom-info {
 				display: flex;
 				justify-content: space-between;
-				font-size: 7px;
+				font-size: 8px; /* Increased for thermal printer clarity */
 				color: #333;
 				padding: 0 1mm;
 				border-top: 0.5px solid #ddd;
