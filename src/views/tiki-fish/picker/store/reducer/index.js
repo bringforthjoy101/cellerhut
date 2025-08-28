@@ -205,9 +205,9 @@ const pickerReducer = (state = initialState, action) => {
 				? itemTotals.subtotal * (currentOrderDiscount.value / 100)
 				: currentOrderDiscount.amount
 
-			const finalSubtotal = itemTotals.subtotal - orderDiscountAmount
-			const tax = (finalSubtotal * 0.15) / (1 + 0.15)
-			const total = finalSubtotal + tax
+			const total = itemTotals.subtotal - orderDiscountAmount // Total is the final price (tax inclusive)
+			const tax = total * 0.15 / 1.15 // Extract the tax portion from the inclusive price
+			const finalSubtotal = total - tax // Net amount without tax
 			const totalDiscount = itemTotals.totalItemDiscount + orderDiscountAmount
 			const discountPercentage = total > 0 ? (totalDiscount / (total + totalDiscount)) * 100 : 0
 
@@ -230,7 +230,7 @@ const pickerReducer = (state = initialState, action) => {
 		case 'PICKER_REMOVE_FROM_ORDER':
 			const filteredItems = state.currentOrder.items.filter((item) => item.id !== action.productId)
 			const newTotal = filteredItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-			const newTax = (newTotal * 0.15) / (1 + 0.15)
+			const newTax = newTotal * 0.15 / 1.15 // Extract tax from inclusive price
 			const newSubtotal = newTotal - newTax
 
 			return {
@@ -252,7 +252,7 @@ const pickerReducer = (state = initialState, action) => {
 				.filter((item) => item.quantity > 0)
 
 			const qtyTotal = itemsWithUpdatedQty.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-			const qtyTax = (qtyTotal * 0.15) / (1 + 0.15)
+			const qtyTax = qtyTotal * 0.15 / 1.15 // Extract tax from inclusive price
 			const qtySubtotal = qtyTotal - qtyTax
 
 			return {
@@ -602,10 +602,10 @@ const pickerReducer = (state = initialState, action) => {
 			
 			mergedOrder.items = Array.from(itemMap.values())
 			
-			// Recalculate totals
-			mergedOrder.subtotal = mergedOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-			mergedOrder.tax = mergedOrder.subtotal * 0.15 // Assuming 15% tax
-			mergedOrder.total = mergedOrder.subtotal + mergedOrder.tax
+			// Recalculate totals (tax inclusive)
+			mergedOrder.total = mergedOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+			mergedOrder.tax = mergedOrder.total * 0.15 / 1.15 // Extract tax from inclusive price
+			mergedOrder.subtotal = mergedOrder.total - mergedOrder.tax // Net amount without tax
 			
 			// Remove merged orders and add new merged order
 			const remainingOrders = state.heldOrders.filter(order => !action.orderIds.includes(order.id))
@@ -651,9 +651,9 @@ const pickerReducer = (state = initialState, action) => {
 				? discountItemTotals.subtotal * (orderDiscount.value / 100)
 				: orderDiscount.value
 
-			const discountFinalSubtotal = discountItemTotals.subtotal - discountOrderAmount
-			const discountTax = (discountFinalSubtotal * 0.15) / (1 + 0.15)
-			const discountTotal = discountFinalSubtotal + discountTax
+			const discountTotal = discountItemTotals.subtotal - discountOrderAmount // Total with discounts (tax inclusive)
+			const discountTax = discountTotal * 0.15 / 1.15 // Extract tax from inclusive price
+			const discountFinalSubtotal = discountTotal - discountTax // Net amount without tax
 			const discountTotalDiscount = discountItemTotals.totalItemDiscount + discountOrderAmount
 			const itemDiscountPercentage = discountTotal > 0 ? (discountTotalDiscount / (discountTotal + discountTotalDiscount)) * 100 : 0
 
@@ -693,9 +693,9 @@ const pickerReducer = (state = initialState, action) => {
 				? orderDiscItemTotals.subtotal * (action.discountValue / 100)
 				: Math.min(action.discountValue, orderDiscItemTotals.subtotal)
 
-			const newFinalSubtotal = orderDiscItemTotals.subtotal - newOrderDiscountAmount
-			const orderDiscountTax = (newFinalSubtotal * 0.15) / (1 + 0.15)
-			const newOrderTotal = newFinalSubtotal + orderDiscountTax
+			const newOrderTotal = orderDiscItemTotals.subtotal - newOrderDiscountAmount // Total with discount (tax inclusive)
+			const orderDiscountTax = newOrderTotal * 0.15 / 1.15 // Extract tax from inclusive price
+			const newFinalSubtotal = newOrderTotal - orderDiscountTax // Net amount without tax
 			const newTotalDiscount = orderDiscItemTotals.totalItemDiscount + newOrderDiscountAmount
 			const newDiscountPercentage = newOrderTotal > 0 ? (newTotalDiscount / (newOrderTotal + newTotalDiscount)) * 100 : 0
 

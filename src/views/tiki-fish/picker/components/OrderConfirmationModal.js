@@ -16,10 +16,15 @@ const OrderConfirmationModal = ({ isOpen, toggle, orderData, onConfirmOrder, isL
 	// Reset state when modal opens/closes
 	useEffect(() => {
 		if (isOpen) {
-			setCashCollected('')
+			// Pre-populate cash collected with total amount for cash payments
+			if (orderData.paymentMethod === 'cash') {
+				setCashCollected(orderData.total.toString())
+			} else {
+				setCashCollected('')
+			}
 			setError('')
 		}
-	}, [isOpen])
+	}, [isOpen, orderData.paymentMethod, orderData.total])
 
 	// Auto-focus cash input when modal opens for cash payments
 	useEffect(() => {
@@ -208,7 +213,7 @@ const OrderConfirmationModal = ({ isOpen, toggle, orderData, onConfirmOrder, isL
 									id="cashCollectedInput"
 									value={cashCollected}
 									onChange={handleCashChange}
-									placeholder={`Enter amount (minimum: ${formatPrice(orderData.total)})`}
+									placeholder={`Amount due: ${formatPrice(orderData.total)}`}
 									// step="0.01"
 									className={error ? 'is-invalid' : ''}
 								/>

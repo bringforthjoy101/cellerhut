@@ -16,7 +16,7 @@ import '@styles/react/libs/charts/apex-charts.scss'
 const AnalyticsDashboard = () => {
 	const { colors } = useContext(ThemeColors)
 	const dispatch = useDispatch()
-	const productStats = useSelector(state => state.products?.stats)
+	const productStats = useSelector((state) => state.products?.stats)
 
 	const [userData, setUserData] = useState(null)
 	const [dashData, setDashData] = useState({})
@@ -68,17 +68,15 @@ const AnalyticsDashboard = () => {
 					{dashData.sales ? <StatsCard cols={{ xl: '4', sm: '6' }} statsData={dashData?.sales.topSelling} /> : <Spinner className="mr-25" size="l" />}
 				</Col>
 			</Row>
-			
+
 			{/* Inventory Statistics Section */}
 			{productStats && (
-				<div className='mb-2'>
-					<h4 className='mb-2'>Inventory Overview</h4>
+				<div className="mb-2">
+					<h4 className="mb-2">Inventory Overview</h4>
 					<InventoryStatsCards stats={productStats} cols={{ xl: '2', lg: '4', md: '4', sm: '6' }} />
 				</div>
 			)}
-			{userData?.role === 'admin' && (
-				<>
-					{/* <Row className="match-height">
+			{/* <Row className="match-height">
 						<Col xl="4" md="6" sm="12">
 							<StatsVertical icon={<DollarSign size={21} />} color="success" stats={dashData.businessBalance ? Number(dashData?.businessBalance).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' }) : <Spinner className="mr-25" size="s" />} statTitle="Total Account Balance" />
 						</Col>
@@ -110,7 +108,7 @@ const AnalyticsDashboard = () => {
 							/>
 						</Col>
 					</Row> */}
-					{/* <Row className="match-height">
+			{/* <Row className="match-height">
 						<Col xl="4" md="6" sm="12">
 							<StatsVertical icon={<TrendingUp size={21} />} color="primary" stats={dashData.stock ? Number(dashData?.stock.stockVolume).toLocaleString() : <Spinner className="mr-25" size="s" />} statTitle="Total Stocks Available" />
 						</Col>
@@ -147,58 +145,56 @@ const AnalyticsDashboard = () => {
 							/>
 						</Col>
 					</Row> */}
-					<Row className="match-height">
-						<Col xl="4" md="6" sm="12">
-							<StatsVertical
-								icon={<TrendingUp size={21} />}
-								color="primary"
-								stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesToday) || 0}` : <Spinner className="mr-25" size="sm" />}
-								statTitle="Today"
-							/>
-						</Col>
-						<Col xl="4" md="6" sm="12">
-							<StatsVertical
-								icon={<TrendingUp size={21} />}
-								color="primary"
-								stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesYesterday) || 0}` : <Spinner className="mr-25" size="sm" />}
-								statTitle="Yesterday"
-							/>
-						</Col>
-						<Col xl="4" md="6" sm="12">
-							<StatsVertical
-								icon={<TrendingUp size={21} />}
-								color="primary"
-								stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesThisWeek) || 0}` : <Spinner className="mr-25" size="sm" />}
-								statTitle="This Week"
-							/>
-						</Col>
-						<Col xl="4" md="6" sm="12">
-							<StatsVertical
-								icon={<TrendingUp size={21} />}
-								color="primary"
-								stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesThisMonth) || 0}` : <Spinner className="mr-25" size="sm" />}
-								statTitle="This Month"
-							/>
-						</Col>
-						<Col xl="4" md="6" sm="12">
-							<StatsVertical
-								icon={<TrendingUp size={21} />}
-								color="primary"
-								stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesThisYear) || 0}` : <Spinner className="mr-25" size="sm" />}
-								statTitle="This Year"
-							/>
-						</Col>
-						<Col xl="4" md="6" sm="12">
-							<StatsVertical
-								icon={<TrendingUp size={21} />}
-								color="primary"
-								stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesSoFar.toFixed(0))}` : <Spinner className="mr-25" size="sm" />}
-								statTitle="So Far"
-							/>
-						</Col>
-					</Row>
-				</>
-			)}
+			<Row className="match-height">
+				<Col xl="4" md="6" sm="12">
+					<StatsVertical
+						icon={<TrendingUp size={21} />}
+						color="primary"
+						stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesToday) || 0}` : <Spinner className="mr-25" size="sm" />}
+						statTitle="Today"
+					/>
+				</Col>
+				<Col xl="4" md="6" sm="12">
+					<StatsVertical
+						icon={<TrendingUp size={21} />}
+						color="primary"
+						stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesYesterday) || 0}` : <Spinner className="mr-25" size="sm" />}
+						statTitle="Yesterday"
+					/>
+				</Col>
+				<Col xl="4" md="6" sm="12">
+					<StatsVertical
+						icon={<TrendingUp size={21} />}
+						color="primary"
+						stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesThisWeek) || 0}` : <Spinner className="mr-25" size="sm" />}
+						statTitle="This Week"
+					/>
+				</Col>
+				<Col xl="4" md="6" sm="12">
+					<StatsVertical
+						icon={<TrendingUp size={21} />}
+						color="primary"
+						stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesThisMonth) || 0}` : <Spinner className="mr-25" size="sm" />}
+						statTitle="This Month"
+					/>
+				</Col>
+				<Col xl="4" md="6" sm="12">
+					<StatsVertical
+						icon={<TrendingUp size={21} />}
+						color="primary"
+						stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesThisYear) || 0}` : <Spinner className="mr-25" size="sm" />}
+						statTitle="This Year"
+					/>
+				</Col>
+				<Col xl="4" md="6" sm="12">
+					<StatsVertical
+						icon={<TrendingUp size={21} />}
+						color="primary"
+						stats={dashData.sales ? `R${numFormatter(dashData.sales?.salesSoFar.toFixed(0))}` : <Spinner className="mr-25" size="sm" />}
+						statTitle="So Far"
+					/>
+				</Col>
+			</Row>
 		</div>
 	)
 }

@@ -1,6 +1,14 @@
 /**
  * Label Generation Utility Functions
  * Provides price tag label generation with barcode support
+ * 
+ * For shelf edge labels (THERMAL_78x25):
+ * - Total label size: 78mm x 25mm
+ * - Left arrow tab: 10mm (non-printable area)
+ * - Right arrow tab: 10mm (non-printable area) 
+ * - Printable area: 58mm x 25mm (center portion)
+ * 
+ * Arrow tabs are used to secure labels in shelf rail holders
  */
 
 import JsBarcode from 'jsbarcode'
@@ -8,7 +16,7 @@ import moment from 'moment'
 
 /**
  * Label format configurations
- * Standard label sizes with dimensions in inches
+ * Standard label sizes with dimensions in inches/mm
  */
 export const LABEL_FORMATS = {
 	THERMAL_78x25: {
@@ -16,10 +24,13 @@ export const LABEL_FORMATS = {
 		id: 'thermal_78x25',
 		labelWidth: '78mm',
 		labelHeight: '25mm',
+		printableWidth: '58mm',  // Actual printable area (78mm - 20mm for tabs)
+		leftTab: '10mm',         // Left arrow tab width
+		rightTab: '10mm',        // Right arrow tab width
 		labelsPerRow: 1,
 		rowsPerPage: 1,
 		pageSize: 'custom',
-		description: 'Standard thermal printer label',
+		description: 'Shelf edge label with arrow tabs',
 		isThermal: true
 	},
 	STANDARD_30: {
@@ -106,8 +117,9 @@ export const generateBarcode = (value, options = {}) => {
  * Format product data for label display
  * @param {Object} product - Product object
  * @param {Object} options - Formatting options
+ * @param {Object} format - Label format configuration
  */
-export const formatLabelData = (product, options = {}) => {
+export const formatLabelData = (product, options = {}, format = null) => {
 	const {
 		showBarcode = true,
 		showCostPrice = false,
@@ -136,10 +148,16 @@ export const formatLabelData = (product, options = {}) => {
 	const formattedWasPrice = wasPrice ? `${currencySymbol}${parseFloat(wasPrice).toFixed(2)}` : null
 	
 	// Adjust barcode parameters based on format
-	const barcodeOptions = {
-		height: 35,     // Increased from 25
-		fontSize: 11,   // Increased from 10
-		width: 1.5,     // Better bar width
+	const barcodeOptions = format?.isThermal ? {
+		height: 28,     // Optimized for thermal labels
+		fontSize: 9,    // Smaller font for thermal
+		width: 1.2,     // Narrower bars to fit printable area
+		margin: 1,      // Minimal margin
+		textMargin: 0
+	} : {
+		height: 35,     // Standard height for regular labels
+		fontSize: 11,   // Standard font size
+		width: 1.5,     // Standard bar width
 		margin: 1,      // Reduced margin for more space
 		textMargin: 0
 	}
@@ -258,7 +276,7 @@ export const exportPriceLabels = (products, options = {}) => {
 		const allLabels = []
 		products.forEach(product => {
 			const quantity = quantities[product.id] || 1
-			const labelData = formatLabelData(product, labelOptions)
+			const labelData = formatLabelData(product, labelOptions, format)
 			
 			for (let i = 0; i < quantity; i++) {
 				allLabels.push(labelData)
@@ -354,16 +372,22 @@ export const exportPriceLabels = (products, options = {}) => {
 					
 					/* Thermal label specific styles */
 					.thermal-label {
-						padding: 2mm;
+						width: 78mm;
+						height: 25mm;
+						padding: 2mm 10mm; /* Add horizontal padding for arrow tabs */
 						background: white;
+						box-sizing: border-box;
+						position: relative;
 					}
 					
 					.thermal-content {
-						width: 100%;
-						height: 100%;
+						width: 58mm; /* Actual printable width */
+						height: 21mm; /* Height minus vertical padding */
+						margin: 0 auto;
 						display: flex;
 						flex-direction: column;
 						justify-content: space-between;
+						overflow: hidden;
 					}
 					
 					.store-header {
@@ -378,13 +402,13 @@ export const exportPriceLabels = (products, options = {}) => {
 					.promotion-badge {
 						position: absolute;
 						top: 2mm;
-						right: 2mm;
+						right: 12mm; /* Adjusted for arrow tab */
 						background: #000;
 						color: white;
-						padding: 1mm 2mm;
-						font-size: 7px;
+						padding: 0.5mm 1.5mm;
+						font-size: 6px;
 						font-weight: bold;
-						border-radius: 2px;
+						border-radius: 1px;
 					}
 					
 					.main-section {
@@ -392,7 +416,8 @@ export const exportPriceLabels = (products, options = {}) => {
 						justify-content: space-between;
 						align-items: center;
 						flex-grow: 1;
-						padding: 0 1mm;
+						padding: 0;
+						max-width: 58mm;
 					}
 					
 					.product-info {
@@ -401,13 +426,15 @@ export const exportPriceLabels = (products, options = {}) => {
 					}
 					
 					.thermal-label .product-name {
-						font-size: 10px;
+						font-size: 9px;
 						font-weight: bold;
 						line-height: 1.1;
 						margin-bottom: 0.5mm;
-						max-width: 40mm;
+						max-width: 35mm; /* Reduced to fit printable area */
 						word-wrap: break-word;
 						white-space: normal;
+						overflow: hidden;
+						text-overflow: ellipsis;
 					}
 					
 					.unit-info {
@@ -421,35 +448,35 @@ export const exportPriceLabels = (products, options = {}) => {
 					}
 					
 					.was-price {
-						font-size: 9px;
+						font-size: 8px; /* Smaller size */
 						text-decoration: line-through;
 						color: #666;
 					}
 					
 					.current-price {
-						font-size: 14px;
+						font-size: 12px; /* Reduced to fit better */
 						font-weight: bold;
 						color: #000;
 					}
 					
 					.barcode-section {
 						text-align: center;
-						margin: 2mm 0;
-						padding: 1mm 0;
+						margin: 1mm 0; /* Reduced margins */
+						padding: 0.5mm 0;
 					}
 					
 					.thermal-label .barcode-image {
-						height: 35px;
+						height: 30px; /* Reduced height */
 						width: auto;
-						max-width: 90%;
+						max-width: 50mm; /* Ensure barcode fits in printable area */
 						display: inline-block;
 					}
 					
 					.barcode-text {
-						font-size: 9px;
+						font-size: 8px; /* Smaller for space efficiency */
 						margin-top: 1px;
 						font-family: monospace;
-						letter-spacing: 0.5px;
+						letter-spacing: 0.3px;
 					}
 					
 					.bottom-info {
@@ -545,7 +572,9 @@ export const exportPriceLabels = (products, options = {}) => {
 						
 						.thermal-label {
 							margin: 0;
-							padding: 1mm;
+							padding: 2mm 10mm; /* Maintain arrow tab spacing in print */
+							width: 78mm !important;
+							height: 25mm !important;
 						}
 						
 						.promotion-badge {
@@ -606,23 +635,27 @@ export const exportSingleLabel = (product, options = {}) => {
  * @param {Object} options - Preview options
  */
 export const generateLabelPreview = (product, options = {}) => {
-	const labelData = formatLabelData(product, options.labelOptions || {})
 	const format = options.format || LABEL_FORMATS.STANDARD_30
+	const labelData = formatLabelData(product, options.labelOptions || {}, format)
 	
 	// Apply same styles as print version for consistency
 	const previewStyles = format.isThermal ? `
 		<style>
 			.preview-container .thermal-label {
-				padding: 2mm;
+				padding: 2mm 10mm;
 				width: 78mm;
 				height: 25mm;
+				position: relative;
+				box-sizing: border-box;
 			}
 			.preview-container .thermal-content {
-				width: 100%;
-				height: 100%;
+				width: 58mm;
+				height: 21mm;
+				margin: 0 auto;
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;
+				overflow: hidden;
 			}
 			.preview-container .store-header {
 				font-size: 8px;
@@ -644,13 +677,15 @@ export const generateLabelPreview = (product, options = {}) => {
 				text-align: left;
 			}
 			.preview-container .product-name {
-				font-size: 10px;
+				font-size: 9px;
 				font-weight: bold;
 				line-height: 1.1;
 				margin-bottom: 0.5mm;
-				max-width: 40mm;
+				max-width: 35mm;
 				word-wrap: break-word;
 				white-space: normal;
+				overflow: hidden;
+				text-overflow: ellipsis;
 			}
 			.preview-container .unit-info {
 				font-size: 8px;
@@ -661,19 +696,19 @@ export const generateLabelPreview = (product, options = {}) => {
 				padding-left: 2mm;
 			}
 			.preview-container .current-price {
-				font-size: 14px;
+				font-size: 12px;
 				font-weight: bold;
 				color: #000;
 			}
 			.preview-container .barcode-section {
 				text-align: center;
-				margin: 2mm 0;
-				padding: 1mm 0;
+				margin: 1mm 0;
+				padding: 0.5mm 0;
 			}
 			.preview-container .barcode-image {
-				height: 35px !important;
+				height: 30px !important;
 				width: auto;
-				max-width: 90%;
+				max-width: 50mm;
 				display: inline-block;
 			}
 			.preview-container .barcode-text {
@@ -694,13 +729,13 @@ export const generateLabelPreview = (product, options = {}) => {
 			.preview-container .promotion-badge {
 				position: absolute;
 				top: 2mm;
-				right: 2mm;
+				right: 12mm; /* Adjusted for arrow tab */
 				background: #000;
 				color: white;
-				padding: 1mm 2mm;
-				font-size: 7px;
+				padding: 0.5mm 1.5mm;
+				font-size: 6px;
 				font-weight: bold;
-				border-radius: 2px;
+				border-radius: 1px;
 			}
 		</style>
 	` : ''
@@ -709,6 +744,13 @@ export const generateLabelPreview = (product, options = {}) => {
 		${previewStyles}
 		<div class="preview-container" style="display: flex; justify-content: center; padding: 20px; background: #f5f5f5;">
 			<div style="width: ${format.labelWidth}; height: ${format.labelHeight}; background: white; border: 1px solid #ddd; ${format.isThermal ? 'padding: 0;' : 'padding: 10px;'} box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
+				${format.isThermal ? `
+					<!-- Arrow tab indicators -->
+					<div style="position: absolute; left: 0; top: 0; width: 10mm; height: 100%; background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 2px, #fff 2px, #fff 4px); opacity: 0.7; pointer-events: none;"></div>
+					<div style="position: absolute; right: 0; top: 0; width: 10mm; height: 100%; background: repeating-linear-gradient(-45deg, #f0f0f0, #f0f0f0 2px, #fff 2px, #fff 4px); opacity: 0.7; pointer-events: none;"></div>
+					<div style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-style: solid; border-width: 5mm 10mm 5mm 0; border-color: transparent #e0e0e0 transparent transparent; opacity: 0.3;"></div>
+					<div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-style: solid; border-width: 5mm 0 5mm 10mm; border-color: transparent transparent transparent #e0e0e0; opacity: 0.3;"></div>
+				` : ''}
 				${generateSingleLabel(labelData, format)}
 			</div>
 		</div>
