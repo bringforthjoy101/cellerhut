@@ -433,6 +433,38 @@ const SalesRepRoutes = [
 		path: '/transactions/list',
 		component: lazy(() => import('../../views/tiki-fish/transactions/list')),
 	},
+	{
+		path: '/suppliers/list',
+		component: lazy(() => import('../../views/tiki-fish/supplier/list')),
+	},
+	{
+		path: '/supplier/view',
+		exact: true,
+		component: () => <Redirect to="/supplier/view/1" />,
+	},
+	{
+		path: '/supplier/view/:id',
+		component: lazy(() => import('../../views/tiki-fish/supplier/view')),
+		meta: {
+			navLink: '/supplier/view',
+		},
+	},
+	{
+		path: '/supplies/list',
+		component: lazy(() => import('../../views/tiki-fish/supply/list')),
+	},
+	{
+		path: '/supply/view',
+		exact: true,
+		component: () => <Redirect to="/supply/view/1" />,
+	},
+	{
+		path: '/supply/view/:id',
+		component: lazy(() => import('../../views/tiki-fish/supply/view')),
+		meta: {
+			navLink: '/supply/view',
+		},
+	},
 ]
 
 const StoreRoutes = [
@@ -477,6 +509,38 @@ const StoreRoutes = [
 	{
 		path: '/transactions/list',
 		component: lazy(() => import('../../views/tiki-fish/transactions/list')),
+	},
+	{
+		path: '/suppliers/list',
+		component: lazy(() => import('../../views/tiki-fish/supplier/list')),
+	},
+	{
+		path: '/supplier/view',
+		exact: true,
+		component: () => <Redirect to="/supplier/view/1" />,
+	},
+	{
+		path: '/supplier/view/:id',
+		component: lazy(() => import('../../views/tiki-fish/supplier/view')),
+		meta: {
+			navLink: '/supplier/view',
+		},
+	},
+	{
+		path: '/supplies/list',
+		component: lazy(() => import('../../views/tiki-fish/supply/list')),
+	},
+	{
+		path: '/supply/view',
+		exact: true,
+		component: () => <Redirect to="/supply/view/1" />,
+	},
+	{
+		path: '/supply/view/:id',
+		component: lazy(() => import('../../views/tiki-fish/supply/view')),
+		meta: {
+			navLink: '/supply/view',
+		},
 	},
 ]
 

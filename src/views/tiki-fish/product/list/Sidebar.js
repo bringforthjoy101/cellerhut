@@ -1,6 +1,6 @@
 // ** Custom Components
 import Sidebar from '@components/sidebar'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import Uppy from '@uppy/core'
 import thumbnailGenerator from '@uppy/thumbnail-generator'
@@ -60,10 +60,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 	const [loadingPricing, setLoadingPricing] = useState(false)
 
 	// Handle barcode scanning for product creation form
-	const handleBarcodeScanned = (barcode, serviceName, scannerType) => {
+	const handleBarcodeScanned = useCallback((barcode, serviceName, scannerType) => {
 		console.log(`📝 Product Form: Barcode scanned ${barcode} from ${serviceName}`)
 		setProductData((prev) => ({ ...prev, barcode }))
-	}
+	}, [])
 
 	// Register as medium-priority scanner handler for product form
 	useScannerHandler('product-form', handleBarcodeScanned, 5, open)
@@ -86,7 +86,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		retryInitialization
 	} = useScannerContext()
 
-	const uploadImage = async (file) => {
+	const uploadImage = useCallback(async (file) => {
 		console.log('Uploading file:', file)
 		const formData = new FormData()
 		formData.append('image', file)
@@ -110,7 +110,6 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 
 			if (data.status) {
 				const imageUrl = data.data.url
-				setProductData((prev) => ({ ...prev, image: imageUrl }))
 				return imageUrl
 			} else {
 				swal('Oops!', data.message || 'Failed to upload image', 'error')
@@ -121,10 +120,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 			swal('Error!', 'Failed to upload image. Please try again.', 'error')
 			return null
 		}
-	}
+	}, [])
 
 	// Fetch base products for composite product creation
-	const fetchBaseProducts = async () => {
+	const fetchBaseProducts = useCallback(async () => {
 		setLoadingBaseProducts(true)
 		try {
 			const userData = Storage.getItem('userData')
@@ -150,10 +149,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		} finally {
 			setLoadingBaseProducts(false)
 		}
-	}
+	}, [])
 
 	// Calculate composite pricing
-	const calculateCompositePrice = async (baseProductId, compositeQty, discountPercent) => {
+	const calculateCompositePrice = useCallback(async (baseProductId, compositeQty, discountPercent) => {
 		if (!baseProductId || !compositeQty || discountPercent === undefined) return
 
 		setLoadingPricing(true)
@@ -179,14 +178,17 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 			if (data.status) {
 				setCalculatedPricing(data.data)
 				// Auto-update price fields if not manually set
-				if (!productData.price) {
-					setProductData((prev) => ({
-						...prev,
-						price: data.data.price,
-						costPrice: data.data.costPrice,
-						packagingPrice: data.data.packagingPrice,
-					}))
-				}
+				setProductData((prev) => {
+					if (!prev.price) {
+						return {
+							...prev,
+							price: data.data.price,
+							costPrice: data.data.costPrice,
+							packagingPrice: data.data.packagingPrice,
+						}
+					}
+					return prev
+				})
 			} else {
 				swal('Error!', data.message || 'Failed to calculate pricing', 'error')
 			}
@@ -196,10 +198,10 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		} finally {
 			setLoadingPricing(false)
 		}
-	}
+	}, [])
 
 	// Handle composite product field changes
-	const handleCompositeFieldChange = (field, value) => {
+	const handleCompositeFieldChange = useCallback((field, value) => {
 		setProductData((prev) => {
 			const updated = { ...prev, [field]: value }
 
@@ -212,7 +214,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 
 			return updated
 		})
-	}
+	}, [calculateCompositePrice])
 
 	// Fetch categories on component mount
 	useEffect(() => {
@@ -226,12 +228,12 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		if (productData.product_type === 'composite') {
 			fetchBaseProducts()
 		}
-	}, [productData.product_type])
+	}, [productData.product_type, fetchBaseProducts])
 
 	useEffect(() => {
 		uppy.use(thumbnailGenerator)
 
-		uppy.on('thumbnail:generated', async (file, preview) => {
+		const handleThumbnailGenerated = async (file, preview) => {
 			console.log('Uppy file object:', file)
 			console.log('Uppy state before upload:', {
 				filesCount: uppy.getFiles().length,
@@ -260,27 +262,30 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 				console.error('No file data found in Uppy file object')
 				swal('Error!', 'Failed to get file data for upload', 'error')
 			}
-		})
+		}
 
-		// Add file upload success and error handlers
-		uppy.on('upload-success', (file, response) => {
+		const handleUploadSuccess = (file, response) => {
 			console.log('Upload success:', file, response)
-		})
+		}
 
-		uppy.on('upload-error', (file, error, response) => {
+		const handleUploadError = (file, error, response) => {
 			console.error('Upload error:', file, error, response)
 			swal('Error!', 'Failed to upload image', 'error')
-		})
+		}
+
+		uppy.on('thumbnail:generated', handleThumbnailGenerated)
+		uppy.on('upload-success', handleUploadSuccess)
+		uppy.on('upload-error', handleUploadError)
 
 		// Only cleanup on component unmount, not on re-renders
 		return () => {
 			console.log('Cleaning up Uppy event listeners')
-			uppy.off('thumbnail:generated')
-			uppy.off('upload-success')
-			uppy.off('upload-error')
+			uppy.off('thumbnail:generated', handleThumbnailGenerated)
+			uppy.off('upload-success', handleUploadSuccess)
+			uppy.off('upload-error', handleUploadError)
 			// Don't close uppy here - it might be needed for subsequent uploads
 		}
-	}, [])
+	}, [uppy, uploadImage])
 
 	// Separate useEffect for component unmount cleanup
 	useEffect(() => {
@@ -293,7 +298,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 	}, [])
 
 	// ** Function to remove uploaded image
-	const removeImage = () => {
+	const removeImage = useCallback(() => {
 		setProductData((prev) => ({
 			...prev,
 			image: '',
@@ -303,16 +308,16 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		uppy.getFiles().forEach((file) => {
 			uppy.removeFile(file.id)
 		})
-	}
+	}, [uppy])
 
 	// ** Function to replace image (same as remove, user can upload new one)
-	const replaceImage = () => {
+	const replaceImage = useCallback(() => {
 		removeImage()
 		// Force a small delay to ensure state is updated before showing drag-drop again
 		setTimeout(() => {
 			// Trigger a re-render by focusing on the component
 		}, 100)
-	}
+	}, [removeImage])
 
 	// ** Function to handle form submit
 	const onSubmit = async (event, errors) => {
@@ -807,7 +812,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 												size="sm"
 												color={isActive ? 'primary' : 'outline-primary'}
 												className="mr-1 mb-1"
-												onClick={() => setPreferredScanner(scanner)}
+												disabled
 											>
 												{scannerNames[scanner] || scanner}
 												{isActive && ' ✓'}

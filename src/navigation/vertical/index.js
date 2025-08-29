@@ -37,5 +37,5 @@ export default userData?.role === 'admin'
 	: userData?.role === 'store'
 	? [...dashboards, ...picker, ...customers, ...products, ...suppliers, ...supplies, ...inventory, ...transactions]
 	: userData?.role === 'sales-rep'
-	? [...dashboards, ...picker, ...customers, ...orders, ...transactions]
+	? [...dashboards, ...picker, ...customers, ...orders, ...supplies, ...transactions]
 	: [...dashboards, ...picker, ...withdrawals]
