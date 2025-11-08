@@ -1,0 +1,134 @@
+// ** Orders Table Styles
+.order-card {
+	transition: all 0.2s ease-in-out;
+	border: 1px solid #ebe9f1;
+
+	&:hover {
+		box-shadow: 0 4px 24px 0 rgba(34, 41, 47, 0.1);
+		transform: translateY(-2px);
+	}
+
+	.cursor-pointer {
+		cursor: pointer;
+	}
+}
+
+// ** Refresh button animation
+.rotate-animation {
+	animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+// ** Skeleton Loading Animations
+.skeleton-box {
+	background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+	background-size: 200% 100%;
+	animation: loading 1.5s infinite;
+	border-radius: 4px;
+}
+
+@keyframes loading {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+.skeleton-row {
+	animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.7;
+	}
+}
+
+// ** Responsive Breakpoints
+@media (max-width: 576px) {
+	.order-card {
+		.font-weight-bold {
+			font-size: 0.85rem !important;
+		}
+
+		.text-muted {
+			font-size: 0.8rem !important;
+		}
+	}
+}
+
+@media (max-width: 768px) {
+	// Hide table on mobile
+	.desktop-table {
+		display: none !important;
+	}
+
+	// Show cards on mobile
+	.mobile-orders {
+		display: block !important;
+	}
+}
+
+@media (min-width: 769px) {
+	// Show table on desktop
+	.desktop-table {
+		display: block !important;
+	}
+
+	// Hide cards on desktop
+	.mobile-orders {
+		display: none !important;
+	}
+}
+
+// ** Filter card enhancements
+.filter-card {
+	.react-select__control {
+		min-height: 38px;
+	}
+
+	.react-select__indicator {
+		padding: 6px;
+	}
+}
+
+// ** Empty state styling
+.empty-state-icon {
+	opacity: 0.3;
+}
+
+// ** Pagination info
+.pagination-info {
+	font-size: 0.875rem;
+	color: #6e6b7b;
+
+	@media (max-width: 576px) {
+		font-size: 0.8rem;
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+}
+
+// ** Table enhancements
+.react-dataTable {
+	.rdt_TableRow {
+		transition: background-color 0.2s;
+
+		&:hover {
+			background-color: #f8f8f8;
+		}
+	}
+}

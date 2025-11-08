@@ -3,19 +3,50 @@ import moment from 'moment'
 
 export const apiUrl = process.env.REACT_APP_API_ENDPOINT
 
-// ** Get all User Data
-export const getAllData = () => {
+// ** Get all User Data with server-side pagination and filtering
+export const getAllData = (params = {}) => {
 	return async (dispatch) => {
-		const response = await apiRequest({ url: '/orders', method: 'GET' }, dispatch)
-		console.log(response)
+		const {
+			page = 1,
+			limit = 25,
+			status = '',
+			paymentMethod = '',
+			search = '',
+			startDate = '',
+			endDate = '',
+			sortBy = 'id',
+			sortOrder = 'DESC'
+		} = params
+
+		// Build query string
+		const queryParams = new URLSearchParams()
+		if (page) queryParams.append('page', page)
+		if (limit) queryParams.append('limit', limit)
+		if (status) queryParams.append('status', status)
+		if (paymentMethod) queryParams.append('paymentMethod', paymentMethod)
+		if (search) queryParams.append('search', search)
+		if (startDate) queryParams.append('startDate', startDate)
+		if (endDate) queryParams.append('endDate', endDate)
+		if (sortBy) queryParams.append('sortBy', sortBy)
+		if (sortOrder) queryParams.append('sortOrder', sortOrder)
+
+		const url = `/orders?${queryParams.toString()}`
+		const response = await apiRequest({ url, method: 'GET' }, dispatch)
+
+		console.log('Orders API Response:', response)
+
 		if (response && response.data.data && response.data.status) {
+			const { data, pagination } = response.data.data
+
 			await dispatch({
 				type: 'GET_ALL_ORDERS_DATA',
-				data: response.data.data,
+				data,
+				pagination,
+				params
 			})
 		} else {
-			console.log(response)
-			swal('Oops!', 'Something went wrong.', 'error')
+			console.log('Error fetching orders:', response)
+			swal('Oops!', 'Failed to fetch orders.', 'error')
 		}
 	}
 }
@@ -44,17 +75,20 @@ export const nullifyOrder = (orderId) => {
 	}
 }
 
-// All Users Filtered Data
+// ** DEPRECATED: Client-side filtering - Use getAllData() with params instead
+// Kept for backward compatibility but should migrate to server-side filtering
 export const getFilteredData = (orders, params) => {
 	return async (dispatch) => {
-		const { q = '', perPage = 100, page = 1 } = params
+		const { q = '', perPage = 25, page = 1 } = params
 
 		/* eslint-disable  */
 		const queryLowered = q?.toLowerCase()
 		let filteredData = orders?.filter(
 			(order) =>
 				order?.orderNumber?.toLowerCase()?.includes(queryLowered) ||
-				order?.student.firstName?.toLowerCase()?.includes(queryLowered) ||
+				order?.customer?.firstName?.toLowerCase()?.includes(queryLowered) ||
+				order?.customer?.lastName?.toLowerCase()?.includes(queryLowered) ||
+				order?.customer?.name?.toLowerCase()?.includes(queryLowered) ||
 				moment(order.createdAt).format('lll').includes(q)
 		)
 
@@ -68,32 +102,12 @@ export const getFilteredData = (orders, params) => {
 	}
 }
 
+// ** DEPRECATED: Client-side date filtering - Use getAllData() with startDate/endDate params instead
+// Kept for backward compatibility but should migrate to server-side filtering
 export const getFilteredRageData = (orders, range, params) => {
-	// const or = [
-	// 	{ id: 683, orderNumber: '164ca075', amount: 240, createdAt: '2022-03-13T10:28:20.000Z' },
-	// 	{ id: 682, orderNumber: '3526fdb4', amount: 350, createdAt: '2022-03-13T10:28:20.000Z' },
-	// 	{ id: 681, orderNumber: '1c4a7825', amount: 270, createdAt: '2022-03-14T10:28:20.000Z' },
-	// 	{ id: 680, orderNumber: '3801d8ad', amount: 440, createdAt: '2022-03-14T10:28:20.000Z' },
-	// 	{ id: 679, orderNumber: '4357861', amount: 50, createdAt: '2022-03-01T10:28:20.000Z' },
-	// 	{ id: 678, orderNumber: '1f316cac', amount: 310, createdAt: '2022-03-02T10:28:20.000Z' },
-	// 	{ id: 677, orderNumber: '496e23f', amount: 310, createdAt: '2022-03-03T10:28:20.000Z' },
-	// 	{ id: 676, orderNumber: '76a2661', amount: 150, createdAt: '2022-03-04T10:28:20.000Z' },
-	// 	{ id: 675, orderNumber: '7f89629', amount: 500, createdAt: '2022-03-05T10:28:20.000Z' },
-	// 	{ id: 674, orderNumber: '2fff0305', amount: 390, createdAt: '2022-03-06T10:28:20.000Z' },
-	// ]
-	// const ra = [1647126000000, 1647212400000]
-	// console.log(or.filter(({ createdAt }) => new Date(createdAt).getTime() >= ra[0] && new Date(createdAt).getTime() <= ra[1]))
-	// console.log(or.filter((d) => {
-	//   const time = new Date(d.createdAt).getTime()
-	//   return ra[0] < time && time < ra[1]
-	// }))
 	return async (dispatch) => {
-		const { q = '', perPage = 100, page = 1 } = params
-		// console.log(range)
-		// orders.filter((d) => {
-		// 	const time = new Date(d.createdAt).getTime()
-		// 	return range[0] < time && time < range[1]
-		// })
+		const { q = '', perPage = 25, page = 1 } = params
+
 		console.log('incoming length', orders.length)
 		const newOrders = orders.filter(({ createdAt }) => new Date(createdAt).getTime() >= range[0] && new Date(createdAt).getTime() <= range[1])
 		console.log('outgoing length', newOrders.length)
@@ -106,10 +120,6 @@ export const getFilteredRageData = (orders, range, params) => {
 			params,
 		})
 	}
-	// return orders.filter((d) => {
-	// 	const time = new Date(d.createdAt).getTime()
-	// 	return range[0] < time && time < range[1]
-	// })
 }
 
 //  Get User
@@ -124,6 +134,51 @@ export const getOrder = (id) => {
 		} else {
 			console.log(response)
 			swal('Oops!', 'Something went wrong.', 'error')
+		}
+	}
+}
+
+// Get Order Tracking
+export const getOrderTracking = (orderId) => {
+	return async (dispatch) => {
+		const response = await apiRequest({ url: `/orders/${orderId}/tracking`, method: 'GET' }, dispatch)
+		if (response && response.data.data && response.data.status) {
+			// Transform coordinates from Cellerhut format (latitude/longitude) to frontend format (lat/lng)
+			const trackingData = response.data.data
+
+			// Transform driver location
+			if (trackingData.driver?.currentLocation) {
+				trackingData.driver.location = [
+					trackingData.driver.currentLocation.latitude,
+					trackingData.driver.currentLocation.longitude
+				]
+			}
+
+			// Transform delivery location
+			if (trackingData.delivery?.location) {
+				trackingData.delivery.location = [
+					trackingData.delivery.location.latitude,
+					trackingData.delivery.location.longitude
+				]
+			}
+
+			// Transform timeline locations
+			if (trackingData.timeline && Array.isArray(trackingData.timeline)) {
+				trackingData.timeline = trackingData.timeline.map(event => {
+					if (event.location) {
+						return {
+							...event,
+							location: [event.location.latitude, event.location.longitude]
+						}
+					}
+					return event
+				})
+			}
+
+			return trackingData
+		} else {
+			console.log(response)
+			return null
 		}
 	}
 }

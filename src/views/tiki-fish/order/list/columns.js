@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 // ** Custom Components
 import Avatar from '@components/avatar'
 import moment from 'moment'
-import { Badge } from 'reactstrap'
+import { Badge, Button, UncontrolledTooltip } from 'reactstrap'
+import { Truck, MapPin } from 'react-feather'
 
 // ** Third Party Components
 
@@ -133,5 +134,75 @@ export const columns = [
 				{row.admin.firstName} {row.admin.lastName}
 			</span>
 		),
+	},
+	{
+		name: 'GPS Tracking',
+		minWidth: '120px',
+		selector: 'tracking_enabled',
+		sortable: true,
+		cell: (row) => {
+			if (row.tracking_enabled || row.trackingEnabled) {
+				return (
+					<Badge color="success" pill>
+						Enabled
+					</Badge>
+				)
+			}
+			return (
+				<Badge color="secondary" pill>
+					Disabled
+				</Badge>
+			)
+		},
+	},
+	{
+		name: 'Actions',
+		minWidth: '180px',
+		cell: (row, index, column, id) => {
+			const { onDispatch, onTrack } = column
+			const isTrackingEnabled = row.tracking_enabled || row.trackingEnabled
+			const canDispatch = ['order-pending', 'order-processing', 'pending', 'processing'].includes(row.status) && !isTrackingEnabled
+			const canTrack = isTrackingEnabled
+
+			return (
+				<div className="d-flex align-items-center gap-1">
+					{canDispatch && (
+						<>
+							<Button
+								color="primary"
+								size="sm"
+								onClick={() => onDispatch && onDispatch(row)}
+								id={`dispatch-${row.id}`}
+								className="d-flex align-items-center"
+							>
+								<Truck size={14} />
+							</Button>
+							<UncontrolledTooltip placement="top" target={`dispatch-${row.id}`}>
+								Dispatch for GPS Tracking
+							</UncontrolledTooltip>
+						</>
+					)}
+					{canTrack && (
+						<>
+							<Button
+								color="success"
+								size="sm"
+								onClick={() => onTrack && onTrack(row)}
+								id={`track-${row.id}`}
+								className="d-flex align-items-center"
+							>
+								<MapPin size={14} />
+							</Button>
+							<UncontrolledTooltip placement="top" target={`track-${row.id}`}>
+								Track Order
+							</UncontrolledTooltip>
+						</>
+					)}
+					{!canDispatch && !canTrack && (
+						<span className="text-muted">-</span>
+					)}
+				</div>
+			)
+		},
 	},
 ]

@@ -122,7 +122,7 @@ const ReportsTable = () => {
 	// ** Get data on mount
 	useEffect(() => {
 		console.log('store', store.loading)
-		dispatch(getSalesReport({ startDate: moment().format('L').split('/').join('-'), endDate: moment().format('L').split('/').join('-')}))
+		dispatch(getSalesReport({ startDate: moment().format('L').split('/').join('-'), endDate: moment().format('L').split('/').join('-') }))
 		dispatch(
 			getFilteredData(store.allData.orders, {
 				page: currentPage,
@@ -185,7 +185,11 @@ const ReportsTable = () => {
 		const range = date.map((d) => new Date(d).getTime())
 		setPicker(range)
 		dispatch(
-			getSalesReport({ startDate: moment(date[0]).format('L').split('/').join('-'), endDate: moment(date[1]).format('L').split('/').join('-'), category: currentCategory.value })
+			getSalesReport({
+				startDate: moment(date[0]).format('L').split('/').join('-'),
+				endDate: moment(date[1]).format('L').split('/').join('-'),
+				category: currentCategory.value,
+			})
 		)
 		dispatch(
 			getFilteredData(store.allData.orders, {
@@ -249,7 +253,6 @@ const ReportsTable = () => {
 					result += item[key]
 					ctr++
 				}
-				
 			})
 			result += lineDelimiter
 			console.log('esults', result)
@@ -361,7 +364,7 @@ const ReportsTable = () => {
 					<td>
 						<span className="align-middle fw-bold">{product.qty}</span>
 					</td>
-					<td>{`${product.orders.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`}</td>
+					<td>{`${product.orders.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}</td>
 				</tr>
 			)
 		})
@@ -369,21 +372,21 @@ const ReportsTable = () => {
 
 	const exportToPDF = () => {
 		const doc = new jsPDF()
-		doc.setFontSize(24);
-		doc.setTextColor("blue");
-		doc.text("Celler Hut Sales Platform.", 20, 20);
-		doc.setFontSize(12);
-		doc.text(`Report Summary from ${moment(picker[0]).format('LLL')} to ${moment(picker[1]).format('LLL')}`, 20, 30);
+		doc.setFontSize(24)
+		doc.setTextColor('blue')
+		doc.text('Celler Hut Sales Platform.', 20, 20)
+		doc.setFontSize(12)
+		doc.text(`Report Summary from ${moment(picker[0]).format('LLL')} to ${moment(picker[1]).format('LLL')}`, 20, 30)
 		doc.autoTable({ html: '#report-table', startY: 40, startX: 80 })
 		doc.save(`report-summary-${moment(picker[0]).format('LLL')}-to-${moment(picker[1]).format('LLL')}-${new Date().getTime()}.pdf`)
-	  }
-	
-	  const exportToCSV = () => {
-		const data = renderTable().map(row => ({
+	}
+
+	const exportToCSV = () => {
+		const data = renderTable().map((row) => ({
 			Products: row.props.children[0].props.children,
 			Qty: row.props.children[1].props.children,
-			Sales: row.props.children[2].props.children
-		  }))
+			Sales: row.props.children[2].props.children,
+		}))
 		const csv = parse(data)
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 		const link = document.createElement('a')
@@ -394,7 +397,7 @@ const ReportsTable = () => {
 		document.body.appendChild(link)
 		link.click()
 		document.body.removeChild(link)
-	  }
+	}
 
 	return (
 		<Fragment>
@@ -471,87 +474,100 @@ const ReportsTable = () => {
 									<Fragment>
 										<Table bordered responsive id="report-table">
 											<thead>
-											<tr>
-												<th>Products</th>
-												<th>Qty</th>
-												<th>Sales</th>
-											</tr>
+												<tr>
+													<th>Products</th>
+													<th>Qty</th>
+													<th>Sales</th>
+												</tr>
 											</thead>
 											<tbody>
-											{renderTable()}
-											<tr key={'sub-total'}>
-												<td></td>
-												<td>
-													<span className="align-middle fw-bold"> SUB TOTAL </span>
-												</td>
-												<td>
-													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersSubTotal?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h5>
-												</td>
-											</tr>
-											<tr key={'logistics'}>
-												<td></td>
-												<td>
-													<span className="align-middle fw-bold"> TOTAL LOGISTICS </span>
-												</td>
-												<td>
-													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersLogistics?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h5>
-												</td>
-											</tr>
-											<tr key={'discounts'}>
-												<td></td>
-												<td>
-													<span className="align-middle fw-bold"> TOTAL DISCOUNTS </span>
-												</td>
-												<td>
-													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersDiscounts?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h5>
-												</td>
-											</tr>
-											<tr key={'total'}>
-												<td></td>
-												<td>
-													<span className="align-middle fw-bold"> GRAND TOTAL </span>
-												</td>
-												<td>
-													<h3 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrders?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h3>
-												</td>
-											</tr>
-											<tr key={'space'}>
-												<td></td>
-												<td>
-													
-												</td>
-												<td>
-													
-												</td>
-											</tr>
-											<tr key={'packaging'}>
-												<td>Extras</td>
-												<td>
-													<span className="align-middle fw-bold"> TOTAL Packaging </span>
-												</td>
-												<td>
-													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersPackaging?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h5>
-												</td>
-											</tr>
-											{/* <tr key={'smokeHouse'}>
+												{renderTable()}
+												<tr key={'sub-total'}>
+													<td></td>
+													<td>
+														<span className="align-middle fw-bold"> SUB TOTAL </span>
+													</td>
+													<td>
+														<h5 className="align-middle fw-bold">
+															{' '}
+															{`${store?.allData?.sumOfOrdersSubTotal?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}{' '}
+														</h5>
+													</td>
+												</tr>
+												<tr key={'logistics'}>
+													<td></td>
+													<td>
+														<span className="align-middle fw-bold"> TOTAL LOGISTICS </span>
+													</td>
+													<td>
+														<h5 className="align-middle fw-bold">
+															{' '}
+															{`${store?.allData?.sumOfOrdersLogistics?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}{' '}
+														</h5>
+													</td>
+												</tr>
+												<tr key={'discounts'}>
+													<td></td>
+													<td>
+														<span className="align-middle fw-bold"> TOTAL DISCOUNTS </span>
+													</td>
+													<td>
+														<h5 className="align-middle fw-bold">
+															{' '}
+															{`${store?.allData?.sumOfOrdersDiscounts?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}{' '}
+														</h5>
+													</td>
+												</tr>
+												<tr key={'total'}>
+													<td></td>
+													<td>
+														<span className="align-middle fw-bold"> GRAND TOTAL </span>
+													</td>
+													<td>
+														<h3 className="align-middle fw-bold">
+															{' '}
+															{`${store?.allData?.sumOfOrders?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}{' '}
+														</h3>
+													</td>
+												</tr>
+												<tr key={'space'}>
+													<td></td>
+													<td></td>
+													<td></td>
+												</tr>
+												<tr key={'packaging'}>
+													<td>Extras</td>
+													<td>
+														<span className="align-middle fw-bold"> TOTAL Packaging </span>
+													</td>
+													<td>
+														<h5 className="align-middle fw-bold">
+															{' '}
+															{`${store?.allData?.sumOfOrdersPackaging?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}{' '}
+														</h5>
+													</td>
+												</tr>
+												{/* <tr key={'smokeHouse'}>
 												<td>Extras</td>
 												<td>
 													<span className="align-middle fw-bold"> TOTAL Smoke House </span>
 												</td>
 												<td>
-													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersSmokeHouse?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h5>
+													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersSmokeHouse?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`} </h5>
 												</td>
 											</tr> */}
-											<tr key={'profits'}>
-												<td>Extras</td>
-												<td>
-													<span className="align-middle fw-bold"> TOTAL Profits </span>
-												</td>
-												<td>
-													<h5 className="align-middle fw-bold"> {`${store?.allData?.sumOfOrdersProfit?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}`} </h5>
-												</td>
-											</tr>
-											
+												<tr key={'profits'}>
+													<td>Extras</td>
+													<td>
+														<span className="align-middle fw-bold"> TOTAL Profits </span>
+													</td>
+													<td>
+														<h5 className="align-middle fw-bold">
+															{' '}
+															{`${store?.allData?.sumOfOrdersProfit?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`}{' '}
+														</h5>
+													</td>
+												</tr>
 											</tbody>
 										</Table>
 									</Fragment>

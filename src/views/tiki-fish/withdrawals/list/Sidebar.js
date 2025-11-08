@@ -15,44 +15,13 @@ import Select from 'react-select'
 const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 	const dispatch = useDispatch()
 	const categories = {
-		SALES: [
-			'Sea Fish Supplies',
-		'Farmed Catfish Supplies',
-		'Crayfish Supplies',
-		'Snails Supplies',
-		],
-		LOGISTICS: [
-			'GIG Wallet Funding',
-		'DHL Shipping Fees',
-		'Cargo Shipping Fees',
-		'Traditional Waybills Fees',
-		'Dispatch Riders Fees',
-		],
-		PACKAGING: [
-			'Cartons',
-		'Burble Wraps',
-		'Gusset Bags',
-		'Cookie Jars',
-		'Cellotape',
-		'Stationeries',
-		],
-		PROFIT: [
-			'Utility Vehicle Fueling',
-		'Salaries',
-		'Weekly Tips',
-		'Profit Withdrawals',
-		'Sales App Service Charges',
-		],
-		SMOKE_HOUSE: [
-			'Firewood Supplies',
-		'Salt',
-		'Skewers',
-		'Fuel at the Farm',
-		'SM Workers Salary',
-		'Maintenance'
-		]
+		SALES: ['Sea Fish Supplies', 'Farmed Catfish Supplies', 'Crayfish Supplies', 'Snails Supplies'],
+		LOGISTICS: ['GIG Wallet Funding', 'DHL Shipping Fees', 'Cargo Shipping Fees', 'Traditional Waybills Fees', 'Dispatch Riders Fees'],
+		PACKAGING: ['Cartons', 'Burble Wraps', 'Gusset Bags', 'Cookie Jars', 'Cellotape', 'Stationeries'],
+		PROFIT: ['Utility Vehicle Fueling', 'Salaries', 'Weekly Tips', 'Profit Withdrawals', 'Sales App Service Charges'],
+		SMOKE_HOUSE: ['Firewood Supplies', 'Salt', 'Skewers', 'Fuel at the Farm', 'SM Workers Salary', 'Maintenance'],
 	}
-	
+
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [wallets, setWallets] = useState([])
 	const [selectedWallet, setSelectedWallet] = useState('')
@@ -61,9 +30,8 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 		amount: '',
 		purpose: '',
 		category: '',
-		walletId: selectedWallet.value
+		walletId: selectedWallet.value,
 	})
-	
 
 	// ** Function to handle form submit
 	const onSubmit = async (event, errors) => {
@@ -75,7 +43,7 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 			const body = JSON.stringify(withdrawalData)
 			try {
 				const response = await apiRequest({ url: '/withdrawals/create', method: 'POST', body }, dispatch)
-				
+
 				if (response) {
 					if (response.data.status) {
 						setIsSubmitting(false)
@@ -85,7 +53,7 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 							amount: '',
 							purpose: '',
 							category: '',
-							walletId: selectedWallet.value
+							walletId: selectedWallet.value,
 						})
 						toggleSidebar()
 					} else {
@@ -94,7 +62,7 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 							amount: '',
 							purpose: '',
 							category: '',
-							walletId: selectedWallet.value
+							walletId: selectedWallet.value,
 						})
 						swal('Oops!', response.data.message, 'error')
 					}
@@ -112,27 +80,24 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 	useEffect(() => {
 		// onSubmit()
 		dispatch(getAllData({ startDate: moment().format('L').split('/').join('-'), endDate: moment().format('L').split('/').join('-') }))
-		
 	}, [dispatch])
 
 	useEffect(() => {
-		apiRequest({ url: '/wallets', method: 'GET' }).then(walletResponse => {
-			console.log({walletResponse})
+		apiRequest({ url: '/wallets', method: 'GET' }).then((walletResponse) => {
+			console.log({ walletResponse })
 			setWallets(walletResponse.data.data)
 		})
 		setWithdrawalData({
 			...withdrawalData,
-			walletId: selectedWallet.value
+			walletId: selectedWallet.value,
 		})
-		
 	}, [selectedWallet])
 
 	const renderWallets = (wallets) => {
 		console.log(wallets)
-		return wallets
-			.map((wallet) => {
-				return { value: wallet.id, label: `${wallet.name} (${wallet.balance.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })})` }
-			})
+		return wallets.map((wallet) => {
+			return { value: wallet.id, label: `${wallet.name} (${wallet.balance.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })})` }
+		})
 	}
 
 	return (
@@ -164,28 +129,25 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 					/>
 				</FormGroup>
 				<FormGroup>
-					<Label for='category'>Category</Label>
-					<AvInput 
-						type='select' 
-						id='category' 
-						name='category' 
+					<Label for="category">Category</Label>
+					<AvInput
+						type="select"
+						id="category"
+						name="category"
 						value={withdrawalData.category}
-						onChange={e => setWithdrawalData({...withdrawalData, category: e.target.value})}
+						onChange={(e) => setWithdrawalData({ ...withdrawalData, category: e.target.value })}
 						required
 					>
-						<option value=''>Select Category</option>
-						{
-							wallets && categories[wallets?.find(w => w.id === selectedWallet.value)?.name]?.map(category => (
-								<option value={category}>{category}</option>
-							))
-						}
-						<option value='Others'>Others</option>
+						<option value="">Select Category</option>
+						{wallets &&
+							categories[wallets?.find((w) => w.id === selectedWallet.value)?.name]?.map((category) => <option value={category}>{category}</option>)}
+						<option value="Others">Others</option>
 					</AvInput>
 				</FormGroup>
 				<FormGroup>
 					<Label for="purpose">Purpose</Label>
 					<AvInput
-						type='textarea'
+						type="textarea"
 						name="purpose"
 						id="purpose"
 						placeholder="Enter Purpose"
@@ -194,9 +156,9 @@ const SidebarNewWithdrawal = ({ open, toggleSidebar }) => {
 						required
 					/>
 				</FormGroup>
-				<Button type='submit' className='mr-1' color='primary' disabled={isSubmitting}>
-					{isSubmitting && <Spinner color='white' size='sm' />}
-					<span className='ml-50'>Submit</span>
+				<Button type="submit" className="mr-1" color="primary" disabled={isSubmitting}>
+					{isSubmitting && <Spinner color="white" size="sm" />}
+					<span className="ml-50">Submit</span>
 				</Button>
 				<Button type="reset" color="secondary" outline onClick={toggleSidebar}>
 					Cancel

@@ -1,16 +1,16 @@
 import moment from 'moment'
 
 export const formatCurrency = (amount) => {
-  return parseFloat(amount || 0).toLocaleString('en-ZA', { 
-    style: 'currency', 
-    currency: 'ZAR' 
-  })
+	return parseFloat(amount || 0).toLocaleString('en-ZA', {
+		style: 'currency',
+		currency: 'ZAR',
+	})
 }
 
 export const generateReceiptHTML = (orderData, orderResult) => {
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}')
-  
-  return `
+	const userData = JSON.parse(localStorage.getItem('userData') || '{}')
+
+	return `
     <!DOCTYPE html>
     <html>
       <head>
@@ -170,7 +170,7 @@ export const generateReceiptHTML = (orderData, orderResult) => {
           <div class="business-header">
             <h1 class="business-name">CELLER HUT</h1>
             <p class="business-address">500m Opposite Ilere Junction, Along Ijare Road</p>
-            <p class="business-address">Akure South, Ondo State, Nigeria</p>
+            <p class="business-address">Akure South, Ondo State, South Africa</p>
             <p class="business-address">Phone: +234-XXX-XXX-XXXX</p>
           </div>
 
@@ -206,7 +206,10 @@ export const generateReceiptHTML = (orderData, orderResult) => {
 
           <!-- Products Section -->
           <div class="products-section">
-            ${orderData?.items?.map(item => `
+            ${
+							orderData?.items
+								?.map(
+									(item) => `
               <div class="product-item">
                 <div class="product-name">${item.name}</div>
                 <div class="product-details">
@@ -214,7 +217,10 @@ export const generateReceiptHTML = (orderData, orderResult) => {
                   <span>${formatCurrency(item.price * item.quantity)}</span>
                 </div>
               </div>
-            `).join('') || ''}
+            `
+								)
+								.join('') || ''
+						}
           </div>
 
           <!-- Totals Section -->
@@ -233,7 +239,9 @@ export const generateReceiptHTML = (orderData, orderResult) => {
             </div>
           </div>
 
-          ${orderData?.paymentMethod === 'cash' && orderData?.cashCollected ? `
+          ${
+						orderData?.paymentMethod === 'cash' && orderData?.cashCollected
+							? `
             <!-- Cash Details -->
             <div class="cash-details">
               <div class="cash-row">
@@ -245,7 +253,9 @@ export const generateReceiptHTML = (orderData, orderResult) => {
                 <span>${formatCurrency(orderData.changeAmount || 0)}</span>
               </div>
             </div>
-          ` : ''}
+          `
+							: ''
+					}
 
           <!-- Footer -->
           <div class="receipt-footer">
@@ -260,87 +270,76 @@ export const generateReceiptHTML = (orderData, orderResult) => {
 }
 
 export const printReceipt = (orderData, orderResult, options = {}) => {
-  const {
-    windowName = 'receipt_print',
-    windowFeatures = 'width=800,height=600,scrollbars=yes',
-    autoPrint = true,
-    autoClose = true
-  } = options
+	const { windowName = 'receipt_print', windowFeatures = 'width=800,height=600,scrollbars=yes', autoPrint = true, autoClose = true } = options
 
-  try {
-    const printWindow = window.open('', windowName, windowFeatures)
-    
-    if (!printWindow) {
-      throw new Error('Failed to open print window. Please check popup blocker settings.')
-    }
+	try {
+		const printWindow = window.open('', windowName, windowFeatures)
 
-    const printContent = generateReceiptHTML(orderData, orderResult)
-    
-    printWindow.document.write(printContent)
-    printWindow.document.close()
-    
-    if (autoPrint) {
-      printWindow.onload = () => {
-        // Small delay to ensure content is fully loaded
-        setTimeout(() => {
-          printWindow.print()
-          
-          if (autoClose) {
-            // Close after printing (with delay to allow print dialog)
-            setTimeout(() => {
-              printWindow.close()
-            }, 1000)
-          }
-        }, 100)
-      }
-    }
+		if (!printWindow) {
+			throw new Error('Failed to open print window. Please check popup blocker settings.')
+		}
 
-    return { success: true, printWindow }
-  } catch (error) {
-    console.error('Print receipt error:', error)
-    return { success: false, error: error.message }
-  }
+		const printContent = generateReceiptHTML(orderData, orderResult)
+
+		printWindow.document.write(printContent)
+		printWindow.document.close()
+
+		if (autoPrint) {
+			printWindow.onload = () => {
+				// Small delay to ensure content is fully loaded
+				setTimeout(() => {
+					printWindow.print()
+
+					if (autoClose) {
+						// Close after printing (with delay to allow print dialog)
+						setTimeout(() => {
+							printWindow.close()
+						}, 1000)
+					}
+				}, 100)
+			}
+		}
+
+		return { success: true, printWindow }
+	} catch (error) {
+		console.error('Print receipt error:', error)
+		return { success: false, error: error.message }
+	}
 }
 
 export const showPrintPreview = (orderData, orderResult) => {
-  const previewWindow = window.open('', 'receipt_preview', 'width=800,height=600,scrollbars=yes')
-  
-  if (!previewWindow) {
-    alert('Failed to open preview window. Please check popup blocker settings.')
-    return
-  }
+	const previewWindow = window.open('', 'receipt_preview', 'width=800,height=600,scrollbars=yes')
 
-  const previewContent = generateReceiptHTML(orderData, orderResult)
-  
-  // Add preview-specific styles and controls
-  const previewHTML = previewContent.replace(
-    '<body>',
-    `<body>
+	if (!previewWindow) {
+		alert('Failed to open preview window. Please check popup blocker settings.')
+		return
+	}
+
+	const previewContent = generateReceiptHTML(orderData, orderResult)
+
+	// Add preview-specific styles and controls
+	const previewHTML = previewContent.replace(
+		'<body>',
+		`<body>
       <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
         <button onclick="window.print()" style="margin-right: 10px; padding: 5px 10px;">Print</button>
         <button onclick="window.close()" style="padding: 5px 10px;">Close</button>
       </div>`
-  )
-  
-  previewWindow.document.write(previewHTML)
-  previewWindow.document.close()
+	)
+
+	previewWindow.document.write(previewHTML)
+	previewWindow.document.close()
 }
 
 // Thermal printer specific utilities
 export const generateThermalReceiptHTML = (orderData, orderResult) => {
-  // Optimized for thermal printers (58mm width)
-  return generateReceiptHTML(orderData, orderResult).replace(
-    'max-width: 300px;',
-    'max-width: 200px;'
-  ).replace(
-    'font-size: 12px;',
-    'font-size: 11px;'
-  )
+	// Optimized for thermal printers (58mm width)
+	return generateReceiptHTML(orderData, orderResult).replace('max-width: 300px;', 'max-width: 200px;').replace('font-size: 12px;', 'font-size: 11px;')
 }
 
 export const printThermalReceipt = (orderData, orderResult) => {
-  return printReceipt(orderData, orderResult, {
-    windowName: 'thermal_receipt_print',
-    windowFeatures: 'width=400,height=600,scrollbars=yes'
-  })
+	return printReceipt(orderData, orderResult, {
+		windowName: 'thermal_receipt_print',
+		windowFeatures: 'width=400,height=600,scrollbars=yes',
+	})
 }

@@ -48,9 +48,9 @@ export const columns = [
 		cell: (row) => (
 			<div className="d-flex justify-content-left align-items-center">
 				{/* {renderClient(row.student)} */}
-				<div className='d-flex flex-column'>
-					<span className='font-weight-bold'>{row?.transactionsValue?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-					<small className='text-truncate text-muted text-capitalize mb-0'>{row.transactionsVolume.toLocaleString()} Transactions</small>
+				<div className="d-flex flex-column">
+					<span className="font-weight-bold">{row?.transactionsValue?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+					<small className="text-truncate text-muted text-capitalize mb-0">{row.transactionsVolume.toLocaleString()} Transactions</small>
 				</div>
 			</div>
 		),
@@ -63,9 +63,9 @@ export const columns = [
 		cell: (row) => (
 			<div className="d-flex justify-content-left align-items-center">
 				{/* {renderClient(row.student)} */}
-				<div className='d-flex flex-column'>
-				<span className='font-weight-bold'>{row?.totalCreditsValue?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-					<small className='text-truncate text-muted text-capitalize mb-0'>{row.totalCreditsVolume.toLocaleString()} Transactions</small>
+				<div className="d-flex flex-column">
+					<span className="font-weight-bold">{row?.totalCreditsValue?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+					<small className="text-truncate text-muted text-capitalize mb-0">{row.totalCreditsVolume.toLocaleString()} Transactions</small>
 				</div>
 			</div>
 		),
@@ -78,9 +78,9 @@ export const columns = [
 		cell: (row) => (
 			<div className="d-flex justify-content-left align-items-center">
 				{/* {renderClient(row.student)} */}
-				<div className='d-flex flex-column'>
-				<span className='font-weight-bold'>{row?.totalDebitsValue?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-					<small className='text-truncate text-muted text-capitalize mb-0'>{row.totalDebitsVolume.toLocaleString()} Transactions</small>
+				<div className="d-flex flex-column">
+					<span className="font-weight-bold">{row?.totalDebitsValue?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+					<small className="text-truncate text-muted text-capitalize mb-0">{row.totalDebitsVolume.toLocaleString()} Transactions</small>
 				</div>
 			</div>
 		),
@@ -93,9 +93,9 @@ export const columns = [
 		cell: (row) => (
 			<div className="d-flex justify-content-left align-items-center">
 				{/* {renderClient(row.student)} */}
-				<div className='d-flex flex-column'>
-				<span className='font-weight-bold'>{row?.amount?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-					<small className='text-truncate text-muted text-capitalize mb-0'>{row.serviceChargeCount.toLocaleString()} Transactions</small>
+				<div className="d-flex flex-column">
+					<span className="font-weight-bold">{row?.amount?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+					<small className="text-truncate text-muted text-capitalize mb-0">{row.serviceChargeCount.toLocaleString()} Transactions</small>
 				</div>
 			</div>
 		),
@@ -116,25 +116,25 @@ export const columns = [
 	// 	minWidth: '150px',
 	// 	selector: 'amount',
 	// 	sortable: true,
-	// 	cell: (row) => <span>{(row.amount || 0).toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}</span>,
+	// 	cell: (row) => <span>{(row.amount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
 	// },
 	// {
 	// 	name: 'Balance',
 	// 	minWidth: '150px',
 	// 	selector: 'balance',
 	// 	sortable: true,
-	// 	cell: (row) => <span className="text-capitalize">{row?.balance?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}</span>,
+	// 	cell: (row) => <span className="text-capitalize">{row?.balance?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
 	// },
 	{
-	  name: 'Status',
-	  minWidth: '100px',
-	  selector: 'status',
-	  sortable: true,
-	  cell: row => (
-	    <Badge className='text-capitalize' color={statusObj[row.status]} pill>
-	      {row.status}
-	    </Badge>
-	  )
+		name: 'Status',
+		minWidth: '100px',
+		selector: 'status',
+		sortable: true,
+		cell: (row) => (
+			<Badge className="text-capitalize" color={statusObj[row.status]} pill>
+				{row.status}
+			</Badge>
+		),
 	},
 	{
 		name: 'Date',

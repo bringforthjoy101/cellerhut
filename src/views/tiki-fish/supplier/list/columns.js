@@ -120,7 +120,10 @@ export const getColumns = (handleEdit) => [
 				<div className="d-flex align-items-center">
 					<DollarSign size={12} className="mr-25 text-success" />
 					<small>
-						Total: <span className="font-weight-bold">{Number(row.statistics?.totalAmount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+						Total:{' '}
+						<span className="font-weight-bold">
+							{Number(row.statistics?.totalAmount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
+						</span>
 					</small>
 				</div>
 			</div>

@@ -5,24 +5,22 @@ import withReactContent from 'sweetalert2-react-content'
 const MySwal = withReactContent(Swal)
 
 // ** Checks if an object is empty (returns boolean)
-export const isObjEmpty = obj => Object.keys(obj).length === 0
+export const isObjEmpty = (obj) => Object.keys(obj).length === 0
 
 // ** Returns K format from a number
-export const kFormatter = num => (num > 999 ? `${(num / 1000).toFixed(1)}k` : num)
+export const kFormatter = (num) => (num > 999 ? `${(num / 1000).toFixed(1)}k` : num)
 
 // ** Converts HTML to string
-export const htmlToString = html => html.replace(/<\/?[^>]+(>|$)/g, '')
+export const htmlToString = (html) => html.replace(/<\/?[^>]+(>|$)/g, '')
 
 // ** Checks if the passed date is today
-const isToday = date => {
-  const today = new Date()
-  return (
-    /* eslint-disable operator-linebreak */
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
-    /* eslint-enable */
-  )
+const isToday = (date) => {
+	const today = new Date()
+	return (
+		/* eslint-disable operator-linebreak */
+		date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear()
+		/* eslint-enable */
+	)
 }
 
 /**
@@ -33,20 +31,20 @@ const isToday = date => {
  * @param {Object} formatting Intl object to format with
  */
 export const formatDate = (value, formatting = { month: 'short', day: 'numeric', year: 'numeric' }) => {
-  if (!value) return value
-  return new Intl.DateTimeFormat('en-US', formatting).format(new Date(value))
+	if (!value) return value
+	return new Intl.DateTimeFormat('en-ZA', formatting).format(new Date(value))
 }
 
 // ** Returns short month of passed date
 export const formatDateToMonthShort = (value, toTimeForCurrentDay = true) => {
-  const date = new Date(value)
-  let formatting = { month: 'short', day: 'numeric' }
+	const date = new Date(value)
+	let formatting = { month: 'short', day: 'numeric' }
 
-  if (toTimeForCurrentDay && isToday(date)) {
-    formatting = { hour: 'numeric', minute: 'numeric' }
-  }
+	if (toTimeForCurrentDay && isToday(date)) {
+		formatting = { hour: 'numeric', minute: 'numeric' }
+	}
 
-  return new Intl.DateTimeFormat('en-US', formatting).format(new Date(value))
+	return new Intl.DateTimeFormat('en-ZA', formatting).format(new Date(value))
 }
 
 /**
@@ -67,114 +65,116 @@ console.log(isUserLoggedIn())
  * @param {String} userRole Role of user
  */
 export const getHomeRouteForLoggedInUser = (userRole = 'admin') => {
-  console.log({userRole})
-  if (userRole === 'admin') return '/'
-  if (userRole === 'client') return '/access-control'
-  return '/login'
+	console.log({ userRole })
+	if (userRole === 'admin') return '/'
+	if (userRole === 'client') return '/access-control'
+	return '/login'
 }
 
 // ** React Select Theme Colors
-export const selectThemeColors = theme => ({
-  ...theme,
-  colors: {
-    ...theme.colors,
-    primary25: '#7367f01a', // for option hover bg-color
-    primary: '#7367f0', // for selected option bg-color
-    neutral10: '#7367f0', // for tags bg-color
-    neutral20: '#ededed', // for input border-color
-    neutral30: '#ededed' // for input hover border-color
-  }
+export const selectThemeColors = (theme) => ({
+	...theme,
+	colors: {
+		...theme.colors,
+		primary25: '#7367f01a', // for option hover bg-color
+		primary: '#7367f0', // for selected option bg-color
+		neutral10: '#7367f0', // for tags bg-color
+		neutral20: '#ededed', // for input border-color
+		neutral30: '#ededed', // for input hover border-color
+	},
 })
 
 export const paginateArray = (array, perPage, page) => array?.slice((page - 1) * perPage, page * perPage)
 
-export const sortCompare = key => (a, b) => {
-  const fieldA = a[key]
-  const fieldB = b[key]
+export const sortCompare = (key) => (a, b) => {
+	const fieldA = a[key]
+	const fieldB = b[key]
 
-  let comparison = 0
-  if (fieldA > fieldB) {
-    comparison = 1
-  } else if (fieldA < fieldB) {
-    comparison = -1
-  }
-  return comparison
+	let comparison = 0
+	if (fieldA > fieldB) {
+		comparison = 1
+	} else if (fieldA < fieldB) {
+		comparison = -1
+	}
+	return comparison
 }
 
 // Api URL
 export const apiUrl = process.env.REACT_APP_API_ENDPOINT
 
 export const Storage = {
-  setItem: (itemKey, itemValue) => {
-    if (typeof itemValue === 'object') {
-      itemValue = JSON.stringify(itemValue)
-    }
-    localStorage.setItem(itemKey, itemValue)
-  },
+	setItem: (itemKey, itemValue) => {
+		if (typeof itemValue === 'object') {
+			itemValue = JSON.stringify(itemValue)
+		}
+		localStorage.setItem(itemKey, itemValue)
+	},
 
-  getItem: (itemKey) => {
-    const itemValue = localStorage.getItem(itemKey)
-    if (!itemValue) return
+	getItem: (itemKey) => {
+		const itemValue = localStorage.getItem(itemKey)
+		if (!itemValue) return
 
-    try {
-      return JSON.parse(itemValue)
-    } catch (err) {
-      return itemValue
-    }
-  },
+		try {
+			return JSON.parse(itemValue)
+		} catch (err) {
+			return itemValue
+		}
+	},
 
-  removeItem: (itemKey) => {
-    localStorage.removeItem(itemKey)
-  }
+	removeItem: (itemKey) => {
+		localStorage.removeItem(itemKey)
+	},
 }
 
 export const apiRequest = ({ url, method, body, params, isFormData }, dispatch) => {
-  const userData = Storage.getItem('userData')
-  const { accessToken } = userData
-  // console.log("storeee", localStorage.removeItem('userData'))
-  
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-    Accept: 'application/json'
-  }
-  
-  // Only set Content-Type if not FormData
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json'
-  }
-  
-  return axios.request({
-    url,
-    method,
-    baseURL: apiUrl,
-    data: body,
-    params, // Add params for query strings
-    headers,
-    responseType: 'json',
-    validateStatus: (status) => {
-      return status >= 200 && status < 500 // default
-    }
-  }).then((response) => {
-    if (response.status === 401 && response.data.message === "Auth Failed") {
+	const userData = Storage.getItem('userData')
+	const { accessToken } = userData
+	// console.log("storeee", localStorage.removeItem('userData'))
 
-      // remove admin from local storage
-      localStorage.removeItem('userData')
-      window.location = '/login'
-    }
-    return response
-  }).catch((error) => {
-      console.log('error', error)
-  })
+	const headers = {
+		Authorization: `Bearer ${accessToken}`,
+		Accept: 'application/json',
+	}
+
+	// Only set Content-Type if not FormData
+	if (!isFormData) {
+		headers['Content-Type'] = 'application/json'
+	}
+
+	return axios
+		.request({
+			url,
+			method,
+			baseURL: apiUrl,
+			data: body,
+			params, // Add params for query strings
+			headers,
+			responseType: 'json',
+			validateStatus: (status) => {
+				return status >= 200 && status < 500 // default
+			},
+		})
+		.then((response) => {
+			if (response.status === 401 && response.data.message === 'Auth Failed') {
+				// remove admin from local storage
+				localStorage.removeItem('userData')
+				window.location = '/login'
+			}
+			return response
+		})
+		.catch((error) => {
+			console.log('error', error)
+		})
 }
 
-export const swal = (title, text = "", icon = "") => {
-  return MySwal.fire({
-    title,
-    text,
-    icon,
-    customClass: {
-      confirmButton: 'btn btn-primary'
-    },
-    buttonsStyling: false
-  })
+export const swal = (title, text = '', icon = '') => {
+	return MySwal.fire({
+		title,
+		text,
+		icon,
+		customClass: {
+			confirmButton: 'btn btn-primary',
+		},
+		buttonsStyling: false,
+	})
 }

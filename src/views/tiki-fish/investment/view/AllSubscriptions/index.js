@@ -131,7 +131,9 @@ const AllSubscriptions = () => {
 		setCurrentPage(page.selected + 1)
 	}
 
-	const filteredData = store?.investmentPackageDetails.investmentSubscriptions?.filter((item) => item?.orderNumber?.toLowerCase() || item?.status?.toLowerCase())
+	const filteredData = store?.investmentPackageDetails.investmentSubscriptions?.filter(
+		(item) => item?.orderNumber?.toLowerCase() || item?.status?.toLowerCase()
+	)
 
 	const CustomPagination = () => {
 		const count = Math.ceil(store?.investmentPackageDetails.investmentSubscriptions.length / rowsPerPage)

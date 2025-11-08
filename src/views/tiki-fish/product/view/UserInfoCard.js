@@ -3,21 +3,7 @@ import Avatar from '@components/avatar'
 import { apiRequest } from '@utils'
 
 // ** Third Party Components
-import {
-	Card,
-	CardBody,
-	Row,
-	Col,
-	Button,
-	Label,
-	Modal,
-	ModalHeader,
-	ModalBody,
-	ModalFooter,
-	Badge,
-	CardHeader,
-	CardTitle,
-} from 'reactstrap'
+import { Card, CardBody, Row, Col, Button, Label, Modal, ModalHeader, ModalBody, ModalFooter, Badge, CardHeader, CardTitle } from 'reactstrap'
 import { useState, Fragment } from 'react'
 import Flatpickr from 'react-flatpickr'
 import '@styles/react/libs/flatpickr/flatpickr.scss'
@@ -122,14 +108,14 @@ const UserInfoCard = ({ selectedProduct }) => {
 			'white wines': 'light',
 			'rose wines': 'info',
 		}
-		
+
 		// Extract name from object or use string directly
 		const categoryName = getCategoryName(category)
-		
+
 		if (!categoryName || typeof categoryName !== 'string') {
 			return 'secondary'
 		}
-		
+
 		return categoryColors[categoryName.toLowerCase()] || 'secondary'
 	}
 

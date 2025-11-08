@@ -20,7 +20,7 @@ const ProductCards = (props) => {
 	const handleBarcodeScanned = useCallback(
 		(barcode, serviceName, scannerType) => {
 			console.log(`🛒 ProductCards: Barcode scanned ${barcode} from ${serviceName}`)
-			
+
 			// Find product by barcode
 			const product = products.find((p) => p.barcode === barcode)
 
@@ -57,7 +57,7 @@ const ProductCards = (props) => {
 		startScanning,
 		stopScanning,
 		retryInitialization,
-		activeHandlerId
+		activeHandlerId,
 	} = useScannerContext()
 
 	// ** Handle Move/Add to cart

@@ -121,7 +121,7 @@ const ReportsTable = () => {
 	// ** Get data on mount
 	useEffect(() => {
 		console.log('store', store.loading)
-		dispatch(getAccountTransactions({ startDate: moment().format('L').split('/').join('-'), endDate: moment().format('L').split('/').join('-')}))
+		dispatch(getAccountTransactions({ startDate: moment().format('L').split('/').join('-'), endDate: moment().format('L').split('/').join('-') }))
 		dispatch(
 			getFilteredData(store.allData, {
 				page: currentPage,
@@ -184,7 +184,11 @@ const ReportsTable = () => {
 		const range = date.map((d) => new Date(d).getTime())
 		setPicker(range)
 		dispatch(
-			getAccountTransactions({ startDate: moment(date[0]).format('L').split('/').join('-'), endDate: moment(date[1]).format('L').split('/').join('-'), category: currentCategory.value })
+			getAccountTransactions({
+				startDate: moment(date[0]).format('L').split('/').join('-'),
+				endDate: moment(date[1]).format('L').split('/').join('-'),
+				category: currentCategory.value,
+			})
 		)
 		dispatch(
 			getFilteredData(store.allData, {
@@ -248,7 +252,6 @@ const ReportsTable = () => {
 					result += item[key]
 					ctr++
 				}
-				
 			})
 			result += lineDelimiter
 			console.log('esults', result)
@@ -424,7 +427,6 @@ const ReportsTable = () => {
 								}}
 							/>
 						</Col>
-						
 					</Row>
 				</CardBody>
 			</Card>

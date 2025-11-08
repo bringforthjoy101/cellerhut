@@ -25,7 +25,7 @@ const Cart = (props) => {
 	// ** Function to convert Date
 	const formatDate = (value, formatting = { month: 'short', day: 'numeric', year: 'numeric' }) => {
 		if (!value) return value
-		return new Intl.DateTimeFormat('en-US', formatting).format(new Date(value))
+		return new Intl.DateTimeFormat('en-ZA', formatting).format(new Date(value))
 	}
 
 	// ** Funciton Function to toggle wishlist item
@@ -45,7 +45,11 @@ const Cart = (props) => {
 				<Card key={item.name} className="ecommerce-card">
 					<div className="item-img">
 						<Link to={`#`}>
-							<img className="img-fluid" src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`} alt={item.name} />
+							<img
+								className="img-fluid"
+								src={item.image ? item.image : `${process.env.REACT_APP_IMAGE_PLACEHOLDER}/placeholder.png`}
+								alt={item.name}
+							/>
 						</Link>
 					</div>
 					<CardBody>
@@ -134,7 +138,7 @@ const Cart = (props) => {
 		paymentMode: selectedPaymentMode.value,
 	})
 	const [totalAmount, setTotalAmount] = useState(Number(subTotal) - Number(orderData.discount))
-	
+
 	const store = useSelector((state) => state.customers)
 
 	// ** Get data on mount
@@ -143,7 +147,7 @@ const Cart = (props) => {
 		console.log({ selectedPaymentMode }, orderData.paymentMode)
 		if (store.length) {
 			dispatch(getAllData(JSON.parse(localStorage.getItem('userData')).role))
-		} 
+		}
 		setOrderData({
 			...orderData,
 			amount: totalAmount,
@@ -155,7 +159,6 @@ const Cart = (props) => {
 		})
 	}, [dispatch, subTotal, products, selectedPaymentMode, discount])
 
-
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	// ** Function to handle form submit
@@ -166,7 +169,7 @@ const Cart = (props) => {
 		if (errors && !errors.length) {
 			setIsSubmitting(true)
 			console.log({ orderData })
-			const body = JSON.stringify({...orderData, discount, amount: totalAmount})
+			const body = JSON.stringify({ ...orderData, discount, amount: totalAmount })
 			try {
 				const response = await apiRequest({ url: '/orders/create', method: 'POST', body }, dispatch)
 				console.log({ response })
@@ -251,7 +254,9 @@ const Cart = (props) => {
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Discount</div>
-										<div className="detail-amt font-weight-bolder">-{Number(discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</div>
+										<div className="detail-amt font-weight-bolder">
+											-{Number(discount).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
+										</div>
 									</li>
 									<li className="price-detail">
 										<div className="detail-title detail-total">Total</div>

@@ -24,7 +24,7 @@ const getItemNames = (items) => {
 const subscriptionStatus = {
 	matured: 'light-secondary',
 	completed: 'light-primary',
-	active: 'light-success'
+	active: 'light-success',
 }
 
 // ** Table columns
@@ -44,11 +44,7 @@ export const columns = [
 		minWidth: '200px',
 		selector: 'investor',
 		sortable: true,
-		cell: (row) => (
-			<span className="font-weight-bold">
-				{row.investor.fullName}
-			</span>
-		),
+		cell: (row) => <span className="font-weight-bold">{row.investor.fullName}</span>,
 	},
 	{
 		name: 'Amount',
@@ -70,13 +66,17 @@ export const columns = [
 		sortable: true,
 		minWidth: '200px',
 		cell: (row) => moment(row.endDate).format('lll'),
-	},	
+	},
 	{
 		name: 'Status',
 		selector: 'status',
 		sortable: true,
 		minWidth: '100px',
-		cell: row => <Badge color={subscriptionStatus[row.status]} pill>{row.status.toUpperCase()}</Badge>
+		cell: (row) => (
+			<Badge color={subscriptionStatus[row.status]} pill>
+				{row.status.toUpperCase()}
+			</Badge>
+		),
 	},
 	// {
 	// 	name: 'Products ',
@@ -91,5 +91,5 @@ export const columns = [
 		sortable: true,
 		minWidth: '200px',
 		cell: (row) => moment(row.createdAt).format('lll'),
-	}
+	},
 ]

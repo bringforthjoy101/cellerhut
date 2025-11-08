@@ -5,177 +5,170 @@ import { Input, InputGroup, InputGroupText, Button, UncontrolledDropdown, Dropdo
 import { debounce } from 'lodash'
 
 const ProductSearch = ({ onViewChange, currentView = 'grid' }) => {
-  const dispatch = useDispatch()
-  const { products, selectedCategory } = useSelector(state => state.picker)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [suggestions, setSuggestions] = useState([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [sortBy, setSortBy] = useState('name')
-  const [sortOrder, setSortOrder] = useState('asc')
+	const dispatch = useDispatch()
+	const { products, selectedCategory } = useSelector((state) => state.picker)
+	const [searchTerm, setSearchTerm] = useState('')
+	const [suggestions, setSuggestions] = useState([])
+	const [showSuggestions, setShowSuggestions] = useState(false)
+	const [sortBy, setSortBy] = useState('name')
+	const [sortOrder, setSortOrder] = useState('asc')
 
-  const debouncedSearch = useCallback(
-    debounce((term) => {
-      if (term.length > 0) {
-        const filtered = products?.filter(product =>
-          product.name.toLowerCase().includes(term.toLowerCase()) ||
-          product.barcode?.includes(term) ||
-          product.category?.toLowerCase().includes(term.toLowerCase())
-        ).slice(0, 5) || []
-        
-        setSuggestions(filtered)
-        setShowSuggestions(true)
-      } else {
-        setSuggestions([])
-        setShowSuggestions(false)
-      }
-      
-      // Dispatch search action to filter products
-      dispatch({ type: 'PICKER_SEARCH_PRODUCTS', searchTerm: term, sortBy, sortOrder })
-    }, 300),
-    [products, dispatch, sortBy, sortOrder]
-  )
+	const debouncedSearch = useCallback(
+		debounce((term) => {
+			if (term.length > 0) {
+				const filtered =
+					products
+						?.filter(
+							(product) =>
+								product.name.toLowerCase().includes(term.toLowerCase()) ||
+								product.barcode?.includes(term) ||
+								product.category?.toLowerCase().includes(term.toLowerCase())
+						)
+						.slice(0, 5) || []
 
-  useEffect(() => {
-    debouncedSearch(searchTerm)
-  }, [searchTerm, debouncedSearch])
+				setSuggestions(filtered)
+				setShowSuggestions(true)
+			} else {
+				setSuggestions([])
+				setShowSuggestions(false)
+			}
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value)
-  }
+			// Dispatch search action to filter products
+			dispatch({ type: 'PICKER_SEARCH_PRODUCTS', searchTerm: term, sortBy, sortOrder })
+		}, 300),
+		[products, dispatch, sortBy, sortOrder]
+	)
 
-  const handleClearSearch = () => {
-    setSearchTerm('')
-    setSuggestions([])
-    setShowSuggestions(false)
-    dispatch({ type: 'PICKER_CLEAR_SEARCH' })
-  }
+	useEffect(() => {
+		debouncedSearch(searchTerm)
+	}, [searchTerm, debouncedSearch])
 
-  const handleSuggestionClick = (product) => {
-    setSearchTerm(product.name)
-    setShowSuggestions(false)
-    dispatch({ type: 'PICKER_SEARCH_PRODUCTS', searchTerm: product.name, sortBy, sortOrder })
-  }
+	const handleSearchChange = (e) => {
+		setSearchTerm(e.target.value)
+	}
 
-  const handleSortChange = (newSortBy) => {
-    const newSortOrder = sortBy === newSortBy && sortOrder === 'asc' ? 'desc' : 'asc'
-    setSortBy(newSortBy)
-    setSortOrder(newSortOrder)
-    dispatch({ type: 'PICKER_SEARCH_PRODUCTS', searchTerm, sortBy: newSortBy, sortOrder: newSortOrder })
-  }
+	const handleClearSearch = () => {
+		setSearchTerm('')
+		setSuggestions([])
+		setShowSuggestions(false)
+		dispatch({ type: 'PICKER_CLEAR_SEARCH' })
+	}
 
-  const getSortLabel = () => {
-    const labels = {
-      name: 'Name',
-      price: 'Price',
-      category: 'Category'
-    }
-    return `${labels[sortBy]} ${sortOrder === 'asc' ? '↑' : '↓'}`
-  }
+	const handleSuggestionClick = (product) => {
+		setSearchTerm(product.name)
+		setShowSuggestions(false)
+		dispatch({ type: 'PICKER_SEARCH_PRODUCTS', searchTerm: product.name, sortBy, sortOrder })
+	}
 
-  return (
-    <div className="product-search">
-      <div className="search-container">
-        <InputGroup className="search-input-group">
-          <InputGroupText>
-            <Search size={16} />
-          </InputGroupText>
-          <Input
-            type="text"
-            placeholder="Search products by name, barcode, or category..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="search-input"
-            autoComplete="off"
-          />
-          {searchTerm && (
-            <Button
-              color="link"
-              size="sm"
-              className="clear-search-btn"
-              onClick={handleClearSearch}
-            >
-              <X size={16} />
-            </Button>
-          )}
-        </InputGroup>
+	const handleSortChange = (newSortBy) => {
+		const newSortOrder = sortBy === newSortBy && sortOrder === 'asc' ? 'desc' : 'asc'
+		setSortBy(newSortBy)
+		setSortOrder(newSortOrder)
+		dispatch({ type: 'PICKER_SEARCH_PRODUCTS', searchTerm, sortBy: newSortBy, sortOrder: newSortOrder })
+	}
 
-        {/* Search Suggestions */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="search-suggestions">
-            {suggestions.map((product) => (
-              <div
-                key={product.id}
-                className="suggestion-item"
-                onClick={() => handleSuggestionClick(product)}
-              >
-                <div className="suggestion-image">
-                  <img
-                    src={product.image || '/images/placeholder.jpg'}
-                    alt={product.name}
-                    onError={(e) => {
-                      e.target.src = '/images/placeholder.jpg'
-                    }}
-                  />
-                </div>
-                <div className="suggestion-details">
-                  <div className="suggestion-name">{product.name}</div>
-                  <div className="suggestion-meta">
-                    <span className="suggestion-price">
-                      {parseFloat(product.price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
-                    </span>
-                    {product.barcode && (
-                      <span className="suggestion-barcode">#{product.barcode}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+	const getSortLabel = () => {
+		const labels = {
+			name: 'Name',
+			price: 'Price',
+			category: 'Category',
+		}
+		return `${labels[sortBy]} ${sortOrder === 'asc' ? '↑' : '↓'}`
+	}
 
-      <div className="search-controls">
-        {/* Sort Dropdown */}
-        <UncontrolledDropdown>
-          <DropdownToggle caret color="outline-secondary" size="sm" className="sort-btn">
-            <Filter size={14} />
-            <span className="d-none d-sm-inline ms-1">{getSortLabel()}</span>
-          </DropdownToggle>
-          <DropdownMenu>
-            <DropdownItem onClick={() => handleSortChange('name')}>
-              Sort by Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </DropdownItem>
-            <DropdownItem onClick={() => handleSortChange('price')}>
-              Sort by Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </DropdownItem>
-            <DropdownItem onClick={() => handleSortChange('category')}>
-              Sort by Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </DropdownItem>
-          </DropdownMenu>
-        </UncontrolledDropdown>
+	return (
+		<div className="product-search">
+			<div className="search-container">
+				<InputGroup className="search-input-group">
+					<InputGroupText>
+						<Search size={16} />
+					</InputGroupText>
+					<Input
+						type="text"
+						placeholder="Search products by name, barcode, or category..."
+						value={searchTerm}
+						onChange={handleSearchChange}
+						className="search-input"
+						autoComplete="off"
+					/>
+					{searchTerm && (
+						<Button color="link" size="sm" className="clear-search-btn" onClick={handleClearSearch}>
+							<X size={16} />
+						</Button>
+					)}
+				</InputGroup>
 
-        {/* View Toggle */}
-        <div className="view-toggle">
-          <Button
-            color={currentView === 'grid' ? 'primary' : 'outline-secondary'}
-            size="sm"
-            onClick={() => onViewChange('grid')}
-            className="view-btn"
-          >
-            <Grid size={14} />
-          </Button>
-          <Button
-            color={currentView === 'list' ? 'primary' : 'outline-secondary'}
-            size="sm"
-            onClick={() => onViewChange('list')}
-            className="view-btn"
-          >
-            <List size={14} />
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
+				{/* Search Suggestions */}
+				{showSuggestions && suggestions.length > 0 && (
+					<div className="search-suggestions">
+						{suggestions.map((product) => (
+							<div key={product.id} className="suggestion-item" onClick={() => handleSuggestionClick(product)}>
+								<div className="suggestion-image">
+									<img
+										src={product.image || '/images/placeholder.jpg'}
+										alt={product.name}
+										onError={(e) => {
+											e.target.src = '/images/placeholder.jpg'
+										}}
+									/>
+								</div>
+								<div className="suggestion-details">
+									<div className="suggestion-name">{product.name}</div>
+									<div className="suggestion-meta">
+										<span className="suggestion-price">
+											{parseFloat(product.price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
+										</span>
+										{product.barcode && <span className="suggestion-barcode">#{product.barcode}</span>}
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
+
+			<div className="search-controls">
+				{/* Sort Dropdown */}
+				<UncontrolledDropdown>
+					<DropdownToggle caret color="outline-secondary" size="sm" className="sort-btn">
+						<Filter size={14} />
+						<span className="d-none d-sm-inline ms-1">{getSortLabel()}</span>
+					</DropdownToggle>
+					<DropdownMenu>
+						<DropdownItem onClick={() => handleSortChange('name')}>
+							Sort by Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+						</DropdownItem>
+						<DropdownItem onClick={() => handleSortChange('price')}>
+							Sort by Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
+						</DropdownItem>
+						<DropdownItem onClick={() => handleSortChange('category')}>
+							Sort by Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}
+						</DropdownItem>
+					</DropdownMenu>
+				</UncontrolledDropdown>
+
+				{/* View Toggle */}
+				<div className="view-toggle">
+					<Button
+						color={currentView === 'grid' ? 'primary' : 'outline-secondary'}
+						size="sm"
+						onClick={() => onViewChange('grid')}
+						className="view-btn"
+					>
+						<Grid size={14} />
+					</Button>
+					<Button
+						color={currentView === 'list' ? 'primary' : 'outline-secondary'}
+						size="sm"
+						onClick={() => onViewChange('list')}
+						className="view-btn"
+					>
+						<List size={14} />
+					</Button>
+				</div>
+			</div>
+		</div>
+	)
 }
 
 export default ProductSearch

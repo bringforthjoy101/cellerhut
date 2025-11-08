@@ -74,39 +74,39 @@ const modeObj = {
 const orderStatus = {
 	processing: 'light-warning',
 	completed: 'light-success',
-	cancelled: 'light-danger'
+	cancelled: 'light-danger',
 }
 
 const handleRefund = async (id) => {
 	// const dispatch = useDispatch()
 	return MySwal.fire({
-	  title: 'Are you sure?',
-	  text: "You won't be able to revert this!",
-	  icon: 'warning',
-	  showCancelButton: true,
-	  confirmButtonText: 'Yes, refund it!',
-	  customClass: {
-		confirmButton: 'btn btn-primary',
-		cancelButton: 'btn btn-outline-danger ml-1'
-	  },
-	  buttonsStyling: false
+		title: 'Are you sure?',
+		text: "You won't be able to revert this!",
+		icon: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Yes, refund it!',
+		customClass: {
+			confirmButton: 'btn btn-primary',
+			cancelButton: 'btn btn-outline-danger ml-1',
+		},
+		buttonsStyling: false,
 	}).then(async function (result) {
-	  if (result.value) {
-		const deleted = await store.dispatch(refundWithdrawal(id))
-		if (deleted?.status) {
-		  await store.dispatch(getAllData())
-			MySwal.fire({
-				icon: 'success',
-				title: 'Refunded!',
-				text: 'Withdrawal has been refunded.',
-				customClass: {
-				  confirmButton: 'btn btn-primary'
-				}
-			})
+		if (result.value) {
+			const deleted = await store.dispatch(refundWithdrawal(id))
+			if (deleted?.status) {
+				await store.dispatch(getAllData())
+				MySwal.fire({
+					icon: 'success',
+					title: 'Refunded!',
+					text: 'Withdrawal has been refunded.',
+					customClass: {
+						confirmButton: 'btn btn-primary',
+					},
+				})
+			}
 		}
-	  }
 	})
-  }
+}
 
 export const columns = [
 	// {
@@ -149,15 +149,15 @@ export const columns = [
 		cell: (row) => <span className="text-capitalize">{row?.category}</span>,
 	},
 	{
-	  name: 'Status',
-	  minWidth: '150px',
-	  selector: 'status',
-	  sortable: true,
-	  cell: (row) => (
-		<Badge className="text-capitalize" color={statusObj[row.status]} pill>
-			{row.status}
-		</Badge>
-	),
+		name: 'Status',
+		minWidth: '150px',
+		selector: 'status',
+		sortable: true,
+		cell: (row) => (
+			<Badge className="text-capitalize" color={statusObj[row.status]} pill>
+				{row.status}
+			</Badge>
+		),
 	},
 	{
 		name: 'Purpose',
@@ -183,7 +183,9 @@ export const columns = [
 				{renderClient(row.admin)}
 				<div className="d-flex flex-column">
 					<Link to={`/admin/view/${row.admin.id}`} className="user-name text-truncate mb-0">
-						<span className="font-weight-bold">{row.admin.firstName} {row.admin.lastName}</span>
+						<span className="font-weight-bold">
+							{row.admin.firstName} {row.admin.lastName}
+						</span>
 					</Link>
 				</div>
 			</div>
@@ -193,21 +195,18 @@ export const columns = [
 		name: 'Actions',
 		selector: 'name',
 		sortable: true,
-		cell: row => (
-		  <UncontrolledDropdown>
-			<DropdownToggle tag='div' className='btn btn-sm'>
-			  <MoreVertical size={14} className='cursor-pointer' />
-			</DropdownToggle>
-			<DropdownMenu right>
-			  <DropdownItem 
-				className='w-100' 
-				onClick={() => handleRefund(row.id)}
-			  >
-				<DollarSign size={14} className='mr-50' />
-				<span className='align-middle'>Refund</span>
-			  </DropdownItem>
-			</DropdownMenu>
-		  </UncontrolledDropdown>
-		)
-	  }
+		cell: (row) => (
+			<UncontrolledDropdown>
+				<DropdownToggle tag="div" className="btn btn-sm">
+					<MoreVertical size={14} className="cursor-pointer" />
+				</DropdownToggle>
+				<DropdownMenu right>
+					<DropdownItem className="w-100" onClick={() => handleRefund(row.id)}>
+						<DollarSign size={14} className="mr-50" />
+						<span className="align-middle">Refund</span>
+					</DropdownItem>
+				</DropdownMenu>
+			</UncontrolledDropdown>
+		),
+	},
 ]

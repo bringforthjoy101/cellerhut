@@ -112,11 +112,7 @@ export const columns = [
 							</Badge>
 						)}
 					</div>
-					{row.product_type === 'composite' && row.BaseProduct && (
-						<small className="text-muted">
-							Based on: {row.BaseProduct.name}
-						</small>
-					)}
+					{row.product_type === 'composite' && row.BaseProduct && <small className="text-muted">Based on: {row.BaseProduct.name}</small>}
 				</div>
 			</div>
 		),
@@ -149,17 +145,15 @@ export const columns = [
 		sortable: true,
 		cell: (row) => {
 			const currentPrice = Number(row.price) || 0
-			
+
 			if (row.product_type === 'composite' && row.BaseProduct && row.discount_percentage > 0) {
 				const basePrice = Number(row.BaseProduct.price) || 0
 				const compositeQuantity = Number(row.composite_quantity) || 1
 				const originalPrice = basePrice * compositeQuantity
-				
+
 				return (
 					<div className="d-flex flex-column">
-						<span className="font-weight-bold text-success">
-							{currentPrice.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
-						</span>
+						<span className="font-weight-bold text-success">{currentPrice.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 						<small className="text-muted">
 							<s>{originalPrice.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</s>
 							<span className="text-success ml-25">({row.discount_percentage}% off)</span>
@@ -167,10 +161,8 @@ export const columns = [
 					</div>
 				)
 			}
-			
-			return (
-				<span>{currentPrice.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
-			)
+
+			return <span>{currentPrice.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 		},
 	},
 	{
@@ -182,14 +174,8 @@ export const columns = [
 			if (row.product_type === 'composite') {
 				return (
 					<div className="d-flex flex-column">
-						<small className="text-primary font-weight-bold">
-							{row.composite_quantity}x units per pack
-						</small>
-						{row.discount_percentage > 0 && (
-							<small className="text-success">
-								{row.discount_percentage}% discount
-							</small>
-						)}
+						<small className="text-primary font-weight-bold">{row.composite_quantity}x units per pack</small>
+						{row.discount_percentage > 0 && <small className="text-success">{row.discount_percentage}% discount</small>}
 					</div>
 				)
 			} else if (row.CompositeProducts && row.CompositeProducts.length > 0) {
@@ -198,9 +184,7 @@ export const columns = [
 						<small className="text-warning font-weight-bold">
 							{row.CompositeProducts.length} composite variant{row.CompositeProducts.length > 1 ? 's' : ''}
 						</small>
-						<small className="text-muted">
-							{row.CompositeProducts.map(comp => `${comp.composite_quantity}x`).join(', ')}
-						</small>
+						<small className="text-muted">{row.CompositeProducts.map((comp) => `${comp.composite_quantity}x`).join(', ')}</small>
 					</div>
 				)
 			}
@@ -214,54 +198,44 @@ export const columns = [
 		sortable: true,
 		cell: (row) => {
 			const storedQty = Number(row.qty)
-			
+
 			if (row.product_type === 'composite' && row.BaseProduct) {
 				const baseQty = Number(row.BaseProduct.qty) || 0
 				const compositeQuantity = Number(row.composite_quantity) || 1
 				const baseAvailable = Math.floor(baseQty / compositeQuantity)
 				const actualAvailable = Math.min(baseAvailable, storedQty)
-				
+
 				return (
 					<div className="d-flex flex-column">
 						<span className={`font-weight-bold ${actualAvailable < storedQty ? 'text-warning' : 'text-success'}`}>
 							{actualAvailable.toLocaleString()}
 						</span>
-						{actualAvailable !== storedQty && (
-							<small className="text-muted">
-								(stored: {storedQty.toLocaleString()})
-							</small>
-						)}
-						{baseAvailable < storedQty && (
-							<small className="text-warning">
-								Limited by base
-							</small>
-						)}
+						{actualAvailable !== storedQty && <small className="text-muted">(stored: {storedQty.toLocaleString()})</small>}
+						{baseAvailable < storedQty && <small className="text-warning">Limited by base</small>}
 					</div>
 				)
 			}
-			
+
 			// For simple products or base products with composite variants
 			if (row.product_type === 'simple' && row.CompositeProducts && row.CompositeProducts.length > 0) {
 				// Calculate how much is reserved for composite products
 				let reservedQty = 0
-				row.CompositeProducts.forEach(comp => {
+				row.CompositeProducts.forEach((comp) => {
 					reservedQty += Number(comp.qty) * Number(comp.composite_quantity)
 				})
-				
+
 				const availableForSingle = storedQty - reservedQty
-				
+
 				if (reservedQty > 0) {
 					return (
 						<div className="d-flex flex-column">
 							<span className="font-weight-bold">{storedQty.toLocaleString()}</span>
-							<small className="text-info">
-								Free: {Math.max(0, availableForSingle).toLocaleString()}
-							</small>
+							<small className="text-info">Free: {Math.max(0, availableForSingle).toLocaleString()}</small>
 						</div>
 					)
 				}
 			}
-			
+
 			return <span className="text-capitalize">{storedQty.toLocaleString()}</span>
 		},
 	},

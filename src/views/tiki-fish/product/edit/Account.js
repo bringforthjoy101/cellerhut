@@ -56,6 +56,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 		qty: selectedProduct.qty,
 		price: selectedProduct.price,
 		costPrice: selectedProduct.costPrice,
+		discountPrice: selectedProduct.discountPrice || '',
 		packagingPrice: selectedProduct.packagingPrice,
 		unit: selectedProduct.unit,
 		unitValue: selectedProduct.unitValue,
@@ -66,6 +67,10 @@ const UserAccountTab = ({ selectedProduct }) => {
 		alcohol_content: selectedProduct.alcohol_content || '',
 		volume: selectedProduct.volume || '',
 		origin: selectedProduct.origin || '',
+		vintage: selectedProduct.vintage || '',
+		tasting_notes: selectedProduct.tasting_notes || '',
+		food_pairings: selectedProduct.food_pairings || '',
+		serving_temperature: selectedProduct.serving_temperature || '',
 		categoryId: selectedProduct.categoryId || '',
 		image: selectedProduct.image || '',
 		// Composite product fields
@@ -99,7 +104,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 		canRetry,
 		startScanning,
 		stopScanning,
-		retryInitialization
+		retryInitialization,
 	} = useScannerContext()
 
 	// Composite product states
@@ -267,6 +272,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 						qty: selectedProduct.qty,
 						price: selectedProduct.price,
 						costPrice: selectedProduct.costPrice,
+						discountPrice: selectedProduct.discountPrice || '',
 						packagingPrice: selectedProduct.packagingPrice,
 						unit: selectedProduct.unit,
 						unitValue: selectedProduct.unitValue,
@@ -352,6 +358,7 @@ const UserAccountTab = ({ selectedProduct }) => {
 				qty: selectedProduct.qty || '',
 				price: selectedProduct.price || '',
 				costPrice: selectedProduct.costPrice || '',
+				discountPrice: selectedProduct.discountPrice || '',
 				packagingPrice: selectedProduct.packagingPrice || '',
 				unit: selectedProduct.unit || '',
 				unitValue: selectedProduct.unitValue || '',
@@ -635,6 +642,40 @@ const UserAccountTab = ({ selectedProduct }) => {
 								/>
 							</FormGroup>
 						</Col>
+						<Col md="6" sm="12">
+							<FormGroup>
+								<Label for="discountPrice">Product Discount Price (Optional)</Label>
+								<AvInput
+									name="discountPrice"
+									id="discountPrice"
+									type="number"
+									step="0.01"
+									placeholder="Discount/Sale Price"
+									value={productData.discountPrice || ''}
+									onChange={(e) => setProductData({ ...productData, discountPrice: e.target.value })}
+								/>
+								<small className="text-muted">
+									Leave empty for no discount. Must be less than selling price.
+								</small>
+								{productData.discountPrice && productData.price && parseFloat(productData.discountPrice) < parseFloat(productData.price) && (
+									<Alert color="success" className="mt-2 p-2">
+										<small>
+											<strong>Discount: </strong>
+											{(((parseFloat(productData.price) - parseFloat(productData.discountPrice)) / parseFloat(productData.price)) * 100).toFixed(2)}% off
+											(Save R{(parseFloat(productData.price) - parseFloat(productData.discountPrice)).toFixed(2)})
+										</small>
+									</Alert>
+								)}
+								{productData.discountPrice && productData.price && parseFloat(productData.discountPrice) >= parseFloat(productData.price) && (
+									<Alert color="danger" className="mt-2 p-2">
+										<small>
+											<AlertCircle size={14} className="mr-1" />
+											Discount price must be less than selling price
+										</small>
+									</Alert>
+								)}
+							</FormGroup>
+						</Col>
 						{/* <Col md="6" sm="12">
 							<FormGroup>
 								<Label for="smokeHousePrice">Smoke House Price</Label>
@@ -855,27 +896,43 @@ const UserAccountTab = ({ selectedProduct }) => {
 						<Col md="6" sm="12">
 							<FormGroup>
 								<Label for="categoryId">Product Category</Label>
-								<AvInput
-									type="select"
-									id="categoryId"
-									name="categoryId"
-									value={productData.categoryId}
-									onChange={(e) => setProductData({ ...productData, categoryId: e.target.value })}
-									disabled={categoriesLoading}
-								>
-									<option value="">{categoriesLoading ? 'Loading categories...' : 'Select Product Category'}</option>
-									{categoriesError ? (
-										<option value="" disabled>
-											Error loading categories
-										</option>
-									) : (
-										categories.map((category) => (
-											<option key={category.id} value={category.id}>
-												{category.name}
-											</option>
-										))
+								<div className="d-flex align-items-center">
+									<div className="flex-grow-1">
+										<AvInput
+											type="select"
+											id="categoryId"
+											name="categoryId"
+											value={productData.categoryId}
+											onChange={(e) => setProductData({ ...productData, categoryId: e.target.value })}
+											disabled={categoriesLoading}
+										>
+											<option value="">{categoriesLoading ? 'Loading categories...' : 'Select Product Category'}</option>
+											{categoriesError ? (
+												<option value="" disabled>
+													Error loading categories
+												</option>
+											) : (
+												categories.map((category) => (
+													<option key={category.id} value={category.id}>
+														{category.name}
+													</option>
+												))
+											)}
+										</AvInput>
+									</div>
+									{productData.categoryId && categories.length > 0 && (
+										<div className="ml-1">
+											<Badge color="light-primary" pill className="d-flex align-items-center px-1 py-50">
+												<span className="text-xs">{categories.find(c => c.id === parseInt(productData.categoryId))?.icon || 'Beverage'}</span>
+											</Badge>
+										</div>
 									)}
-								</AvInput>
+								</div>
+								{productData.categoryId && categories.length > 0 && (
+									<small className="text-muted d-block mt-50">
+										Icon: {categories.find(c => c.id === parseInt(productData.categoryId))?.icon || 'Beverage'}
+									</small>
+								)}
 							</FormGroup>
 						</Col>
 						<Col md="6" sm="12">
@@ -925,6 +982,59 @@ const UserAccountTab = ({ selectedProduct }) => {
 									placeholder="Product Origin"
 									value={productData.origin}
 									onChange={(e) => setProductData({ ...productData, origin: e.target.value })}
+								/>
+							</FormGroup>
+						</Col>
+						<Col md="6" sm="12">
+							<FormGroup>
+								<Label for="vintage">Vintage Year</Label>
+								<AvInput
+									type="number"
+									name="vintage"
+									id="vintage"
+									placeholder="e.g., 2015"
+									value={productData.vintage}
+									onChange={(e) => setProductData({ ...productData, vintage: e.target.value })}
+								/>
+							</FormGroup>
+						</Col>
+						<Col md="6" sm="12">
+							<FormGroup>
+								<Label for="serving_temperature">Serving Temperature</Label>
+								<AvInput
+									name="serving_temperature"
+									id="serving_temperature"
+									placeholder="e.g., Serve chilled (8-10°C)"
+									value={productData.serving_temperature}
+									onChange={(e) => setProductData({ ...productData, serving_temperature: e.target.value })}
+								/>
+							</FormGroup>
+						</Col>
+						<Col md="12" sm="12">
+							<FormGroup>
+								<Label for="tasting_notes">Tasting Notes</Label>
+								<AvInput
+									type="textarea"
+									name="tasting_notes"
+									id="tasting_notes"
+									rows="3"
+									placeholder="Describe the flavor profile, aroma, and tasting experience..."
+									value={productData.tasting_notes}
+									onChange={(e) => setProductData({ ...productData, tasting_notes: e.target.value })}
+								/>
+							</FormGroup>
+						</Col>
+						<Col md="12" sm="12">
+							<FormGroup>
+								<Label for="food_pairings">Food Pairings</Label>
+								<AvInput
+									type="textarea"
+									name="food_pairings"
+									id="food_pairings"
+									rows="3"
+									placeholder="Suggest ideal food pairings for this product..."
+									value={productData.food_pairings}
+									onChange={(e) => setProductData({ ...productData, food_pairings: e.target.value })}
 								/>
 							</FormGroup>
 						</Col>

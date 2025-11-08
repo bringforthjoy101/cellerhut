@@ -1,7 +1,7 @@
 export const toastTranslucent = (
-  <pre>
-    <code className='language-jsx'>
-      {`
+	<pre>
+		<code className="language-jsx">
+			{`
 
 import { Toast, ToastBody, ToastHeader, Row, Col } from 'reactstrap'
 import transparentBg from '@src/assets/images/svg/transparent.svg'
@@ -107,14 +107,14 @@ const ToastTranslucent = () => {
 }
 export default ToastTranslucent
 `}
-    </code>
-  </pre>
+		</code>
+	</pre>
 )
 
 export const toastHeaderIcons = (
-  <pre>
-    <code className='language-jsx'>
-      {`
+	<pre>
+		<code className="language-jsx">
+			{`
 
 import { Toast, ToastBody, ToastHeader, Spinner, Row, Col } from 'reactstrap'
 import logo from '@src/assets/images/logo/logo.png'
@@ -198,6 +198,6 @@ const ToastHeaderIcons = () => {
 }
 export default ToastHeaderIcons
 `}
-    </code>
-  </pre>
+		</code>
+	</pre>
 )

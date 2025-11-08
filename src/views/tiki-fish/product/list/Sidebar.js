@@ -83,7 +83,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 		canRetry,
 		startScanning,
 		stopScanning,
-		retryInitialization
+		retryInitialization,
 	} = useScannerContext()
 
 	const uploadImage = useCallback(async (file) => {
@@ -201,20 +201,23 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 	}, [])
 
 	// Handle composite product field changes
-	const handleCompositeFieldChange = useCallback((field, value) => {
-		setProductData((prev) => {
-			const updated = { ...prev, [field]: value }
+	const handleCompositeFieldChange = useCallback(
+		(field, value) => {
+			setProductData((prev) => {
+				const updated = { ...prev, [field]: value }
 
-			// Trigger price calculation when relevant fields change
-			if (['base_product_id', 'composite_quantity', 'discount_percentage'].includes(field)) {
-				setTimeout(() => {
-					calculateCompositePrice(updated.base_product_id, updated.composite_quantity, updated.discount_percentage)
-				}, 100)
-			}
+				// Trigger price calculation when relevant fields change
+				if (['base_product_id', 'composite_quantity', 'discount_percentage'].includes(field)) {
+					setTimeout(() => {
+						calculateCompositePrice(updated.base_product_id, updated.composite_quantity, updated.discount_percentage)
+					}, 100)
+				}
 
-			return updated
-		})
-	}, [calculateCompositePrice])
+				return updated
+			})
+		},
+		[calculateCompositePrice]
+	)
 
 	// Fetch categories on component mount
 	useEffect(() => {
@@ -807,13 +810,7 @@ const SidebarNewUsers = ({ open, toggleSidebar }) => {
 										}
 										const isActive = scanner === bestScanner
 										return (
-											<Button
-												key={scanner}
-												size="sm"
-												color={isActive ? 'primary' : 'outline-primary'}
-												className="mr-1 mb-1"
-												disabled
-											>
+											<Button key={scanner} size="sm" color={isActive ? 'primary' : 'outline-primary'} className="mr-1 mb-1" disabled>
 												{scannerNames[scanner] || scanner}
 												{isActive && ' ✓'}
 											</Button>

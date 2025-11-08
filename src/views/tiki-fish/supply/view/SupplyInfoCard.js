@@ -35,7 +35,7 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 	const [paymentModalOpen, setPaymentModalOpen] = useState(false)
 	const [paymentData, setPaymentData] = useState({
 		amount: '',
-		paymentMethod: 'cash'
+		paymentMethod: 'cash',
 	})
 
 	// ** render supplier avatar
@@ -53,11 +53,11 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 					borderRadius: 0,
 					fontSize: 'calc(48px)',
 					width: '100%',
-					height: '100%'
+					height: '100%',
 				}}
 				style={{
 					height: '110px',
-					width: '110px'
+					width: '110px',
 				}}
 			/>
 		)
@@ -67,15 +67,15 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 	const handleApproveClick = () => {
 		return MySwal.fire({
 			title: 'Are you sure?',
-			text: "This will approve the supply and update product quantities!",
+			text: 'This will approve the supply and update product quantities!',
 			icon: 'warning',
 			showCancelButton: true,
 			confirmButtonText: 'Yes, Approve supply!',
 			customClass: {
 				confirmButton: 'btn btn-primary',
-				cancelButton: 'btn btn-outline-danger ml-1'
+				cancelButton: 'btn btn-outline-danger ml-1',
 			},
-			buttonsStyling: false
+			buttonsStyling: false,
 		}).then(function (result) {
 			if (result.value) {
 				dispatch(approveSupply(selectedSupply.id))
@@ -93,9 +93,9 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 			confirmButtonText: 'Yes, Reject supply!',
 			customClass: {
 				confirmButton: 'btn btn-danger',
-				cancelButton: 'btn btn-outline-secondary ml-1'
+				cancelButton: 'btn btn-outline-secondary ml-1',
 			},
-			buttonsStyling: false
+			buttonsStyling: false,
 		}).then(function (result) {
 			if (result.value) {
 				dispatch(rejectSupply(selectedSupply.id))
@@ -124,9 +124,9 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 			confirmButtonText: 'Yes, delete it!',
 			customClass: {
 				confirmButton: 'btn btn-primary',
-				cancelButton: 'btn btn-outline-danger ms-1'
+				cancelButton: 'btn btn-outline-danger ms-1',
 			},
-			buttonsStyling: false
+			buttonsStyling: false,
 		}).then(async (result) => {
 			if (result.value) {
 				await dispatch(deleteSupply(selectedSupply.id))
@@ -162,7 +162,16 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 								<div className="user-info">
 									<h4>{selectedSupply?.supplier?.name || 'Unknown Supplier'}</h4>
 									{selectedSupply !== null ? (
-										<Badge color={selectedSupply.status === 'approved' ? 'light-success' : selectedSupply.status === 'rejected' ? 'light-danger' : 'light-warning'} className="text-capitalize">
+										<Badge
+											color={
+												selectedSupply.status === 'approved'
+													? 'light-success'
+													: selectedSupply.status === 'rejected'
+													? 'light-danger'
+													: 'light-warning'
+											}
+											className="text-capitalize"
+										>
 											{selectedSupply.status}
 										</Badge>
 									) : null}
@@ -204,7 +213,12 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 								</li>
 								<li className="mb-75">
 									<span className="fw-bolder me-25">Status:</span>
-									<Badge className="text-capitalize" color={selectedSupply.status === 'approved' ? 'light-success' : selectedSupply.status === 'rejected' ? 'light-danger' : 'light-warning'}>
+									<Badge
+										className="text-capitalize"
+										color={
+											selectedSupply.status === 'approved' ? 'light-success' : selectedSupply.status === 'rejected' ? 'light-danger' : 'light-warning'
+										}
+									>
 										{selectedSupply.status}
 									</Badge>
 								</li>
@@ -247,11 +261,7 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 								<hr className="my-1" />
 								<li className="mb-75">
 									<span className="fw-bolder me-25">Created By:</span>
-									<span>
-										{selectedSupply.CreatedBy 
-											? `${selectedSupply.CreatedBy.firstName} ${selectedSupply.CreatedBy.lastName}`
-											: 'Unknown'}
-									</span>
+									<span>{selectedSupply.CreatedBy ? `${selectedSupply.CreatedBy.firstName} ${selectedSupply.CreatedBy.lastName}` : 'Unknown'}</span>
 								</li>
 								{selectedSupply.approvedAt && (
 									<li className="mb-75">
@@ -262,9 +272,7 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 								{selectedSupply.ApprovedBy && (
 									<li className="mb-75">
 										<span className="fw-bolder me-25">Approved By:</span>
-										<span>
-											{`${selectedSupply.ApprovedBy.firstName} ${selectedSupply.ApprovedBy.lastName}`}
-										</span>
+										<span>{`${selectedSupply.ApprovedBy.firstName} ${selectedSupply.ApprovedBy.lastName}`}</span>
 									</li>
 								)}
 							</ul>
@@ -309,54 +317,54 @@ const SupplyInfoCard = ({ selectedSupply }) => {
 			</Card>
 
 			{/* Supply Modal */}
-			<SupplyModal 
-				open={sidebarOpen} 
-				toggleSidebar={toggleSidebar} 
-				selectedSupply={selectedSupply} 
-			/>
+			<SupplyModal open={sidebarOpen} toggleSidebar={toggleSidebar} selectedSupply={selectedSupply} />
 
 			{/* Payment Modal */}
 			<Modal isOpen={paymentModalOpen} toggle={() => setPaymentModalOpen(false)}>
-				<ModalHeader toggle={() => setPaymentModalOpen(false)}>
-					Record Payment for {selectedSupply?.supplyNumber}
-				</ModalHeader>
+				<ModalHeader toggle={() => setPaymentModalOpen(false)}>Record Payment for {selectedSupply?.supplyNumber}</ModalHeader>
 				<Form onSubmit={handlePaymentSubmit}>
 					<ModalBody>
 						<FormGroup>
-							<Label for='amount'>Amount</Label>
+							<Label for="amount">Amount</Label>
 							<Input
-								type='number'
-								id='amount'
+								type="number"
+								id="amount"
 								value={paymentData.amount}
 								onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-								placeholder='Enter payment amount'
-								step='0.01'
-								min='0'
+								placeholder="Enter payment amount"
+								step="0.01"
+								min="0"
 								max={(selectedSupply?.totalAmount || 0) - (selectedSupply?.amountPaid || 0)}
 								required
 							/>
 						</FormGroup>
 						<FormGroup>
-							<Label for='paymentMethod'>Payment Method</Label>
+							<Label for="paymentMethod">Payment Method</Label>
 							<Input
-								type='select'
-								id='paymentMethod'
+								type="select"
+								id="paymentMethod"
 								value={paymentData.paymentMethod}
 								onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
 							>
-								<option value='cash'>Cash</option>
-								<option value='bank-transfer'>Bank Transfer</option>
+								<option value="cash">Cash</option>
+								<option value="bank-transfer">Bank Transfer</option>
 							</Input>
 						</FormGroup>
-						<div className='text-muted'>
-							<small>Total Amount: R{selectedSupply?.totalAmount || 0}</small><br />
-							<small>Amount Paid: R{selectedSupply?.amountPaid || 0}</small><br />
+						<div className="text-muted">
+							<small>Total Amount: R{selectedSupply?.totalAmount || 0}</small>
+							<br />
+							<small>Amount Paid: R{selectedSupply?.amountPaid || 0}</small>
+							<br />
 							<small>Amount Due: R{(selectedSupply?.totalAmount || 0) - (selectedSupply?.amountPaid || 0)}</small>
 						</div>
 					</ModalBody>
-					<div className='modal-footer'>
-						<Button color='secondary' onClick={() => setPaymentModalOpen(false)}>Cancel</Button>
-						<Button color='primary' type='submit'>Record Payment</Button>
+					<div className="modal-footer">
+						<Button color="secondary" onClick={() => setPaymentModalOpen(false)}>
+							Cancel
+						</Button>
+						<Button color="primary" type="submit">
+							Record Payment
+						</Button>
 					</div>
 				</Form>
 			</Modal>

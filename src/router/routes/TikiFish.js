@@ -111,6 +111,10 @@ const ManagerRoutes = [
 		},
 	},
 	{
+		path: '/categories/list',
+		component: lazy(() => import('../../views/tiki-fish/category/list')),
+	},
+	{
 		path: '/orders/list',
 		component: lazy(() => import('../../views/tiki-fish/order/list')),
 	},

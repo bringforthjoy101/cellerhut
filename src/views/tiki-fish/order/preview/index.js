@@ -13,7 +13,11 @@ import SpinnerComponent from '@src/@core/components/spinner/Loading-spinner'
 // import SendInvoiceSidebar from '../shared-sidebar/SidebarSendInvoice'
 // import AddPaymentSidebar from '../shared-sidebar/SidebarAddPayment'
 
-import { getOrder } from '../store/action'
+// ** Tracking Modals
+import DispatchModal from '../list/DispatchModal'
+import TrackingModal from '../list/TrackingModal'
+
+import { getOrder, getAllData, getFilteredData } from '../store/action'
 
 // ** Styles
 import '@styles/base/pages/app-invoice.scss'
@@ -29,10 +33,27 @@ const InvoicePreview = () => {
 	const [data, setData] = useState(null)
 	const [sendSidebarOpen, setSendSidebarOpen] = useState(false)
 	const [addPaymentOpen, setAddPaymentOpen] = useState(false)
+	const [dispatchModalOpen, setDispatchModalOpen] = useState(false)
+	const [trackingModalOpen, setTrackingModalOpen] = useState(false)
 
 	// ** Functions to toggle add & send sidebar
 	const toggleSendSidebar = () => setSendSidebarOpen(!sendSidebarOpen)
 	const toggleAddSidebar = () => setAddPaymentOpen(!addPaymentOpen)
+
+	// ** Dispatch Handlers
+	const handleDispatch = () => {
+		setDispatchModalOpen(true)
+	}
+
+	const handleDispatchSuccess = () => {
+		// Refresh order data after successful dispatch
+		dispatch(getOrder(id))
+	}
+
+	// ** Tracking Handlers
+	const handleTrack = () => {
+		setTrackingModalOpen(true)
+	}
 
 	// ** Get invoice on mount based on id
 	useEffect(() => {
@@ -51,11 +72,26 @@ const InvoicePreview = () => {
 					<PreviewCard data={selectedOrder} />
 				</Col>
 				<Col xl={3} md={4} sm={12}>
-					<PreviewActions id={id} data={selectedOrder} />
+					<PreviewActions id={id} data={selectedOrder} onDispatch={handleDispatch} onTrack={handleTrack} />
 				</Col>
 			</Row>
 			{/* <SendInvoiceSidebar toggleSidebar={toggleSendSidebar} open={sendSidebarOpen} /> */}
 			{/* <AddPaymentSidebar toggleSidebar={toggleAddSidebar} open={addPaymentOpen} /> */}
+
+			{/* Dispatch Modal */}
+			<DispatchModal
+				isOpen={dispatchModalOpen}
+				toggle={() => setDispatchModalOpen(!dispatchModalOpen)}
+				order={selectedOrder}
+				onDispatchSuccess={handleDispatchSuccess}
+			/>
+
+			{/* Tracking Modal */}
+			<TrackingModal
+				isOpen={trackingModalOpen}
+				toggle={() => setTrackingModalOpen(!trackingModalOpen)}
+				order={selectedOrder}
+			/>
 		</div>
 	) : (
 		<SpinnerComponent />

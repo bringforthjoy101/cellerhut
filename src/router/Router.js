@@ -10,6 +10,7 @@ import { useRouterTransition } from '@hooks/useRouterTransition'
 // ** Custom Components
 // import Spinner from '@components/spinner/Loading-spinner' // Uncomment if your require content fallback
 import LayoutWrapper from '@layouts/components/layout-wrapper'
+import ScrollToTop from '@src/utility/components/ScrollToTop'
 
 // ** Router Components
 import { BrowserRouter as AppRouter, Route, Switch, Redirect } from 'react-router-dom'
@@ -183,6 +184,7 @@ const Router = () => {
   }
   return (
     <AppRouter basename={process.env.REACT_APP_BASENAME}>
+      <ScrollToTop />
       <Switch>
         {/* If user is logged in Redirect user to DefaultRoute else to login */}
         <Route

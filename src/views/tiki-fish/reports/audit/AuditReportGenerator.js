@@ -187,7 +187,7 @@ const AuditReportGenerator = () => {
 							<Alert color="info">
 								<AlertCircle size={16} className="mr-1" />
 								<strong>For Auditor Review:</strong> This comprehensive report includes all revenue, tax compliance (15% VAT), product performance,
-								and regulatory information required for South African liquor business auditing.
+								and regulatory information required for Nigerian liquor business auditing.
 							</Alert>
 
 							{/* Filters Section */}

@@ -19,7 +19,22 @@ const ReportPreview = ({ reportData }) => {
 		return null
 	}
 
-	const { reportInfo, revenue, taxation, products, payments, customers, profitability, settlements, compliance, supplies, suppliers, supplyPayments, inventory, cashFlow } = reportData
+	const {
+		reportInfo,
+		revenue,
+		taxation,
+		products,
+		payments,
+		customers,
+		profitability,
+		settlements,
+		compliance,
+		supplies,
+		suppliers,
+		supplyPayments,
+		inventory,
+		cashFlow,
+	} = reportData
 
 	return (
 		<Fragment>
@@ -29,7 +44,7 @@ const ReportPreview = ({ reportData }) => {
 					<Card className="border-primary">
 						<CardHeader className="bg-primary text-white">
 							<CardTitle tag="h4" className="mb-0 text-white">
-								📊 Comprehensive Audit Report - South African Liquor Business
+								📊 Comprehensive Audit Report - Nigerian Liquor Business
 							</CardTitle>
 						</CardHeader>
 						<CardBody>
@@ -47,7 +62,9 @@ const ReportPreview = ({ reportData }) => {
 									<div className="d-flex flex-column">
 										<strong>Generated:</strong>
 										<span>{reportInfo.generatedAt}</span>
-										<small className="text-muted">Total Orders: {reportInfo.totalOrders} | Total Supplies: {reportInfo.totalSupplies || 0}</small>
+										<small className="text-muted">
+											Total Orders: {reportInfo.totalOrders} | Total Supplies: {reportInfo.totalSupplies || 0}
+										</small>
 									</div>
 								</Col>
 							</Row>
@@ -385,7 +402,7 @@ const ReportPreview = ({ reportData }) => {
 						<CardHeader>
 							<CardTitle tag="h5" className="d-flex align-items-center">
 								<Info className="mr-1" size={18} />
-								South African Liquor Business Compliance
+								Nigerian Liquor Business Compliance
 							</CardTitle>
 						</CardHeader>
 						<CardBody>
@@ -632,9 +649,7 @@ const ReportPreview = ({ reportData }) => {
 									</Col>
 									<Col md="3">
 										<div className="text-center p-3 border rounded">
-											<h4 className={cashFlow.netCashFlow >= 0 ? 'text-success' : 'text-danger'}>
-												{formatCurrency(cashFlow.netCashFlow || 0)}
-											</h4>
+											<h4 className={cashFlow.netCashFlow >= 0 ? 'text-success' : 'text-danger'}>{formatCurrency(cashFlow.netCashFlow || 0)}</h4>
 											<small>Net Cash Flow</small>
 										</div>
 									</Col>
@@ -649,9 +664,12 @@ const ReportPreview = ({ reportData }) => {
 								</Row>
 								{cashFlow.vatBalance && (
 									<Alert color="info" className="mt-3">
-										<strong>VAT Reconciliation:</strong><br/>
-										VAT Collected from Sales: {formatCurrency(cashFlow.vatBalance.collected || 0)}<br/>
-										VAT Paid on Supplies: {formatCurrency(cashFlow.vatBalance.paid || 0)}<br/>
+										<strong>VAT Reconciliation:</strong>
+										<br />
+										VAT Collected from Sales: {formatCurrency(cashFlow.vatBalance.collected || 0)}
+										<br />
+										VAT Paid on Supplies: {formatCurrency(cashFlow.vatBalance.paid || 0)}
+										<br />
 										Net VAT Position: {formatCurrency(cashFlow.vatBalance.netVATPayable || 0)}
 									</Alert>
 								)}

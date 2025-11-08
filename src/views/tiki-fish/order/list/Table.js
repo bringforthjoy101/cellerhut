@@ -6,13 +6,13 @@ import { columns } from './columns'
 import moment from 'moment'
 
 // ** Store & Actions
-import { getAllData, getFilteredData, getFilteredRageData } from '../store/action'
+import { getAllData, getFilteredData, getFilteredRageData, getOrder } from '../store/action'
 import { useDispatch, useSelector } from 'react-redux'
 
 // ** Third Party Components
 import Select from 'react-select'
 import ReactPaginate from 'react-paginate'
-import { ChevronDown, Share, Printer, FileText } from 'react-feather'
+import { ChevronDown, Share, Printer, FileText, RefreshCw } from 'react-feather'
 import Flatpickr from 'react-flatpickr'
 import DataTable from 'react-data-table-component'
 import { selectThemeColors } from '@utils'
@@ -33,14 +33,25 @@ import {
 	Label,
 	CustomInput,
 	Button,
+	Spinner,
 } from 'reactstrap'
 
 // ** Styles
 import '@styles/react/libs/react-select/_react-select.scss'
 import '@styles/react/libs/tables/react-dataTable-component.scss'
+import '@styles/react/apps/app-orders.scss'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import FormGroup from 'reactstrap/lib/FormGroup'
+
+// ** Custom Components
+import OrderCard from './OrderCard'
+import { OrderSkeleton, OrderTableSkeleton } from './OrderSkeleton'
+import EmptyState from './EmptyState'
+
+// ** Tracking Modals
+import DispatchModal from './DispatchModal'
+import TrackingModal from './TrackingModal'
 
 const TransactionTable = () => {
 	// ** Store Vars
@@ -50,71 +61,127 @@ const TransactionTable = () => {
 	// ** States
 	const [searchTerm, setSearchTerm] = useState('')
 	const [currentPage, setCurrentPage] = useState(1)
-	const [rowsPerPage, setRowsPerPage] = useState(100)
-	const [picker, setPicker] = useState([new Date(), new Date()])
+	const [rowsPerPage, setRowsPerPage] = useState(25)
+	const [picker, setPicker] = useState([])
+	const [statusFilter, setStatusFilter] = useState('')
+	const [paymentMethodFilter, setPaymentMethodFilter] = useState('')
+	const [loading, setLoading] = useState(false)
+
+	// ** Tracking Modal States
+	const [dispatchModalOpen, setDispatchModalOpen] = useState(false)
+	const [trackingModalOpen, setTrackingModalOpen] = useState(false)
+	const [selectedOrder, setSelectedOrder] = useState(null)
+
+	// ** Fetch orders with server-side filtering and pagination
+	const fetchOrders = async (params = {}) => {
+		setLoading(true)
+		const filterParams = {
+			page: currentPage,
+			limit: rowsPerPage,
+			search: searchTerm,
+			status: statusFilter,
+			paymentMethod: paymentMethodFilter,
+			...(picker.length === 2 && {
+				startDate: moment(picker[0]).format('YYYY-MM-DD'),
+				endDate: moment(picker[1]).format('YYYY-MM-DD'),
+			}),
+			...params,
+		}
+		await dispatch(getAllData(filterParams))
+		setLoading(false)
+	}
+
+	// ** Refresh handler
+	const handleRefresh = () => {
+		fetchOrders()
+	}
 
 	useEffect(() => {
-		dispatch(getAllData())
-		dispatch(
-			getFilteredData(store.allData, {
-				page: currentPage,
-				perPage: rowsPerPage,
-				q: searchTerm,
-			})
-		)
-	}, [dispatch])
+		fetchOrders()
+	}, [])
 
 	// ** Function in get data on page change
 	const handlePagination = (page) => {
-		dispatch(
-			getFilteredData(store.allData, {
-				page: page.selected + 1,
-				perPage: rowsPerPage,
-				q: searchTerm,
-			})
-		)
-		// dispatch(getFilteredRageData(store.allData, picker, { page: currentPage, perPage: rowsPerPage }))
-		setCurrentPage(page.selected + 1)
+		const newPage = page.selected + 1
+		setCurrentPage(newPage)
+		fetchOrders({ page: newPage })
 	}
 
 	// ** Function in get data on rows per page
 	const handlePerPage = (e) => {
 		const value = parseInt(e.currentTarget.value)
-		dispatch(
-			getFilteredData(store.allData, {
-				page: currentPage,
-				perPage: value,
-				q: searchTerm,
-			})
-		)
-		// dispatch(getFilteredRageData(store.allData, picker, { page: currentPage, perPage: rowsPerPage }))
 		setRowsPerPage(value)
+		setCurrentPage(1)
+		fetchOrders({ limit: value, page: 1 })
 	}
 
 	// ** Function in get data on search query change
 	const handleFilter = (val) => {
 		setSearchTerm(val)
-		dispatch(
-			getFilteredData(store.allData, {
-				page: currentPage,
-				perPage: rowsPerPage,
-				q: val,
-			})
-		)
-		// dispatch(getFilteredRageData(store.allData, picker, { page: currentPage, perPage: rowsPerPage }))
+		setCurrentPage(1)
+		fetchOrders({ search: val, page: 1 })
 	}
 
+	// ** Function for date range filtering
 	const handleRangeSearch = (date) => {
-		const range = date.map((d) => new Date(d).getTime())
-		setPicker(range)
-		dispatch(getFilteredRageData(store.allData, range, { page: currentPage, perPage: rowsPerPage }))
+		setPicker(date)
+		setCurrentPage(1)
+		if (date.length === 2) {
+			fetchOrders({
+				startDate: moment(date[0]).format('YYYY-MM-DD'),
+				endDate: moment(date[1]).format('YYYY-MM-DD'),
+				page: 1
+			})
+		}
 	}
 
-	const filteredData = store.allData.filter((item) => item.orderNumber.toLowerCase() || moment(item.createdAt).format('lll'))
+	// ** Function for status filtering
+	const handleStatusFilter = (selectedOption) => {
+		const value = selectedOption ? selectedOption.value : ''
+		setStatusFilter(value)
+		setCurrentPage(1)
+		fetchOrders({ status: value, page: 1 })
+	}
+
+	// ** Function for payment method filtering
+	const handlePaymentMethodFilter = (selectedOption) => {
+		const value = selectedOption ? selectedOption.value : ''
+		setPaymentMethodFilter(value)
+		setCurrentPage(1)
+		fetchOrders({ paymentMethod: value, page: 1 })
+	}
+
+	// ** Clear all filters
+	const handleClearFilters = () => {
+		setSearchTerm('')
+		setPicker([])
+		setStatusFilter('')
+		setPaymentMethodFilter('')
+		setCurrentPage(1)
+		fetchOrders({ search: '', status: '', paymentMethod: '', startDate: '', endDate: '', page: 1 })
+	}
+
+	// ** Tracking Handlers
+	const handleDispatch = async (order) => {
+		// Fetch full order details including address before opening modal
+		await dispatch(getOrder(order.id))
+		// The selectedOrder will be updated in the store by getOrder action
+		setDispatchModalOpen(true)
+	}
+
+	const handleTrack = (order) => {
+		setSelectedOrder(order)
+		setTrackingModalOpen(true)
+	}
+
+	const handleDispatchSuccess = () => {
+		// Refresh order data after successful dispatch
+		fetchOrders()
+	}
 
 	// ** Custom Pagination
 	const CustomPagination = () => {
-		const count = Math.ceil(store.total / rowsPerPage)
+		const count = store.pagination?.totalPages || Math.ceil(store.total / rowsPerPage)
 
 		return (
 			<ReactPaginate
@@ -238,63 +305,170 @@ const TransactionTable = () => {
 		)
 	}
 
-	// ** Table data to render
+	// ** Table data to render (server-side pagination)
 	const dataToRender = () => {
-		const filters = {
-			q: searchTerm,
-		}
-
-		const isFiltered = Object.keys(filters).some(function (k) {
-			return filters[k].length > 0
-		})
-
-		if (store.data.length > 0) {
-			return store.data
-		} else if (store.data.length === 0 && isFiltered) {
-			return []
-		} else {
-			return store.allData.slice(0, rowsPerPage)
-		}
+		return store.data || []
 	}
+
+	// ** Status options for filter
+	const statusOptions = [
+		{ value: '', label: 'All Statuses' },
+		{ value: 'order-pending', label: 'Pending' },
+		{ value: 'order-processing,processing', label: 'Processing' },
+		{ value: 'order-at-local-facility', label: 'At Local Facility' },
+		{ value: 'order-out-for-delivery', label: 'Out for Delivery' },
+		{ value: 'order-completed', label: 'Completed' },
+		{ value: 'order-cancelled', label: 'Cancelled' },
+		{ value: 'order-refunded', label: 'Refunded' },
+		{ value: 'held', label: 'Held' }
+	]
+
+	// ** Payment method options for filter
+	const paymentMethodOptions = [
+		{ value: '', label: 'All Payment Methods' },
+		{ value: 'cash', label: 'Cash' },
+		{ value: 'mpesa', label: 'M-Pesa' },
+		{ value: 'card', label: 'Card' },
+		{ value: 'bank-transfer', label: 'Bank Transfer' },
+		{ value: 'pos', label: 'POS' },
+		{ value: 'dynamic', label: 'Dynamic' },
+		{ value: 'cod', label: 'Cash on Delivery' }
+	]
 
 	return (
 		<Fragment>
 			<Card>
-				<CardHeader>
-					<CardTitle tag="h4">Search Filter</CardTitle>
+				<CardHeader className="border-bottom">
+					<CardTitle tag="h4">Search & Filters</CardTitle>
+					<div className="d-flex">
+						<Button
+							color="primary"
+							outline
+							size="sm"
+							className="mr-50"
+							onClick={handleRefresh}
+							disabled={loading}
+						>
+							<RefreshCw size={14} className={loading ? 'rotate-animation' : ''} />
+							<span className="ml-50 d-none d-sm-inline">Refresh</span>
+						</Button>
+						<Button color="secondary" outline size="sm" onClick={handleClearFilters}>
+							Clear Filters
+						</Button>
+					</div>
 				</CardHeader>
 				<CardBody>
 					<Row form className="mt-1 mb-50">
-						<Col lg="4" md="6">
+						<Col lg="3" md="6" className="mb-1">
 							<FormGroup>
-								<Label for="select">Search Table:</Label>
+								<Label for="search-input">Search:</Label>
 								<Input
-									id="search-invoice"
-									className="ml-50 w-100"
+									id="search-input"
 									type="text"
 									value={searchTerm}
-									placeholder="Search"
+									placeholder="Order number, customer..."
 									onChange={(e) => handleFilter(e.target.value)}
 								/>
 							</FormGroup>
 						</Col>
-						<Col lg="4" md="6">
-							<Label for="range-picker">Select Range</Label>
-							<Flatpickr
-								value={picker}
-								id="range-picker"
-								className="form-control"
-								onChange={(date) => handleRangeSearch(date)}
-								options={{
-									mode: 'range',
-									defaultDate: ['2020-02-01', '2020-02-15'],
-								}}
-							/>
+						<Col lg="3" md="6" className="mb-1">
+							<FormGroup>
+								<Label for="status-filter">Status:</Label>
+								<Select
+									id="status-filter"
+									className="react-select"
+									classNamePrefix="select"
+									isClearable={true}
+									options={statusOptions}
+									value={statusOptions.find(opt => opt.value === statusFilter)}
+									onChange={handleStatusFilter}
+									theme={selectThemeColors}
+								/>
+							</FormGroup>
+						</Col>
+						<Col lg="3" md="6" className="mb-1">
+							<FormGroup>
+								<Label for="payment-filter">Payment Method:</Label>
+								<Select
+									id="payment-filter"
+									className="react-select"
+									classNamePrefix="select"
+									isClearable={true}
+									options={paymentMethodOptions}
+									value={paymentMethodOptions.find(opt => opt.value === paymentMethodFilter)}
+									onChange={handlePaymentMethodFilter}
+									theme={selectThemeColors}
+								/>
+							</FormGroup>
+						</Col>
+						<Col lg="3" md="6" className="mb-1">
+							<FormGroup>
+								<Label for="range-picker">Date Range:</Label>
+								<Flatpickr
+									value={picker}
+									id="range-picker"
+									className="form-control"
+									onChange={(date) => handleRangeSearch(date)}
+									options={{
+										mode: 'range',
+										dateFormat: 'Y-m-d'
+									}}
+									placeholder="Select date range"
+								/>
+							</FormGroup>
 						</Col>
 					</Row>
+					{(searchTerm || statusFilter || paymentMethodFilter || picker.length === 2) && (
+						<Row>
+							<Col xs="12">
+								<div className="text-muted">
+									<small>
+										Showing {store.pagination?.total || 0} result{(store.pagination?.total !== 1) ? 's' : ''}
+										{searchTerm && ` for "${searchTerm}"`}
+									</small>
+								</div>
+							</Col>
+						</Row>
+					)}
 				</CardBody>
 			</Card>
-			<Card>
+
+			{/* Mobile View - Order Cards */}
+			<div className="mobile-orders">
+				{loading ? (
+					// Loading skeleton for mobile
+					Array.from({ length: rowsPerPage }).map((_, index) => (
+						<OrderSkeleton key={`skeleton-${index}`} />
+					))
+				) : dataToRender().length > 0 ? (
+					// Render order cards
+					<>
+						{dataToRender().map((order) => (
+							<OrderCard
+								key={order.id}
+								order={order}
+								onDispatch={handleDispatch}
+								onTrack={handleTrack}
+							/>
+						))}
+						{/* Pagination for mobile */}
+						<Card>
+							<CardBody className="p-1">
+								<CustomPagination />
+							</CardBody>
+						</Card>
+					</>
+				) : (
+					// Empty state for mobile
+					<EmptyState
+						type={searchTerm || statusFilter || paymentMethodFilter || picker.length === 2 ? 'no-results' : 'no-data'}
+						onClearFilters={handleClearFilters}
+					/>
+				)}
+			</div>
+
+			{/* Desktop View - Data Table */}
+			<Card className="desktop-table">
 				<Row className="mx-0 mt-3">
 					<Col xl="6" sm="12" className="d-flex align-items-center pl-3">
 						<div className="d-flex align-items-center w-100">
@@ -311,9 +485,10 @@ const TransactionTable = () => {
 									backgroundPosition: 'calc(100% - 3px) 11px, calc(100% - 20px) 13px, 100% 0',
 								}}
 							>
+								<option value="10">10</option>
+								<option value="25">25</option>
+								<option value="50">50</option>
 								<option value="100">100</option>
-								<option value="250">250</option>
-								<option value="500">500</option>
 							</CustomInput>
 							<Label for="rows-per-page">Entries</Label>
 						</div>
@@ -325,35 +500,63 @@ const TransactionTable = () => {
 								<span className="align-middle ml-lg-50">Download Table</span>
 							</DropdownToggle>
 							<DropdownMenu right>
-								{/* <DropdownItem className="w-100" onClick={() => downloadCSV(store.allData)}>
-									<FileText size={15} />
-									<span className="align-middle ml-50">CSV</span>
-								</DropdownItem> */}
 								<DropdownItem className="w-100" onClick={() => downloadPDF()}>
 									<FileText size={15} />
 									<span className="align-middle ml-50">PDF</span>
 								</DropdownItem>
-								{/* <DropdownItem className="w-100" onClick={() => printOrder(filteredData)}>
-									<Printer size={15} />
-									<span className="align-middle ml-50">Print</span>
-								</DropdownItem> */}
 							</DropdownMenu>
 						</UncontrolledButtonDropdown>
 					</Col>
 				</Row>
-				<DataTable
-					noHeader
-					pagination
-					subHeader
-					responsive
-					paginationServer
-					columns={columns}
-					sortIcon={<ChevronDown />}
-					className="react-dataTable"
-					paginationComponent={CustomPagination}
-					data={dataToRender()}
-				/>
+				{loading ? (
+					// Loading skeleton for desktop
+					<div className="p-2">
+						<OrderTableSkeleton rows={rowsPerPage} />
+					</div>
+				) : dataToRender().length > 0 ? (
+					// Render data table
+					<DataTable
+						noHeader
+						pagination
+						subHeader
+						responsive
+						paginationServer
+						columns={columns.map((col) => (
+							col.name === 'Actions'
+								? {
+										...col,
+										onDispatch: handleDispatch,
+										onTrack: handleTrack,
+								  }
+								: col
+						))}
+						sortIcon={<ChevronDown />}
+						className="react-dataTable"
+						paginationComponent={CustomPagination}
+						data={dataToRender()}
+					/>
+				) : (
+					// Empty state for desktop
+					<EmptyState
+						type={searchTerm || statusFilter || paymentMethodFilter || picker.length === 2 ? 'no-results' : 'no-data'}
+						onClearFilters={handleClearFilters}
+					/>
+				)}
 			</Card>
+
+			{/* Tracking Modals */}
+			<DispatchModal
+				isOpen={dispatchModalOpen}
+				toggle={() => setDispatchModalOpen(!dispatchModalOpen)}
+				order={store.selectedOrder}
+				onDispatchSuccess={handleDispatchSuccess}
+			/>
+
+			<TrackingModal
+				isOpen={trackingModalOpen}
+				toggle={() => setTrackingModalOpen(!trackingModalOpen)}
+				order={selectedOrder}
+			/>
 		</Fragment>
 	)
 }

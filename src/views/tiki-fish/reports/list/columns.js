@@ -67,7 +67,7 @@ const modeObj = {
 const orderStatus = {
 	processing: 'light-warning',
 	completed: 'light-success',
-	cancelled: 'light-danger'
+	cancelled: 'light-danger',
 }
 
 export const columns = [
@@ -101,7 +101,7 @@ export const columns = [
 	// 	width: '150px',
 	// 	selector: 'amountPaid',
 	// 	sortable: true,
-	// 	cell: (row) => <span className="text-capitalize">{(row?.amountPaid || 0)?.toLocaleString('en-US', { style: 'currency', currency: 'ZAR' })}</span>,
+	// 	cell: (row) => <span className="text-capitalize">{(row?.amountPaid || 0)?.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>,
 	// },
 	{
 		name: 'Payment Mode',
@@ -149,7 +149,9 @@ export const columns = [
 				{renderClient(row.admin)}
 				<div className="d-flex flex-column">
 					<Link to={`/admin/view/${row.admin.id}`} className="user-name text-truncate mb-0">
-						<span className="font-weight-bold">{row.admin.firstName} {row.admin.lastName}</span>
+						<span className="font-weight-bold">
+							{row.admin.firstName} {row.admin.lastName}
+						</span>
 					</Link>
 				</div>
 			</div>

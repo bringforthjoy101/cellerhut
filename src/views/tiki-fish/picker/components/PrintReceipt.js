@@ -2,36 +2,34 @@ import React, { useEffect, useState } from 'react'
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Table, Badge } from 'reactstrap'
 import moment from 'moment'
 
-const PrintReceipt = ({ 
-  isOpen, 
-  toggle, 
-  orderData, 
-  orderResult,
-  autoPrint = true 
-}) => {
-  const [shouldPrint, setShouldPrint] = useState(false)
+const PrintReceipt = ({ isOpen, toggle, orderData, orderResult, autoPrint = true }) => {
+	const [shouldPrint, setShouldPrint] = useState(false)
 
-  const formatCurrency = (amount) => {
-    return parseFloat(amount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
-  }
+	const formatCurrency = (amount) => {
+		return parseFloat(amount || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
+	}
 
-  const formatPrice = (price) => {
-    return parseFloat(price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
-  }
+	const formatPrice = (price) => {
+		return parseFloat(price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
+	}
 
-  const getPaymentMethodDisplay = (paymentMethod) => {
-    switch (paymentMethod?.toLowerCase()) {
-      case 'card': return 'POS'
-      case 'mobile': return 'BANK TRANSFER'
-      case 'cash': return 'CASH'
-      default: return (paymentMethod || 'CASH').toUpperCase()
-    }
-  }
+	const getPaymentMethodDisplay = (paymentMethod) => {
+		switch (paymentMethod?.toLowerCase()) {
+			case 'card':
+				return 'POS'
+			case 'mobile':
+				return 'BANK TRANSFER'
+			case 'cash':
+				return 'CASH'
+			default:
+				return (paymentMethod || 'CASH').toUpperCase()
+		}
+	}
 
-  const generatePrintHTML = () => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}')
-    
-    return `
+	const generatePrintHTML = () => {
+		const userData = JSON.parse(localStorage.getItem('userData') || '{}')
+
+		return `
       <!DOCTYPE html>
       <html>
         <head>
@@ -158,7 +156,7 @@ const PrintReceipt = ({
             <div class="business-header">
               <h1 class="business-name">CELLER HUT</h1>
               <p class="business-address">500m Opposite Ilere Junction, Along Ijare Road</p>
-              <p class="business-address">Akure South, Ondo State, Nigeria</p>
+              <p class="business-address">Akure South, Ondo State, South Africa</p>
               <p class="business-address">Phone: +234-XXX-XXX-XXXX</p>
             </div>
 
@@ -194,7 +192,10 @@ const PrintReceipt = ({
 
             <!-- Products Section -->
             <div class="products-section">
-              ${orderData?.items?.map(item => `
+              ${
+								orderData?.items
+									?.map(
+										(item) => `
                 <div class="product-item">
                   <div class="product-name">${item.name}</div>
                   <div class="product-details">
@@ -202,7 +203,10 @@ const PrintReceipt = ({
                     <span>${formatCurrency(item.price * item.quantity)}</span>
                   </div>
                 </div>
-              `).join('') || ''}
+              `
+									)
+									.join('') || ''
+							}
             </div>
 
             <!-- Totals Section -->
@@ -221,7 +225,9 @@ const PrintReceipt = ({
               </div>
             </div>
 
-            ${orderData?.paymentMethod === 'cash' && orderData?.cashCollected ? `
+            ${
+							orderData?.paymentMethod === 'cash' && orderData?.cashCollected
+								? `
               <!-- Cash Details -->
               <div class="cash-details">
                 <div class="cash-row">
@@ -233,7 +239,9 @@ const PrintReceipt = ({
                   <span>${formatCurrency(orderData.changeAmount || 0)}</span>
                 </div>
               </div>
-            ` : ''}
+            `
+								: ''
+						}
 
             <!-- Footer -->
             <div class="receipt-footer">
@@ -245,152 +253,168 @@ const PrintReceipt = ({
         </body>
       </html>
     `
-  }
+	}
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank', 'width=800,height=600')
-    const printContent = generatePrintHTML()
-    
-    printWindow.document.write(printContent)
-    printWindow.document.close()
-    
-    // Wait for content to load then print
-    printWindow.onload = () => {
-      printWindow.print()
-      printWindow.close()
-    }
-  }
+	const handlePrint = () => {
+		const printWindow = window.open('', '_blank', 'width=800,height=600')
+		const printContent = generatePrintHTML()
 
-  // Auto-print when modal opens (if autoPrint is enabled)
-  useEffect(() => {
-    if (isOpen && autoPrint && orderResult?.orderId) {
-      const printTimer = setTimeout(() => {
-        handlePrint()
-      }, 500)
-      return () => clearTimeout(printTimer)
-    }
-  }, [isOpen, autoPrint, orderResult])
+		printWindow.document.write(printContent)
+		printWindow.document.close()
 
-  return (
-    <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
-      <ModalHeader toggle={toggle}>
-        <div className="d-flex align-items-center">
-          <span>Order Receipt - #{orderResult?.orderId || 'N/A'}</span>
-        </div>
-      </ModalHeader>
-      
-      <ModalBody>
-        <div className="receipt-preview p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-          {/* Business Header */}
-          <div className="text-center mb-3 pb-3 border-bottom">
-            <h4 className="mb-1">CELLER HUT</h4>
-            <small className="text-muted d-block">500m Opposite Ilere Junction, Along Ijare Road</small>
-            <small className="text-muted d-block">Akure South, Ondo State, Nigeria</small>
-            <small className="text-muted d-block">Phone: +234-XXX-XXX-XXXX</small>
-          </div>
+		// Wait for content to load then print
+		printWindow.onload = () => {
+			printWindow.print()
+			printWindow.close()
+		}
+	}
 
-          {/* Receipt Header */}
-          <div className="text-center mb-3">
-            <h5>ORDER RECEIPT</h5>
-            <h6>#{orderResult?.orderId || 'N/A'}</h6>
-          </div>
+	// Auto-print when modal opens (if autoPrint is enabled)
+	useEffect(() => {
+		if (isOpen && autoPrint && orderResult?.orderId) {
+			const printTimer = setTimeout(() => {
+				handlePrint()
+			}, 500)
+			return () => clearTimeout(printTimer)
+		}
+	}, [isOpen, autoPrint, orderResult])
 
-          {/* Order Information */}
-          <div className="mb-3">
-            <div className="d-flex justify-content-between py-1">
-              <span><strong>Date:</strong></span>
-              <span>{moment().format('DD/MM/YYYY HH:mm')}</span>
-            </div>
-            <div className="d-flex justify-content-between py-1">
-              <span><strong>Customer:</strong></span>
-              <span>Walk-in Customer</span>
-            </div>
-            <div className="d-flex justify-content-between py-1">
-              <span><strong>Payment:</strong></span>
-              <span>{getPaymentMethodDisplay(orderData?.paymentMethod)}</span>
-            </div>
-            <div className="d-flex justify-content-between py-1">
-              <span><strong>Status:</strong></span>
-              <span>
-                <Badge color="success" className="badge-sm">COMPLETED</Badge>
-              </span>
-            </div>
-          </div>
+	return (
+		<Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
+			<ModalHeader toggle={toggle}>
+				<div className="d-flex align-items-center">
+					<span>Order Receipt - #{orderResult?.orderId || 'N/A'}</span>
+				</div>
+			</ModalHeader>
 
-          {/* Products */}
-          <div className="mb-3">
-            <Table size="sm" className="mb-0">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th className="text-center">Qty</th>
-                  <th className="text-right">Price</th>
-                  <th className="text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderData?.items?.map((item, index) => (
-                  <tr key={index}>
-                    <td>
-                      <div className="font-weight-bold">{item.name}</div>
-                    </td>
-                    <td className="text-center">{item.quantity}</td>
-                    <td className="text-right">{formatPrice(item.price)}</td>
-                    <td className="text-right">{formatPrice(item.price * item.quantity)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
+			<ModalBody>
+				<div className="receipt-preview p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+					{/* Business Header */}
+					<div className="text-center mb-3 pb-3 border-bottom">
+						<h4 className="mb-1">CELLER HUT</h4>
+						<small className="text-muted d-block">500m Opposite Ilere Junction, Along Ijare Road</small>
+						<small className="text-muted d-block">Akure South, Ondo State, South Africa</small>
+						<small className="text-muted d-block">Phone: +234-XXX-XXX-XXXX</small>
+					</div>
 
-          {/* Totals */}
-          <div className="mb-3 pt-2 border-top">
-            <div className="d-flex justify-content-between py-1">
-              <span>Subtotal:</span>
-              <span>{formatPrice(orderData?.subtotal)}</span>
-            </div>
-            <div className="d-flex justify-content-between py-1">
-              <span>Tax (15% included):</span>
-              <span>{formatPrice(orderData?.tax)}</span>
-            </div>
-            <div className="d-flex justify-content-between py-2 border-top font-weight-bold">
-              <span>TOTAL:</span>
-              <span>{formatPrice(orderData?.total)}</span>
-            </div>
-          </div>
+					{/* Receipt Header */}
+					<div className="text-center mb-3">
+						<h5>ORDER RECEIPT</h5>
+						<h6>#{orderResult?.orderId || 'N/A'}</h6>
+					</div>
 
-          {/* Cash Details */}
-          {orderData?.paymentMethod === 'cash' && orderData?.cashCollected && (
-            <div className="mb-3 p-2 bg-light border rounded">
-              <div className="d-flex justify-content-between py-1">
-                <span><strong>Cash Received:</strong></span>
-                <span className="font-weight-bold">{formatPrice(orderData.cashCollected)}</span>
-              </div>
-              <div className="d-flex justify-content-between py-1">
-                <span><strong>Change Given:</strong></span>
-                <span className="font-weight-bold text-success">{formatPrice(orderData.changeAmount || 0)}</span>
-              </div>
-            </div>
-          )}
+					{/* Order Information */}
+					<div className="mb-3">
+						<div className="d-flex justify-content-between py-1">
+							<span>
+								<strong>Date:</strong>
+							</span>
+							<span>{moment().format('DD/MM/YYYY HH:mm')}</span>
+						</div>
+						<div className="d-flex justify-content-between py-1">
+							<span>
+								<strong>Customer:</strong>
+							</span>
+							<span>Walk-in Customer</span>
+						</div>
+						<div className="d-flex justify-content-between py-1">
+							<span>
+								<strong>Payment:</strong>
+							</span>
+							<span>{getPaymentMethodDisplay(orderData?.paymentMethod)}</span>
+						</div>
+						<div className="d-flex justify-content-between py-1">
+							<span>
+								<strong>Status:</strong>
+							</span>
+							<span>
+								<Badge color="success" className="badge-sm">
+									COMPLETED
+								</Badge>
+							</span>
+						</div>
+					</div>
 
-          <div className="text-center pt-3 border-top">
-            <p className="mb-1"><strong>Thank you for your patronage!</strong></p>
-            <p className="mb-0">We hope to see you again.</p>
-            <small className="text-muted">Printed: {moment().format('DD/MM/YYYY HH:mm:ss')}</small>
-          </div>
-        </div>
-      </ModalBody>
+					{/* Products */}
+					<div className="mb-3">
+						<Table size="sm" className="mb-0">
+							<thead>
+								<tr>
+									<th>Item</th>
+									<th className="text-center">Qty</th>
+									<th className="text-right">Price</th>
+									<th className="text-right">Total</th>
+								</tr>
+							</thead>
+							<tbody>
+								{orderData?.items?.map((item, index) => (
+									<tr key={index}>
+										<td>
+											<div className="font-weight-bold">{item.name}</div>
+										</td>
+										<td className="text-center">{item.quantity}</td>
+										<td className="text-right">{formatPrice(item.price)}</td>
+										<td className="text-right">{formatPrice(item.price * item.quantity)}</td>
+									</tr>
+								))}
+							</tbody>
+						</Table>
+					</div>
 
-      <ModalFooter>
-        <Button color="primary" onClick={handlePrint}>
-          🖨️ Print Receipt
-        </Button>
-        <Button color="secondary" onClick={toggle}>
-          Close
-        </Button>
-      </ModalFooter>
-    </Modal>
-  )
+					{/* Totals */}
+					<div className="mb-3 pt-2 border-top">
+						<div className="d-flex justify-content-between py-1">
+							<span>Subtotal:</span>
+							<span>{formatPrice(orderData?.subtotal)}</span>
+						</div>
+						<div className="d-flex justify-content-between py-1">
+							<span>Tax (15% included):</span>
+							<span>{formatPrice(orderData?.tax)}</span>
+						</div>
+						<div className="d-flex justify-content-between py-2 border-top font-weight-bold">
+							<span>TOTAL:</span>
+							<span>{formatPrice(orderData?.total)}</span>
+						</div>
+					</div>
+
+					{/* Cash Details */}
+					{orderData?.paymentMethod === 'cash' && orderData?.cashCollected && (
+						<div className="mb-3 p-2 bg-light border rounded">
+							<div className="d-flex justify-content-between py-1">
+								<span>
+									<strong>Cash Received:</strong>
+								</span>
+								<span className="font-weight-bold">{formatPrice(orderData.cashCollected)}</span>
+							</div>
+							<div className="d-flex justify-content-between py-1">
+								<span>
+									<strong>Change Given:</strong>
+								</span>
+								<span className="font-weight-bold text-success">{formatPrice(orderData.changeAmount || 0)}</span>
+							</div>
+						</div>
+					)}
+
+					<div className="text-center pt-3 border-top">
+						<p className="mb-1">
+							<strong>Thank you for your patronage!</strong>
+						</p>
+						<p className="mb-0">We hope to see you again.</p>
+						<small className="text-muted">Printed: {moment().format('DD/MM/YYYY HH:mm:ss')}</small>
+					</div>
+				</div>
+			</ModalBody>
+
+			<ModalFooter>
+				<Button color="primary" onClick={handlePrint}>
+					🖨️ Print Receipt
+				</Button>
+				<Button color="secondary" onClick={toggle}>
+					Close
+				</Button>
+			</ModalFooter>
+		</Modal>
+	)
 }
 
 export default PrintReceipt

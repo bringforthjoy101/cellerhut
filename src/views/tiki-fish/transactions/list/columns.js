@@ -133,7 +133,9 @@ export const columns = [
 				{renderClient(row.admin)}
 				<div className="d-flex flex-column">
 					<Link to={`/admin/view/${row.admin.id}`} className="user-name text-truncate mb-0">
-						<span className="font-weight-bold">{row.admin.firstName} {row.admin.lastName}</span>
+						<span className="font-weight-bold">
+							{row.admin.firstName} {row.admin.lastName}
+						</span>
 					</Link>
 				</div>
 			</div>

@@ -21,15 +21,14 @@ const Print = () => {
 		{ id } = useParams()
 	// const [userData, setUserData] = useState(null)
 	const userData = JSON.parse(localStorage.getItem('userData'))
-const { selectedOrder } = store
+	const { selectedOrder } = store
 	useEffect(() => {
 		// axios.get(`/api/invoice/invoices/${id}`).then(response => {
 		//   setData(response.data)
 		// })
 		dispatch(getOrder(id))
 		// if (isUserLoggedIn()) setUserData(JSON.parse(localStorage.getItem('userData')))
-		// 
-		
+		//
 	}, [])
 	// Auto-print when order data is loaded
 	useEffect(() => {
@@ -40,7 +39,7 @@ const { selectedOrder } = store
 			}, 1000)
 			return () => clearTimeout(printTimer)
 		}
-	}, [selectedOrder]) 
+	}, [selectedOrder])
 
 	const renderTable = (products) => {
 		return products.map((product) => {
@@ -56,7 +55,9 @@ const { selectedOrder } = store
 						<span className="price-text">{Number(product.price).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
 					</td>
 					<td className="text-right total">
-						<span className="total-text">{Number(Number(product.price) * Number(product.quantity)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}</span>
+						<span className="total-text">
+							{Number(Number(product.price) * Number(product.quantity)).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
+						</span>
 					</td>
 				</tr>
 			)
@@ -68,9 +69,7 @@ const { selectedOrder } = store
 		return products.map((product) => {
 			return (
 				<div key={product.productId} className="thermal-product-item">
-					<div className="product-name">
-						{product.product.name}
-					</div>
+					<div className="product-name">{product.product.name}</div>
 					<div className="product-details">
 						<span className="qty-price">
 							{product.quantity.toLocaleString()} × {Number(product.price).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}
@@ -130,7 +129,7 @@ const { selectedOrder } = store
 		window.close()
 	}
 
-	return selectedOrder !== null ?  (
+	return selectedOrder !== null ? (
 		<div className="invoice-print enhanced-receipt">
 			{/* Print Controls - Hidden when printing */}
 			<div className="print-controls no-print mb-3 text-center">
@@ -143,9 +142,7 @@ const { selectedOrder } = store
 					</Button>
 				</ButtonGroup>
 				<div className="mt-2">
-					<small className="text-muted">
-						This receipt will auto-print when loaded. Use the Print button to print again.
-					</small>
+					<small className="text-muted">This receipt will auto-print when loaded. Use the Print button to print again.</small>
 				</div>
 			</div>
 
@@ -154,7 +151,7 @@ const { selectedOrder } = store
 				<div className="business-header text-center mb-3">
 					<h1 className="business-name">CELLER HUT</h1>
 					<p className="business-address">500m Opposite Ilere Junction, Along Ijare Road</p>
-					<p className="business-address">Akure South, Ondo State, Nigeria</p>
+					<p className="business-address">Akure South, Ondo State, South Africa</p>
 					<p className="business-contact">Phone: +234-XXX-XXX-XXXX | Email: info@cellerhut.com</p>
 				</div>
 
@@ -221,9 +218,7 @@ const { selectedOrder } = store
 					</Table>
 
 					{/* Thermal printer optimized list - shown only on thermal printers */}
-					<div className="thermal-products-list">
-						{renderThermalProductList(selectedOrder?.orderItems)}
-					</div>
+					<div className="thermal-products-list">{renderThermalProductList(selectedOrder?.orderItems)}</div>
 				</div>
 
 				<hr className="receipt-divider" />
@@ -256,7 +251,10 @@ const { selectedOrder } = store
 				{/* Footer */}
 				<div className="receipt-footer text-center mt-4">
 					<div className="attendant-info mb-2">
-						<span className="attendant-label">Served by:</span> <span className="attendant-name">{selectedOrder?.admin.firstName} {selectedOrder?.admin.lastName}</span>
+						<span className="attendant-label">Served by:</span>{' '}
+						<span className="attendant-name">
+							{selectedOrder?.admin.firstName} {selectedOrder?.admin.lastName}
+						</span>
 					</div>
 					<hr className="receipt-divider" />
 					<p className="thank-you-message">Thank you for your patronage!</p>

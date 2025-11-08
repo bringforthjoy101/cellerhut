@@ -5,272 +5,266 @@ import { Badge } from 'reactstrap'
 import { addToOrder, updateQuantity } from '../store/actions'
 
 const ProductCard = ({ product, viewMode = 'grid' }) => {
-  const dispatch = useDispatch()
-  const { currentOrder } = useSelector(state => state.picker)
+	const dispatch = useDispatch()
+	const { currentOrder } = useSelector((state) => state.picker)
 
-  const orderItem = currentOrder.items.find(item => item.id === product.id)
-  const quantity = orderItem ? orderItem.quantity : 0
-  
-  // Calculate actual available quantity for composite products
-  const getActualAvailableQty = () => {
-    const storedQty = product.qty || 0
-    
-    if (product.product_type === 'composite' && product.BaseProduct) {
-      const baseQty = Number(product.BaseProduct.qty) || 0
-      const compositeQuantity = Number(product.composite_quantity) || 1
-      const baseAvailable = Math.floor(baseQty / compositeQuantity)
-      return Math.min(baseAvailable, storedQty)
-    }
-    
-    return storedQty
-  }
-  
-  const availableQty = getActualAvailableQty()
-  const isComposite = product.product_type === 'composite'
+	const orderItem = currentOrder.items.find((item) => item.id === product.id)
+	const quantity = orderItem ? orderItem.quantity : 0
 
-  const handleAddToOrder = () => {
-    if (availableQty > 0) {
-      dispatch(addToOrder(product))
-    }
-  }
+	// Calculate actual available quantity for composite products
+	const getActualAvailableQty = () => {
+		const storedQty = product.qty || 0
 
-  const handleQuantityChange = (newQuantity) => {
-    if (newQuantity <= availableQty) {
-      dispatch(updateQuantity(product.id, newQuantity))
-    }
-  }
+		if (product.product_type === 'composite' && product.BaseProduct) {
+			const baseQty = Number(product.BaseProduct.qty) || 0
+			const compositeQuantity = Number(product.composite_quantity) || 1
+			const baseAvailable = Math.floor(baseQty / compositeQuantity)
+			return Math.min(baseAvailable, storedQty)
+		}
 
-  const formatPrice = (price) => {
-    return parseFloat(price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
-  }
+		return storedQty
+	}
 
-  const getCategoryName = (category) => {
-    if (!category) return 'Uncategorized'
-    if (typeof category === 'string') return category
-    if (typeof category === 'object' && category.name) return category.name
-    return 'Uncategorized'
-  }
+	const availableQty = getActualAvailableQty()
+	const isComposite = product.product_type === 'composite'
 
-  const getStockStatus = () => {
-    if (availableQty === 0) {
-      return {
-        color: 'danger',
-        text: 'Out of Stock',
-        icon: <AlertCircle size={12} />,
-        className: 'stock-out'
-      }
-    } else if (availableQty <= 10) {
-      return {
-        color: 'warning',
-        text: `Low Stock (${availableQty})`,
-        icon: <AlertTriangle size={12} />,
-        className: 'stock-low'
-      }
-    } else {
-      return {
-        color: 'success',
-        text: `In Stock (${availableQty})`,
-        icon: <CheckCircle size={12} />,
-        className: 'stock-available'
-      }
-    }
-  }
+	const handleAddToOrder = () => {
+		if (availableQty > 0) {
+			dispatch(addToOrder(product))
+		}
+	}
 
-  const stockStatus = getStockStatus()
-  const isInOrder = quantity > 0
-  const isOutOfStock = availableQty === 0
+	const handleQuantityChange = (newQuantity) => {
+		if (newQuantity <= availableQty) {
+			dispatch(updateQuantity(product.id, newQuantity))
+		}
+	}
 
-  if (viewMode === 'list') {
-    return (
-      <div className={`product-card-list ${isInOrder ? 'in-order' : ''} ${stockStatus.className}`}>
-        <div className="product-image-container">
-          <img
-            src={product.image || '/images/placeholder.jpg'}
-            alt={product.name}
-            className={`product-image-list ${isOutOfStock ? 'out-of-stock' : ''}`}
-            onError={(e) => {
-              e.target.src = '/images/placeholder.jpg'
-            }}
-          />
-          {isInOrder && (
-            <Badge color="primary" className="quantity-badge" pill>
-              {quantity}
-            </Badge>
-          )}
-          <Badge color={stockStatus.color} className="stock-badge" pill>
-            {stockStatus.icon} {stockStatus.text}
-          </Badge>
-        </div>
-        
-        <div className="product-details">
-          <div className="product-main-info">
-            <h4 className="product-name">
-              {product.name}
-              {isComposite && (
-                <Badge color="light-info" className="ml-2">
-                  <Layers size={10} className="mr-1" />
-                  {product.composite_quantity}x pack
-                </Badge>
-              )}
-            </h4>
-            <div className="product-meta">
-              <span className="product-category">
-                <Package size={12} />
-                {getCategoryName(product.category)}
-              </span>
-              {product.barcode && (
-                <span className="product-barcode">#{product.barcode}</span>
-              )}
-              {isComposite && product.discount_percentage > 0 && (
-                <Badge color="success" className="ml-2">
-                  {product.discount_percentage}% off
-                </Badge>
-              )}
-            </div>
-          </div>
-          
-          <div className="product-price-section">
-            <div className="product-price">{formatPrice(product.price)}</div>
-            {isInOrder && (
-              <div className="item-total">
-                Total: {formatPrice(product.price * quantity)}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="product-actions">
-          {isInOrder ? (
-            <div className="quantity-controls-list">
-              <button
-                className="quantity-btn"
-                onClick={() => handleQuantityChange(quantity - 1)}
-                disabled={quantity <= 0}
-                aria-label="Decrease quantity"
-              >
-                <Minus size={14} />
-              </button>
-              <div className="quantity-display">{quantity}</div>
-              <button
-                className="quantity-btn"
-                onClick={() => handleQuantityChange(quantity + 1)}
-                disabled={quantity >= availableQty}
-                aria-label="Increase quantity"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-          ) : (
-            <button
-              className={`add-to-cart-btn ${isOutOfStock ? 'disabled' : ''}`}
-              onClick={handleAddToOrder}
-              disabled={isOutOfStock}
-              aria-label={`Add ${product.name} to order`}
-            >
-              <ShoppingCart size={16} />
-              {isOutOfStock ? 'Out of Stock' : 'Add to Order'}
-            </button>
-          )}
-        </div>
-      </div>
-    )
-  }
+	const formatPrice = (price) => {
+		return parseFloat(price || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
+	}
 
-  return (
-    <div 
-      className={`product-card ${isInOrder ? 'in-order' : ''} ${stockStatus.className} ${isOutOfStock ? 'out-of-stock-card' : ''}`} 
-      onClick={!isOutOfStock ? handleAddToOrder : undefined}
-      role="button"
-      tabIndex={0}
-      aria-label={`${product.name} - ${formatPrice(product.price)}${isInOrder ? ` - ${quantity} in order` : ''} - ${stockStatus.text}`}
-      onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && !isOutOfStock) {
-          e.preventDefault()
-          handleAddToOrder()
-        }
-      }}
-    >
-      <div className="product-image-container">
-        <img
-          src={product.image || '/images/placeholder.jpg'}
-          alt={product.name}
-          className={`product-image ${isOutOfStock ? 'out-of-stock' : ''}`}
-          onError={(e) => {
-            e.target.src = '/images/placeholder.jpg'
-          }}
-        />
-        {isInOrder && (
-          <Badge color="primary" className="quantity-badge" pill>
-            {quantity}
-          </Badge>
-        )}
-        <Badge color={stockStatus.color} className="stock-badge" pill>
-          {stockStatus.icon} {availableQty}
-        </Badge>
-      </div>
-      
-      <div className="product-info">
-        <h4 className="product-name">
-          {product.name}
-          {isComposite && (
-            <Badge color="light-info" className="composite-badge" pill>
-              <Layers size={8} />
-              {product.composite_quantity}x
-            </Badge>
-          )}
-        </h4>
-        <div className="product-price">
-          {formatPrice(product.price)}
-          {isComposite && product.discount_percentage > 0 && (
-            <small className="discount-info">
-              <Badge color="success" pill>
-                -{product.discount_percentage}%
-              </Badge>
-            </small>
-          )}
-        </div>
-        
-        <div className="product-meta">
-          <span className="product-category">
-            <Package size={10} />
-            {getCategoryName(product.category)}
-          </span>
-        </div>
-        
-        {isInOrder ? (
-          <div className="quantity-controls" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="quantity-btn"
-              onClick={() => handleQuantityChange(quantity - 1)}
-              disabled={quantity <= 0}
-              aria-label="Decrease quantity"
-            >
-              <Minus size={14} />
-            </button>
-            <div className="quantity-display">{quantity}</div>
-            <button
-              className="quantity-btn"
-              onClick={() => handleQuantityChange(quantity + 1)}
-              disabled={quantity >= availableQty}
-              aria-label="Increase quantity"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-        ) : (
-          <div className="quantity-controls">
-            <button className="quantity-btn" disabled>
-              <Minus size={14} />
-            </button>
-            <div className="quantity-display">0</div>
-            <button className="quantity-btn" disabled={isOutOfStock}>
-              <Plus size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+	const getCategoryName = (category) => {
+		if (!category) return 'Uncategorized'
+		if (typeof category === 'string') return category
+		if (typeof category === 'object' && category.name) return category.name
+		return 'Uncategorized'
+	}
+
+	const getStockStatus = () => {
+		if (availableQty === 0) {
+			return {
+				color: 'danger',
+				text: 'Out of Stock',
+				icon: <AlertCircle size={12} />,
+				className: 'stock-out',
+			}
+		} else if (availableQty <= 10) {
+			return {
+				color: 'warning',
+				text: `Low Stock (${availableQty})`,
+				icon: <AlertTriangle size={12} />,
+				className: 'stock-low',
+			}
+		} else {
+			return {
+				color: 'success',
+				text: `In Stock (${availableQty})`,
+				icon: <CheckCircle size={12} />,
+				className: 'stock-available',
+			}
+		}
+	}
+
+	const stockStatus = getStockStatus()
+	const isInOrder = quantity > 0
+	const isOutOfStock = availableQty === 0
+
+	if (viewMode === 'list') {
+		return (
+			<div className={`product-card-list ${isInOrder ? 'in-order' : ''} ${stockStatus.className}`}>
+				<div className="product-image-container">
+					<img
+						src={product.image || '/images/placeholder.jpg'}
+						alt={product.name}
+						className={`product-image-list ${isOutOfStock ? 'out-of-stock' : ''}`}
+						onError={(e) => {
+							e.target.src = '/images/placeholder.jpg'
+						}}
+					/>
+					{isInOrder && (
+						<Badge color="primary" className="quantity-badge" pill>
+							{quantity}
+						</Badge>
+					)}
+					<Badge color={stockStatus.color} className="stock-badge" pill>
+						{stockStatus.icon} {stockStatus.text}
+					</Badge>
+				</div>
+
+				<div className="product-details">
+					<div className="product-main-info">
+						<h4 className="product-name">
+							{product.name}
+							{isComposite && (
+								<Badge color="light-info" className="ml-2">
+									<Layers size={10} className="mr-1" />
+									{product.composite_quantity}x pack
+								</Badge>
+							)}
+						</h4>
+						<div className="product-meta">
+							<span className="product-category">
+								<Package size={12} />
+								{getCategoryName(product.category)}
+							</span>
+							{product.barcode && <span className="product-barcode">#{product.barcode}</span>}
+							{isComposite && product.discount_percentage > 0 && (
+								<Badge color="success" className="ml-2">
+									{product.discount_percentage}% off
+								</Badge>
+							)}
+						</div>
+					</div>
+
+					<div className="product-price-section">
+						<div className="product-price">{formatPrice(product.price)}</div>
+						{isInOrder && <div className="item-total">Total: {formatPrice(product.price * quantity)}</div>}
+					</div>
+				</div>
+
+				<div className="product-actions">
+					{isInOrder ? (
+						<div className="quantity-controls-list">
+							<button
+								className="quantity-btn"
+								onClick={() => handleQuantityChange(quantity - 1)}
+								disabled={quantity <= 0}
+								aria-label="Decrease quantity"
+							>
+								<Minus size={14} />
+							</button>
+							<div className="quantity-display">{quantity}</div>
+							<button
+								className="quantity-btn"
+								onClick={() => handleQuantityChange(quantity + 1)}
+								disabled={quantity >= availableQty}
+								aria-label="Increase quantity"
+							>
+								<Plus size={14} />
+							</button>
+						</div>
+					) : (
+						<button
+							className={`add-to-cart-btn ${isOutOfStock ? 'disabled' : ''}`}
+							onClick={handleAddToOrder}
+							disabled={isOutOfStock}
+							aria-label={`Add ${product.name} to order`}
+						>
+							<ShoppingCart size={16} />
+							{isOutOfStock ? 'Out of Stock' : 'Add to Order'}
+						</button>
+					)}
+				</div>
+			</div>
+		)
+	}
+
+	return (
+		<div
+			className={`product-card ${isInOrder ? 'in-order' : ''} ${stockStatus.className} ${isOutOfStock ? 'out-of-stock-card' : ''}`}
+			onClick={!isOutOfStock ? handleAddToOrder : undefined}
+			role="button"
+			tabIndex={0}
+			aria-label={`${product.name} - ${formatPrice(product.price)}${isInOrder ? ` - ${quantity} in order` : ''} - ${stockStatus.text}`}
+			onKeyDown={(e) => {
+				if ((e.key === 'Enter' || e.key === ' ') && !isOutOfStock) {
+					e.preventDefault()
+					handleAddToOrder()
+				}
+			}}
+		>
+			<div className="product-image-container">
+				<img
+					src={product.image || '/images/placeholder.jpg'}
+					alt={product.name}
+					className={`product-image ${isOutOfStock ? 'out-of-stock' : ''}`}
+					onError={(e) => {
+						e.target.src = '/images/placeholder.jpg'
+					}}
+				/>
+				{isInOrder && (
+					<Badge color="primary" className="quantity-badge" pill>
+						{quantity}
+					</Badge>
+				)}
+				<Badge color={stockStatus.color} className="stock-badge" pill>
+					{stockStatus.icon} {availableQty}
+				</Badge>
+			</div>
+
+			<div className="product-info">
+				<h4 className="product-name">
+					{product.name}
+					{isComposite && (
+						<Badge color="light-info" className="composite-badge" pill>
+							<Layers size={8} />
+							{product.composite_quantity}x
+						</Badge>
+					)}
+				</h4>
+				<div className="product-price">
+					{formatPrice(product.price)}
+					{isComposite && product.discount_percentage > 0 && (
+						<small className="discount-info">
+							<Badge color="success" pill>
+								-{product.discount_percentage}%
+							</Badge>
+						</small>
+					)}
+				</div>
+
+				<div className="product-meta">
+					<span className="product-category">
+						<Package size={10} />
+						{getCategoryName(product.category)}
+					</span>
+				</div>
+
+				{isInOrder ? (
+					<div className="quantity-controls" onClick={(e) => e.stopPropagation()}>
+						<button
+							className="quantity-btn"
+							onClick={() => handleQuantityChange(quantity - 1)}
+							disabled={quantity <= 0}
+							aria-label="Decrease quantity"
+						>
+							<Minus size={14} />
+						</button>
+						<div className="quantity-display">{quantity}</div>
+						<button
+							className="quantity-btn"
+							onClick={() => handleQuantityChange(quantity + 1)}
+							disabled={quantity >= availableQty}
+							aria-label="Increase quantity"
+						>
+							<Plus size={14} />
+						</button>
+					</div>
+				) : (
+					<div className="quantity-controls">
+						<button className="quantity-btn" disabled>
+							<Minus size={14} />
+						</button>
+						<div className="quantity-display">0</div>
+						<button className="quantity-btn" disabled={isOutOfStock}>
+							<Plus size={14} />
+						</button>
+					</div>
+				)}
+			</div>
+		</div>
+	)
 }
 
 export default ProductCard

@@ -24,7 +24,7 @@ const getItemNames = (items) => {
 const orderStatus = {
 	processing: 'light-warning',
 	completed: 'light-success',
-	cancelled: 'light-danger'
+	cancelled: 'light-danger',
 }
 
 // ** Table columns
@@ -51,7 +51,11 @@ export const columns = [
 		selector: 'status',
 		sortable: true,
 		minWidth: '100px',
-		cell: row => <Badge color={orderStatus[row.status]} pill>{row.status.toUpperCase()}</Badge>
+		cell: (row) => (
+			<Badge color={orderStatus[row.status]} pill>
+				{row.status.toUpperCase()}
+			</Badge>
+		),
 	},
 	{
 		name: 'Products ',
