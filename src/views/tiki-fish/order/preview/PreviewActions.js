@@ -102,7 +102,7 @@ const PreviewActions = ({ id, data, onDispatch, onTrack }) => {
 		const doc = new jsPDF()
 		doc.setFontSize(24)
 		doc.setTextColor('blue')
-		doc.text('Celler Hut Sales.', 14, 20)
+		doc.text('Cellar Hut Sales.', 14, 20)
 
 		// Add title
 		doc.setFontSize(12)
@@ -161,8 +161,8 @@ const PreviewActions = ({ id, data, onDispatch, onTrack }) => {
 					Complete Order
 				</Button.Ripple>
 
-				{/* Dispatch Button - Only show if order can be dispatched */}
-				{onDispatch && !(data.tracking_enabled || data.trackingEnabled) && ['order-pending', 'order-processing', 'pending', 'processing'].includes(data.status) && (
+				{/* Dispatch Button - Only show if order can be dispatched and is online order */}
+				{onDispatch && data.location !== 'Shop' && !(data.tracking_enabled || data.trackingEnabled) && ['order-pending', 'order-processing', 'pending', 'processing'].includes(data.status) && (
 					<Button.Ripple
 						className="mb-75"
 						color="primary"
@@ -174,8 +174,8 @@ const PreviewActions = ({ id, data, onDispatch, onTrack }) => {
 					</Button.Ripple>
 				)}
 
-				{/* Track Order Button - Only show if tracking is enabled */}
-				{onTrack && (data.tracking_enabled || data.trackingEnabled) && (
+				{/* Track Order Button - Only show if tracking is enabled and is online order */}
+				{onTrack && data.location !== 'Shop' && (data.tracking_enabled || data.trackingEnabled) && (
 					<Button.Ripple
 						className="mb-75"
 						color="success"

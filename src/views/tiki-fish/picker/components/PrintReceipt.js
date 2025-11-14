@@ -154,7 +154,7 @@ const PrintReceipt = ({ isOpen, toggle, orderData, orderResult, autoPrint = true
           <div class="receipt-container">
             <!-- Business Header -->
             <div class="business-header">
-              <h1 class="business-name">CELLER HUT</h1>
+              <h1 class="business-name">CELLAR HUT</h1>
               <p class="business-address">500m Opposite Ilere Junction, Along Ijare Road</p>
               <p class="business-address">Akure South, Ondo State, South Africa</p>
               <p class="business-address">Phone: +234-XXX-XXX-XXXX</p>
@@ -291,7 +291,7 @@ const PrintReceipt = ({ isOpen, toggle, orderData, orderResult, autoPrint = true
 				<div className="receipt-preview p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
 					{/* Business Header */}
 					<div className="text-center mb-3 pb-3 border-bottom">
-						<h4 className="mb-1">CELLER HUT</h4>
+						<h4 className="mb-1">CELLAR HUT</h4>
 						<small className="text-muted d-block">500m Opposite Ilere Junction, Along Ijare Road</small>
 						<small className="text-muted d-block">Akure South, Ondo State, South Africa</small>
 						<small className="text-muted d-block">Phone: +234-XXX-XXX-XXXX</small>

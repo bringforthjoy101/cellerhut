@@ -2,10 +2,10 @@ import moment from 'moment'
 
 // Storage keys
 const STORAGE_KEYS = {
-  HELD_ORDERS: 'cellerhut_held_orders',
-  ORDER_TABS: 'cellerhut_order_tabs',
-  ACTIVE_ORDER_ID: 'cellerhut_active_order_id',
-  SESSION_ID: 'cellerhut_session_id'
+  HELD_ORDERS: 'cellarhut_held_orders',
+  ORDER_TABS: 'cellarhut_order_tabs',
+  ACTIVE_ORDER_ID: 'cellarhut_active_order_id',
+  SESSION_ID: 'cellarhut_session_id'
 }
 
 // Configuration

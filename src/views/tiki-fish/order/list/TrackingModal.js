@@ -1,38 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Row, Col, Card, CardBody, Badge, Spinner, Collapse, UncontrolledTooltip } from 'reactstrap'
-import { Map, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import { MapPin, Phone, Truck, RefreshCw, Navigation, Package, Clock, X, User, Mail, Copy, ChevronDown, ChevronUp, Download, Share2, Printer, ExternalLink, DollarSign, CreditCard, ShoppingBag, Star, MessageCircle, Award } from 'react-feather'
 import { useDispatch } from 'react-redux'
 import { getOrderTracking } from '../store/action'
 import moment from 'moment'
-import L from 'leaflet'
-
-// Fix for default marker icons in Leaflet
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-	iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-	iconUrl: require('leaflet/dist/images/marker-icon.png'),
-	shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-})
-
-// Custom marker icons
-const driverIcon = new L.Icon({
-	iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-	shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-	iconSize: [25, 41],
-	iconAnchor: [12, 41],
-	popupAnchor: [1, -34],
-	shadowSize: [41, 41],
-})
-
-const deliveryIcon = new L.Icon({
-	iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-	shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-	iconSize: [25, 41],
-	iconAnchor: [12, 41],
-	popupAnchor: [1, -34],
-	shadowSize: [41, 41],
-})
 
 const TrackingModal = ({ isOpen, toggle, order }) => {
 	const dispatch = useDispatch()
@@ -273,36 +244,6 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 	const fullTrackingUrl = tookanData?.full_tracking_link
 	const timeline = rawData?.timeline || [] // For backward compatibility with old API format
 
-	// Validate location data - ensure arrays have valid numeric values
-	const isValidLocation = (loc) => {
-		return Array.isArray(loc) &&
-			loc.length === 2 &&
-			typeof loc[0] === 'number' &&
-			typeof loc[1] === 'number' &&
-			!isNaN(loc[0]) &&
-			!isNaN(loc[1])
-	}
-
-	const driverLocation = isValidLocation(driver?.location) ? driver.location : null
-	const deliveryLocation = isValidLocation(delivery?.location) ? delivery.location : null
-	const mapCenter = driverLocation || deliveryLocation || [-33.9249, 18.4241]
-
-	// Create route path if both locations exist
-	const routePath = driverLocation && deliveryLocation ? [driverLocation, deliveryLocation] : []
-
-	// Calculate distance if both locations exist
-	let calculatedDistance = null
-	if (driverLocation && deliveryLocation) {
-		const R = 6371 // Earth's radius in km
-		const dLat = (deliveryLocation[0] - driverLocation[0]) * Math.PI / 180
-		const dLon = (deliveryLocation[1] - driverLocation[1]) * Math.PI / 180
-		const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-			Math.cos(driverLocation[0] * Math.PI / 180) * Math.cos(deliveryLocation[0] * Math.PI / 180) *
-			Math.sin(dLon / 2) * Math.sin(dLon / 2)
-		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-		calculatedDistance = (R * c).toFixed(2)
-	}
-
 	return (
 		<Modal isOpen={isOpen} toggle={toggle} size="xl" className="modal-fullscreen">
 			<ModalHeader toggle={toggle}>
@@ -328,65 +269,50 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 			<ModalBody>
 				<Row>
-					{/* Map Section */}
-					<Col lg="8" className="mb-3">
+					{/* Tracking Iframe Section */}
+					<Col lg="8" md="12" className="mb-2">
 						<Card>
-							<CardBody className="p-0">
-								<div style={{ height: '500px', width: '100%' }}>
-									{(driverLocation || deliveryLocation) ? (
-										<Map
-											center={mapCenter}
-											zoom={13}
-											className="leaflet-map"
-											style={{ height: '100%', width: '100%' }}
-											key={`${driverLocation?.[0]}-${deliveryLocation?.[0]}`}
-										>
-										<TileLayer
-											attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-											url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+							<CardBody className="p-1">
+								<div className="d-none d-sm-block" style={{ height: '500px', width: '100%' }}>
+									{trackingUrl ? (
+										<iframe
+											src={trackingUrl}
+											title="Order Tracking"
+											width="100%"
+											height="100%"
+											frameBorder="0"
+											allow="geolocation"
+											sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+											style={{ borderRadius: '0.357rem' }}
 										/>
-
-										{/* Delivery Location Marker */}
-										{deliveryLocation && (
-											<Marker position={deliveryLocation} icon={deliveryIcon}>
-												<Popup>
-													<div>
-														<strong>Delivery Location</strong>
-														<br />
-														{delivery?.address || 'Delivery destination'}
-													</div>
-												</Popup>
-											</Marker>
-										)}
-
-										{/* Driver Location Marker */}
-										{driverLocation && orderStatus !== 'order-completed' && (
-											<Marker position={driverLocation} icon={driverIcon}>
-												<Popup>
-													<div>
-														<strong>{driver?.name || 'Driver'}</strong>
-														<br />
-														Current Location
-														{driver?.vehicleNumber && (
-															<>
-																<br />
-																Vehicle: {driver.vehicleNumber}
-															</>
-														)}
-													</div>
-												</Popup>
-											</Marker>
-										)}
-
-										{/* Route Line */}
-										{routePath.length > 0 && <Polyline positions={routePath} color="#3B82F6" weight={4} opacity={0.7} />}
-									</Map>
 									) : (
 										<div className="d-flex align-items-center justify-content-center h-100 bg-light">
 											<div className="text-center p-4">
-												<MapPin size={48} className="text-muted mb-3" />
-												<h6 className="text-muted">Location data not yet available</h6>
-												<p className="text-muted small">Map will appear once tracking begins</p>
+												<MapPin size={48} className="text-muted mb-2" />
+												<h6 className="text-muted">Tracking not available</h6>
+												<p className="text-muted small">Tracking information will appear once the order is dispatched</p>
+											</div>
+										</div>
+									)}
+								</div>
+								<div className="d-block d-sm-none" style={{ height: '400px', width: '100%' }}>
+									{trackingUrl ? (
+										<iframe
+											src={trackingUrl}
+											title="Order Tracking"
+											width="100%"
+											height="100%"
+											frameBorder="0"
+											allow="geolocation"
+											sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+											style={{ borderRadius: '0.357rem' }}
+										/>
+									) : (
+										<div className="d-flex align-items-center justify-content-center h-100 bg-light">
+											<div className="text-center p-4">
+												<MapPin size={48} className="text-muted mb-2" />
+												<h6 className="text-muted">Tracking not available</h6>
+												<p className="text-muted small">Tracking information will appear once the order is dispatched</p>
 											</div>
 										</div>
 									)}
@@ -399,9 +325,9 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 							<>
 								{/* Proof of Delivery */}
 								{(delivery?.proofOfDelivery?.photo || delivery?.proofOfDelivery?.signature) && (
-									<Card className="mt-3">
+									<Card className="mt-2">
 										<CardBody>
-											<div className="d-flex justify-content-between align-items-center mb-3">
+											<div className="d-flex justify-content-between align-items-center mb-2">
 												<h5 className="mb-0">Proof of Delivery</h5>
 												{delivery.actualTime && (
 													<Badge color="success" pill>
@@ -473,16 +399,16 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 								{/* Feedback & Communication */}
 								{(feedback.driverComment || feedback.customerComment || metrics.customerRating) && (
-									<Card className="mt-3">
+									<Card className="mt-2">
 										<CardBody>
-											<h5 className="mb-3 d-flex align-items-center">
+											<h5 className="mb-2 d-flex align-items-center">
 												<MessageCircle size={18} className="mr-2" />
 												Feedback & Communication
 											</h5>
 
 											{/* Customer Rating */}
 											{metrics.customerRating && (
-												<div className="mb-3 p-3 bg-warning-light rounded">
+												<div className="mb-2 p-3 bg-warning-light rounded">
 													<div className="d-flex justify-content-between align-items-center">
 														<small className="text-muted">Customer Rating</small>
 														<div className="d-flex align-items-center">
@@ -502,7 +428,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 											{/* Driver Comment */}
 											{feedback.driverComment && (
-												<div className="mb-3 p-3 bg-light rounded">
+												<div className="mb-2 p-3 bg-light rounded">
 													<div className="d-flex align-items-start">
 														<Truck size={16} className="mr-2 mt-1 text-primary" />
 														<div className="flex-grow-1">
@@ -515,7 +441,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 											{/* Customer Comment */}
 											{feedback.customerComment && (
-												<div className="p-3 bg-light rounded">
+												<div className="p-2 bg-light rounded">
 													<div className="d-flex align-items-start">
 														<User size={16} className="mr-2 mt-1 text-info" />
 														<div className="flex-grow-1">
@@ -533,11 +459,11 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 					</Col>
 
 					{/* Info Sidebar */}
-					<Col lg="4">
+					<Col lg="4" md="12">
 						{/* Order Summary Card */}
-						<Card className="mb-3">
+						<Card className="mb-2">
 							<CardBody>
-								<div className="d-flex justify-content-between align-items-center mb-3">
+								<div className="d-flex justify-content-between align-items-center mb-2">
 									<h6 className="mb-0">Order Summary</h6>
 									<Badge color={getStatusColor(orderStatus)} pill>
 										{formatStatusText(orderStatus)}
@@ -545,7 +471,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 								</div>
 
 								{/* Order Number */}
-								<div className="mb-3 p-2 bg-light rounded">
+								<div className="mb-2 p-2 bg-light rounded">
 									<div className="d-flex justify-content-between align-items-center">
 										<div>
 											<small className="text-muted d-block">Order Number</small>
@@ -567,7 +493,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 								</div>
 
 								{/* Order Amount */}
-								<div className="mb-3">
+								<div className="mb-2">
 									<div className="d-flex justify-content-between mb-2">
 										<span className="text-muted">Subtotal</span>
 										<span>{formatCurrency(orderInfo.subTotal)}</span>
@@ -594,7 +520,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 								</div>
 
 								{/* Payment Method */}
-								<div className="d-flex align-items-center mb-3">
+								<div className="d-flex align-items-center mb-2">
 									<CreditCard size={16} className="mr-2 text-muted" />
 									<div className="flex-grow-1">
 										<small className="text-muted d-block">Payment Method</small>
@@ -665,10 +591,10 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 						{/* Order Items Card */}
 						{orderInfo.orderItems && orderInfo.orderItems.length > 0 && (
-							<Card className="mb-3">
+							<Card className="mb-2">
 								<CardBody>
 									<div
-										className="d-flex justify-content-between align-items-center mb-2"
+										className="d-flex justify-content-between align-items-center mb-1"
 										style={{ cursor: 'pointer' }}
 										onClick={() => setShowOrderItems(!showOrderItems)}
 									>
@@ -716,10 +642,10 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 						{/* Driver Info */}
 						{driver && driver.name && (
-							<Card className="mb-3">
+							<Card className="mb-2">
 								<CardBody>
-									<h6 className="mb-3">Driver Information</h6>
-									<div className="d-flex align-items-center mb-3">
+									<h6 className="mb-2">Driver Information</h6>
+									<div className="d-flex align-items-center mb-2">
 										<div
 											className="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white mr-3"
 											style={{ width: '50px', height: '50px', fontSize: '20px' }}
@@ -755,7 +681,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 									</div>
 
 									{/* Contact Buttons */}
-									<Row className="mb-3">
+									<Row className="mb-2">
 										{driver.phone && (
 											<Col xs="6">
 												<Button
@@ -786,43 +712,13 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 										)}
 									</Row>
 
-									{/* Driver Location Coordinates */}
-									{driverLocation && (
-										<div className="mb-2 p-2 bg-light rounded">
-											<div className="d-flex align-items-center justify-content-between">
-												<div>
-													<small className="text-muted d-block">Current Location</small>
-													<small className="font-size-12">
-														{driverLocation[0].toFixed(5)}, {driverLocation[1].toFixed(5)}
-													</small>
-												</div>
-												<Button
-													color="link"
-													size="sm"
-													className="p-0"
-													onClick={() => window.open(`https://www.google.com/maps?q=${driverLocation[0]},${driverLocation[1]}`, '_blank')}
-												>
-													<ExternalLink size={14} />
-												</Button>
-											</div>
-										</div>
-									)}
-
-									{/* ETA & Distance */}
-									{(delivery?.estimatedTime || calculatedDistance) && (
+									{/* ETA */}
+									{delivery?.estimatedTime && (
 										<div className="mt-2 p-2 bg-primary-light rounded">
-											{delivery?.estimatedTime && (
-												<div className="d-flex align-items-center mb-1">
-													<Clock size={14} className="mr-2 text-primary" />
-													<small className="font-weight-bold">ETA: {moment(delivery.estimatedTime).format('h:mm A')}</small>
-												</div>
-											)}
-											{calculatedDistance && (
-												<div className="d-flex align-items-center">
-													<MapPin size={14} className="mr-2 text-primary" />
-													<small className="font-weight-bold">Distance: {calculatedDistance} km</small>
-												</div>
-											)}
+											<div className="d-flex align-items-center">
+												<Clock size={14} className="mr-2 text-primary" />
+												<small className="font-weight-bold">ETA: {moment(delivery.estimatedTime).format('h:mm A')}</small>
+											</div>
 										</div>
 									)}
 								</CardBody>
@@ -830,16 +726,16 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 						)}
 
 						{/* Delivery Details Card */}
-						<Card className="mb-3">
+						<Card className="mb-2">
 							<CardBody>
-								<h6 className="mb-3 d-flex align-items-center">
+								<h6 className="mb-2 d-flex align-items-center">
 									<MapPin size={16} className="mr-2" />
 									Delivery Details
 								</h6>
 
 								{/* Delivery Address */}
 								{delivery.address && (
-									<div className="mb-3 p-2 bg-light rounded">
+									<div className="mb-2 p-2 bg-light rounded">
 										<small className="text-muted d-block mb-1">Delivery Address</small>
 										<div className="d-flex justify-content-between align-items-start">
 											<div className="flex-grow-1">
@@ -894,9 +790,9 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 						{/* Custom Fields from Tookan */}
 						{customFields && customFields.length > 0 && (
-							<Card className="mb-3">
+							<Card className="mb-2">
 								<CardBody>
-									<h6 className="mb-3 d-flex align-items-center">
+									<h6 className="mb-2 d-flex align-items-center">
 										<Package size={16} className="mr-2" />
 										Additional Information
 									</h6>
@@ -922,10 +818,10 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 						{/* Performance Metrics Card */}
 						{(metrics.totalDistance || metrics.timeSpent || metrics.distanceTravelled) && (
-							<Card className="mb-3">
+							<Card className="mb-2">
 								<CardBody>
 									<div
-										className="d-flex justify-content-between align-items-center mb-2"
+										className="d-flex justify-content-between align-items-center mb-1"
 										style={{ cursor: 'pointer' }}
 										onClick={() => setShowMetrics(!showMetrics)}
 									>
@@ -938,7 +834,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 									<Collapse isOpen={showMetrics}>
 										<Row className="text-center">
 											{metrics.totalDistance && (
-												<Col xs="6" className="mb-3">
+												<Col xs="6" className="mb-2">
 													<div className="p-2 bg-light rounded">
 														<div className="text-primary font-weight-bold" style={{ fontSize: '20px' }}>
 															{metrics.totalDistance}
@@ -948,7 +844,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 												</Col>
 											)}
 											{metrics.distanceTravelled && (
-												<Col xs="6" className="mb-3">
+												<Col xs="6" className="mb-2">
 													<div className="p-2 bg-light rounded">
 														<div className="text-primary font-weight-bold" style={{ fontSize: '20px' }}>
 															{(parseFloat(metrics.distanceTravelled) / 1000).toFixed(2)} km
@@ -985,12 +881,12 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 						{/* Timeline */}
 						{(timestamps.created || timestamps.acknowledged || timestamps.started || timestamps.arrived || timestamps.completed) && (
-							<Card className="mb-3">
+							<Card className="mb-2">
 								<CardBody>
-									<h6 className="mb-3">Delivery Timeline</h6>
+									<h6 className="mb-2">Delivery Timeline</h6>
 									<div className="timeline">
 										{timestamps.completed && (
-											<div className="timeline-item mb-3">
+											<div className="timeline-item mb-2">
 												<div className="d-flex align-items-start">
 													<div className="timeline-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center mr-2"
 														style={{ width: '32px', height: '32px', fontSize: '16px' }}>
@@ -1011,7 +907,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 											</div>
 										)}
 										{timestamps.arrived && (
-											<div className="timeline-item mb-3">
+											<div className="timeline-item mb-2">
 												<div className="d-flex align-items-start">
 													<div className="timeline-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2"
 														style={{ width: '32px', height: '32px', fontSize: '16px' }}>
@@ -1032,7 +928,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 											</div>
 										)}
 										{timestamps.started && (
-											<div className="timeline-item mb-3">
+											<div className="timeline-item mb-2">
 												<div className="d-flex align-items-start">
 													<div className="timeline-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2"
 														style={{ width: '32px', height: '32px', fontSize: '16px' }}>
@@ -1053,7 +949,7 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 											</div>
 										)}
 										{timestamps.acknowledged && (
-											<div className="timeline-item mb-3">
+											<div className="timeline-item mb-2">
 												<div className="d-flex align-items-start">
 													<div className="timeline-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center mr-2"
 														style={{ width: '32px', height: '32px', fontSize: '16px' }}>
@@ -1100,12 +996,12 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 
 						{/* Old Timeline - fallback for old data format */}
 						{timeline && timeline.length > 0 && (
-							<Card>
+							<Card className="mb-2">
 								<CardBody>
-									<h6 className="mb-3">Delivery Timeline</h6>
+									<h6 className="mb-2">Delivery Timeline</h6>
 									<div className="timeline">
 										{timeline.map((event, index) => (
-											<div key={event.id || index} className="timeline-item mb-3">
+											<div key={event.id || index} className="timeline-item mb-2">
 												<div className="d-flex align-items-start">
 													<div
 														className="timeline-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2"
@@ -1134,26 +1030,6 @@ const TrackingModal = ({ isOpen, toggle, order }) => {
 											</div>
 										))}
 									</div>
-								</CardBody>
-							</Card>
-						)}
-
-						{/* External Tracking Link */}
-						{trackingUrl && (
-							<Card className="mt-3">
-								<CardBody>
-									<Button
-										color="primary"
-										block
-										tag="a"
-										href={trackingUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="d-flex align-items-center justify-content-center"
-									>
-										<Navigation size={14} className="mr-1" />
-										Open in Tookan App
-									</Button>
 								</CardBody>
 							</Card>
 						)}

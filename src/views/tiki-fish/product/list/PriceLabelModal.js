@@ -43,7 +43,7 @@ const PriceLabelModal = ({ isOpen, toggle }) => {
 		showUnit: true,
 		// New options
 		showStoreName: true,
-		storeName: 'CELLERHUT',
+		storeName: 'CELLARHUT',
 		showExpiryDate: false,
 		expiryDate: '',
 		showBatchNumber: false,

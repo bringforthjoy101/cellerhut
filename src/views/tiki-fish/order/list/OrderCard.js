@@ -56,9 +56,9 @@ const OrderCard = ({ order, onDispatch, onTrack }) => {
 		history.push(`/order/preview/${order.id}`)
 	}
 
-	// ** Can dispatch check
-	const canDispatch = order.status === 'order-pending' || order.status === 'order-processing' || order.status === 'processing'
-	const canTrack = order.tracking_enabled && order.tookan_job_id
+	// ** Can dispatch check - only for online orders
+	const canDispatch = order.location !== 'Shop' && (order.status === 'order-pending' || order.status === 'order-processing' || order.status === 'processing')
+	const canTrack = order.location !== 'Shop' && order.tracking_enabled && order.tookan_job_id
 
 	return (
 		<Card className="order-card mb-1">

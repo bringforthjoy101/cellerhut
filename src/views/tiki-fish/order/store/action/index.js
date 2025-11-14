@@ -143,7 +143,7 @@ export const getOrderTracking = (orderId) => {
 	return async (dispatch) => {
 		const response = await apiRequest({ url: `/orders/${orderId}/tracking`, method: 'GET' }, dispatch)
 		if (response && response.data.data && response.data.status) {
-			// Transform coordinates from Cellerhut format (latitude/longitude) to frontend format (lat/lng)
+			// Transform coordinates from Cellarhut format (latitude/longitude) to frontend format (lat/lng)
 			const trackingData = response.data.data
 
 			// Transform driver location

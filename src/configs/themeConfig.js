@@ -3,7 +3,7 @@
 //Template config options
 const themeConfig = {
 	app: {
-		appName: 'Celler Hut',
+		appName: 'Cellar Hut',
 		appLogoImage: require('@src/assets/images/logo/favicon.png').default,
 	},
 	layout: {

@@ -63,7 +63,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon="primary">
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a primary icon — check it out!</ToastBody>
 				</Toast>
@@ -71,7 +71,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon="success">
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a success icon — check it out!</ToastBody>
 				</Toast>
@@ -79,7 +79,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon="info">
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a info icon — check it out!</ToastBody>
 				</Toast>
@@ -87,7 +87,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon="danger">
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a danger icon — check it out!</ToastBody>
 				</Toast>
@@ -95,7 +95,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon="warning">
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a warning icon — check it out!</ToastBody>
 				</Toast>
@@ -103,7 +103,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon="dark">
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a dark icon — check it out!</ToastBody>
 				</Toast>
@@ -112,7 +112,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon={<Spinner size="sm" color="primary" />}>
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a spinner — check it out!</ToastBody>
 				</Toast>
@@ -121,7 +121,7 @@ const ToastHeaderIcons = () => {
 			<Col md="6" sm="12">
 				<Toast>
 					<ToastHeader close={close} icon={logo}>
-						Celler Hut
+						Cellar Hut
 					</ToastHeader>
 					<ToastBody>This is a toast with a logo — check it out!</ToastBody>
 				</Toast>

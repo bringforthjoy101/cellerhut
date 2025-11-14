@@ -168,7 +168,7 @@ export const generateReceiptHTML = (orderData, orderResult) => {
         <div class="receipt-container">
           <!-- Business Header -->
           <div class="business-header">
-            <h1 class="business-name">CELLER HUT</h1>
+            <h1 class="business-name">CELLAR HUT</h1>
             <p class="business-address">500m Opposite Ilere Junction, Along Ijare Road</p>
             <p class="business-address">Akure South, Ondo State, South Africa</p>
             <p class="business-address">Phone: +234-XXX-XXX-XXXX</p>

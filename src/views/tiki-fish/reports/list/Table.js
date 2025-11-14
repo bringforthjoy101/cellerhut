@@ -374,7 +374,7 @@ const ReportsTable = () => {
 		const doc = new jsPDF()
 		doc.setFontSize(24)
 		doc.setTextColor('blue')
-		doc.text('Celler Hut Sales Platform.', 20, 20)
+		doc.text('Cellar Hut Sales Platform.', 20, 20)
 		doc.setFontSize(12)
 		doc.text(`Report Summary from ${moment(picker[0]).format('LLL')} to ${moment(picker[1]).format('LLL')}`, 20, 30)
 		doc.autoTable({ html: '#report-table', startY: 40, startX: 80 })

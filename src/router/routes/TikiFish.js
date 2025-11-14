@@ -175,6 +175,27 @@ const ManagerRoutes = [
 			navLink: '/tiki-fish/wallets/view',
 		},
 	},
+	// ** Payment Management Routes
+	{
+		path: '/payments/transactions',
+		exact: true,
+		component: lazy(() => import('../../views/tiki-fish/payments/list')),
+	},
+	{
+		path: '/payments/transactions/:id',
+		component: lazy(() => import('../../views/tiki-fish/payments/detail')),
+		meta: {
+			navLink: '/payments/transactions',
+		},
+	},
+	{
+		path: '/payments/logs',
+		component: lazy(() => import('../../views/tiki-fish/payments/logs')),
+	},
+	{
+		path: '/payments/webhooks',
+		component: lazy(() => import('../../views/tiki-fish/payments/webhooks')),
+	},
 	{
 		path: '/investments/packages/list',
 		component: lazy(() => import('../../views/tiki-fish/investment/list')),
@@ -262,6 +283,19 @@ const ManagerRoutes = [
 		path: '/inventory/reports',
 		component: lazy(() => import('../../views/tiki-fish/inventory-count/reports')),
 	},
+    // ** Notifications Routes
+    {
+        path: '/notifications/broadcast',
+        component: lazy(() => import('../../views/tiki-fish/notifications/BroadcastMessage'))
+    },
+    {
+        path: '/notifications/history',
+        component: lazy(() => import('../../views/tiki-fish/notifications/BroadcastHistory'))
+    },
+    {
+        path: '/notifications/logs',
+        component: lazy(() => import('../../views/tiki-fish/notifications/NotificationLogs'))
+    }
 ]
 
 const BursaryRoutes = [

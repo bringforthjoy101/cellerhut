@@ -127,7 +127,7 @@ export const formatLabelData = (product, options = {}, format = null) => {
 		showCategory = false,
 		showUnit = true,
 		showStoreName = false,
-		storeName = 'CELLERHUT',
+		storeName = 'CELLARHUT',
 		showExpiryDate = false,
 		expiryDate = null,
 		showBatchNumber = false,

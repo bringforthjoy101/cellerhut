@@ -161,8 +161,8 @@ export const columns = [
 		cell: (row, index, column, id) => {
 			const { onDispatch, onTrack } = column
 			const isTrackingEnabled = row.tracking_enabled || row.trackingEnabled
-			const canDispatch = ['order-pending', 'order-processing', 'pending', 'processing'].includes(row.status) && !isTrackingEnabled
-			const canTrack = isTrackingEnabled
+			const canDispatch = row.location !== 'Shop' && ['order-pending', 'order-processing', 'pending', 'processing'].includes(row.status) && !isTrackingEnabled
+			const canTrack = row.location !== 'Shop' && isTrackingEnabled
 
 			return (
 				<div className="d-flex align-items-center gap-1">

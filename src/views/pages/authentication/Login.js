@@ -25,7 +25,7 @@ const ToastContentValid = ({ name, role }) => (
 			</div>
 		</div>
 		<div className="toastify-body">
-			<span>You have successfully logged in as an {role} user to Celler Hut. Now you can start to explore. Enjoy!</span>
+			<span>You have successfully logged in as an {role} user to Cellar Hut. Now you can start to explore. Enjoy!</span>
 		</div>
 	</Fragment>
 )
@@ -39,7 +39,7 @@ const ToastContentNotVerified = ({ name, role }) => (
 			</div>
 		</div>
 		<div className="toastify-body">
-			<span>You have successfully logged in as an {role} user to Celler Hut. Kindly change your password to continue. Thank you!</span>
+			<span>You have successfully logged in as an {role} user to Cellar Hut. Kindly change your password to continue. Thank you!</span>
 		</div>
 	</Fragment>
 )
@@ -125,7 +125,7 @@ const Login = (props) => {
 			<Row className="auth-inner m-0">
 				<Link className="brand-logo" to="/" onClick={(e) => e.preventDefault()}>
 					<img src={Logo} width="40" />
-					<h2 className="brand-text text-primary ml-1">Celler Hut</h2>
+					<h2 className="brand-text text-primary ml-1">Cellar Hut</h2>
 				</Link>
 				<Col className="d-none d-lg-flex align-items-center p-1" lg="8" sm="12">
 					<div className="w-100 d-lg-flex align-items-center justify-content-center px-5">
@@ -135,7 +135,7 @@ const Login = (props) => {
 				<Col className="d-flex align-items-center auth-bg px-2 p-lg-5" lg="4" sm="12">
 					<Col className="px-xl-2 mx-auto" sm="8" md="6" lg="12">
 						<CardTitle tag="h2" className="font-weight-bold mb-1">
-							Welcome to Celler Hut 👋
+							Welcome to Cellar Hut 👋
 						</CardTitle>
 						<CardText className="mb-2">Please sign-in to your account and start the adventure</CardText>
 						<AvForm className="auth-login-form mt-2" onSubmit={handleSubmit}>

@@ -386,7 +386,7 @@ const ReportsTable = () => {
 		const doc = new jsPDF()
 		doc.setFontSize(24)
 		doc.setTextColor('blue')
-		doc.text('Celler Hut Sales Platform.', 20, 20)
+		doc.text('Cellar Hut Sales Platform.', 20, 20)
 		doc.setFontSize(12)
 		doc.text(`Withdrawal Summary from ${moment(picker[0]).format('LL')} to ${moment(picker[1]).format('LL')}`, 20, 30)
 		doc.autoTable({ html: '#withdrawal-table', startY: 40, startX: 80 })

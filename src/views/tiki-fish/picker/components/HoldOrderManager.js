@@ -231,12 +231,12 @@ const HoldOrderManager = ({ isOpen, toggle }) => {
 	const handleAddNote = (orderId, note) => {
 		setOrderNotes((prev) => ({ ...prev, [orderId]: note }))
 		// Save to localStorage
-		localStorage.setItem('cellerhut_order_notes', JSON.stringify({ ...orderNotes, [orderId]: note }))
+		localStorage.setItem('Cellarhut_order_notes', JSON.stringify({ ...orderNotes, [orderId]: note }))
 	}
 
 	// Load notes from localStorage on mount
 	useEffect(() => {
-		const savedNotes = localStorage.getItem('cellerhut_order_notes')
+		const savedNotes = localStorage.getItem('Cellarhut_order_notes')
 		if (savedNotes) {
 			try {
 				setOrderNotes(JSON.parse(savedNotes))

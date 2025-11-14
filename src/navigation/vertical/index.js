@@ -13,6 +13,8 @@ import reports from './reports.js'
 import withdrawals from './withdrawals.js'
 import transactions from './transactions.js'
 import wallets from './wallets.js'
+import payments from './payments.js'
+import notifications from './notifications.js'
 // import investments from './investments.js'
 
 const userData = JSON.parse(localStorage.getItem('userData'))
@@ -32,7 +34,9 @@ export default userData?.role === 'admin'
 			...withdrawals,
 			...transactions,
 			...wallets,
+			...payments,
 			...reports,
+			...notifications,
 	  ]
 	: userData?.role === 'store'
 	? [...dashboards, ...picker, ...customers, ...products, ...suppliers, ...supplies, ...inventory, ...transactions]
